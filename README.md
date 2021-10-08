@@ -4,12 +4,13 @@
 
 # FixMyCrypto Features
 
-* Automatically fixes most common mistakes which result in the "invalid recovery phrase" error
+* Automatically fixes most common mistakes which result in an "invalid recovery phrase" error
     * Invalid words (e.g. fax -> fix)
     * Valid but incorrect words (e.g. fix -> fox/fit/fog etc.)
     * Swapped word order
 * Runs totally offline so your recovery phrase is never exposed to the internet
 * Smart typo detection drastically reduces the search time
+    * Words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
 * Coin support: 
     * BTC (+ forks e.g. BCH, etc.)
     * ETH (+ forks e.g. ETC)
@@ -141,6 +142,10 @@ Ledger & Trezor hardware wallets use unique methods to convert your recovery phr
 * If you used a “BIP39 passphrase” (a.k.a. “25th word”, NOT your wallet password or spending password) when you created the wallet, put it between the quotes next to “passphrase”. Note: If you used a passphrase, you must provide the EXACT passphrase used. The program doesn’t currently attempt to guess or change the passphrase, but this may be added to a future version.
 
 * The other settings can generally be left alone.
+
+# Current Limitations
+
+* Only English BIP39 wordlist is currently implemented.
 
 # Support
 

@@ -158,13 +158,26 @@ namespace FixMyCrypto {
                     }
                 }
 
+                Rhymes rhymes = new Rhymes();
+
                 //  Create list of closest words by max distance
                 if (wordsByMaxDistance == null) {
                     wordsByMaxDistance = new List<short>[allWordCount];
 
                     Parallel.ForEach(wordlist.Values, word => {
+                    // foreach (var word in wordlist.Values) {
                         wordsByMaxDistance[word] = GetWordsSortedByMaxDistance(word, Settings.wordDistance);
+
+                        //  Add rhymes / sounds like from table
+
+                        List<string> soundsLike = rhymes.GetWords(wordArray[word]);
+
+                        foreach (string w in soundsLike) {
+                            short ix = wordlist[w];
+                            if (!wordsByMaxDistance[word].Contains(ix)) wordsByMaxDistance[word].Add(ix);
+                        }
                     });
+                    // }
 
                     //  debug
                     
