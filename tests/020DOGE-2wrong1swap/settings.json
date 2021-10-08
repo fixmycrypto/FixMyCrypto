@@ -1,0 +1,21 @@
+{
+    "phrase": "siren bottom inflict vehicle else monkey dirt tide cook task general when",
+
+    "passphrase": "",
+
+    "paths": [
+
+    ],
+
+    "knownAddresses":  [
+        "DF9hRhb9vhJ6ooG1skX7YyKYhZBKaf3dXD"
+    ],
+
+    "accounts": "0",
+
+    "indices": "0-4",
+
+    "coin": "DOGE",  //  "BTC", "ADA", "ETH", "DOGE", "LTC"
+
+    "logLevel": 5      //  Debug = 5, Info = 4, Warning = 3, Error = 2, None = 0,
+}

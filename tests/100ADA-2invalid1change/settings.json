@@ -1,0 +1,21 @@
+{
+    "phrase": "satoshi wreck slim poet tone october hard kiss tuition limb jump gaft audit doll story video question reopen question ok rough draft brass try",
+
+    "passphrase": "",
+
+    "paths": [
+
+    ],
+
+    "knownAddresses":  [
+        "addr1q8hv2rqpe6d34gpanjw70x8gqy4spjyxr8whls5aqc4fddwdu249mqpyzyvru8m5wgwlcqmyj0cpjgp7c8y6mntd7z3smhueak"
+    ],
+
+    "accounts": "0",
+
+    "indices": "0-4",
+
+    "coin": "ADA",  //  "BTC", "ADA", "ETH", "DOGE", "LTC"
+
+    "logLevel": 5      //  Debug = 5, Info = 4, Warning = 3, Error = 2, None = 0,
+}

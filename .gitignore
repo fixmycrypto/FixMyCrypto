@@ -1,0 +1,9 @@
+bin/**
+obj/**
+results-decrypted.txt
+results.json
+secrets.json
+/settings.json
+key.txt
+*.bak
+tests/**/log.txt

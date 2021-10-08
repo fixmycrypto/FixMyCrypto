@@ -1,0 +1,21 @@
+{
+    "phrase": "siren button inform vehicle else donkey cook task dirt tide general when",
+
+    "passphrase": "",
+
+    "paths": [
+
+    ],
+
+    "knownAddresses":  [
+        "0x7b562aFCFaEbD8413b237E1e7C287A83B993bEC0"
+    ],
+
+    "accounts": "0",
+
+    "indices": "0",
+
+    "coin": "ETH",  //  "BTC", "ADA", "ETH", "DOGE", "LTC"
+
+    "logLevel": 5      //  Debug = 5, Info = 4, Warning = 3, Error = 2, None = 0,
+}

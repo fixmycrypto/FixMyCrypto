@@ -1,0 +1,21 @@
+{
+    "phrase": "siren bottom inform vehicle also donkey dirt task cook tide federal when",
+
+    "passphrase": "Vitalik!",
+
+    "paths": [
+
+    ],
+
+    "knownAddresses":  [
+        "0x1eA9c6B0ab97566F91bfe99c9B0442C9634910B8"
+    ],
+
+    "accounts": "0",
+
+    "indices": "0",
+
+    "coin": "ETH",  //  "BTC", "ADA", "ETH", "DOGE", "LTC"
+
+    "logLevel": 5      //  Debug = 5, Info = 4, Warning = 3, Error = 2, None = 0,
+}

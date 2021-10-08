@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>FixMyCrypto</RootNamespace>
+    <TargetName>FixMyCrypto</TargetName>
+    <AssemblyName>FixMyCrypto</AssemblyName>
+    <NoWarn>NU1701</NoWarn>
+    <AssemblyVersion>1.3.0.0</AssemblyVersion>
+  </PropertyGroup>
+
+<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+  <DebugType>none</DebugType>
+  <Optimize>true</Optimize>
+</PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle" Version="1.8.9" />
+    <PackageReference Include="CardanoSharp.Wallet" Version="0.2.0" />
+    <PackageReference Include="Cryptography.ECDSA.Secp256k1" Version="1.1.3" />
+    <PackageReference Include="Json.NET" Version="1.0.25" />
+    <PackageReference Include="NBitcoin" Version="5.0.78" />
+    <PackageReference Include="NBitcoin.Altcoins" Version="2.0.32" />
+    <None Update="settings.example.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
