@@ -66,6 +66,17 @@ namespace FixMyCrypto {
 
             if (o != path) throw new Exception($"{o} != {path}");
         }
+
+        public static void FailValidate(CoinType ct, string address) {
+            try {
+                PhraseToAddress.ValidateAddress(ct, address);
+            }
+            catch (Exception) {
+                return;
+            }
+
+            throw new Exception($"validation should have failed: {ct} {address}");
+        }
         public static void TestCardanoKeyVector(string name, string phrase, string passphrase, CoinType coin, string expectSK, string expectCC) {
             PhraseToAddress p = PhraseToAddress.Create(coin, null, null, 0, 0);
             Phrase ph = new Phrase(phrase);
@@ -86,33 +97,25 @@ namespace FixMyCrypto {
             //  Needed to init word lists
             PhraseProducer pp = new PhraseProducer(null, 0, 0, null);
 
-            //  Test Phrase hashing
-            HashSet<Phrase> testedPhrases = new HashSet<Phrase>();
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            for (int i = 0; i < 1e5; i++) {
-                Mnemonic m = new Mnemonic(Wordlist.English, WordCount.Twelve);
-                Phrase ph = new Phrase(m.Words);
-                if (!testedPhrases.Add(ph)) throw new Exception("item already in set");
-                // Log.Debug($"phrase: {p} hash: {ph.GetHashCode():x2}");
-            }
-            foreach (Phrase p2 in testedPhrases) {
-                if (!testedPhrases.Contains(p2)) {
-                    throw new Exception($"not found: {p2}");
-                }
-            }
-            sw.Stop();
-            Log.Debug($"phrase hash time: {sw.ElapsedMilliseconds}ms");
+            //  Test address validation
+            //  Should pass
+            PhraseToAddress.ValidateAddress(CoinType.BTC, "14NPVhtZo8c5vxuZwTGGYxJPd8HbtqEJpu");
+            PhraseToAddress.ValidateAddress(CoinType.BTC, "39JhELZ5E9HaGKBnnQhfWqTZLF4vUfKKsh");
+            PhraseToAddress.ValidateAddress(CoinType.BTC, "bc1qmr9cmy3p3q695mkn5rnmz27csvnvr2ja05wa4p");
+            PhraseToAddress.ValidateAddress(CoinType.ETH, "0x67cFdcFF9d22ED77F612043547f44980e6793859");
+            PhraseToAddress.ValidateAddress(CoinType.LTC, "LcvWUyyTThg39acPTn5Ek2eC2kcBiz37Lk");
+            PhraseToAddress.ValidateAddress(CoinType.LTC, "MFn6qthNdwqYyFGdq6TzEtev5rTupUjSVh");
+            PhraseToAddress.ValidateAddress(CoinType.LTC, "ltc1q55zt0pq7dy9p9n7va9fyqhxldnp7ajcyhv84tx");
+            PhraseToAddress.ValidateAddress(CoinType.DOGE, "D6NBFwSBkhYt88B1NCpE6Ecawym7m5w6i6");
+            PhraseToAddress.ValidateAddress(CoinType.BCH, "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
+            PhraseToAddress.ValidateAddress(CoinType.BCH, "qp3wjpa3tjlj042z2wv7hahsldgwhwy0rq9sywjpyy");
 
-            //  Test keyboard distance
-            /*
-            for (char a = ' '; a <= '~'; a++) {
-                for (char b = ' '; b <= '~'; b++) {
-                    double distance = KeyboardDistance.GetKeyboardDistance(a, b);
-                    Log.Debug($"{a} -> {b} = {distance:F2}");
-                }
-            }
-            */
+            //  Should fail
+            FailValidate(CoinType.BTC, "14NPVhtZo8c5vxuZwTOGYxJPd8HbtqEJpu");
+            FailValidate(CoinType.BTC, "bc1qmr9cmy3p3q695mkn5rnmz27csvnvr2ja05wa4b");
+            FailValidate(CoinType.ETH, "0x67cFdcFF9d22ED77F612043547f44980e679385");
+            FailValidate(CoinType.LTC, "btc1q55zt0pq7dy9p9n7va9fyqhxldnp7ajcyhv84tx");
+            FailValidate(CoinType.DOGE, "D6NBFwSBkhYt88B1NCpE6Ecawym7m5w6i6o");
 
             //  Test vectors
             //  TODO: Test addresses

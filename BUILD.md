@@ -16,4 +16,4 @@ VS Code project files are included. Prereqs: .NET 5.0
 # Test:
 
 * run Test configuration in VS Code (or run FixMyCrypto -t)
-* run tests\tests.bat
+* cd tests && tests\tests.bat

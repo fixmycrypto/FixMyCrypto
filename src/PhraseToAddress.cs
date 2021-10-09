@@ -526,29 +526,72 @@ namespace FixMyCrypto {
         public override void ValidateAddress(string address) {
             switch (this.coinType) {
                 case CoinType.BTC:
-                case CoinType.BCH:
 
-                if (!address.StartsWith("1") && !address.StartsWith("3") && !address.StartsWith("bc1q"))
+                if (address.StartsWith("1"))
+                {
+                    var addr = new BitcoinPubKeyAddress(address, Network.Main);
+                } 
+                else if(address.StartsWith("3"))
+                {
+                    var addr = new BitcoinScriptAddress(address, Network.Main);
+                }
+                else if (address.StartsWith("bc1q"))
+                {
+                    var addr = new BitcoinWitPubKeyAddress(address, Network.Main);
+                }
+                else
+                {
                     throw new Exception("Invalid address");
+                }
 
                 break;
 
-                //  TODO: validate address string
+                case CoinType.BCH:
+
+                //  TODO: Not working
+
+                // var bch = BitcoinAddress.Create(address, NBitcoin.Altcoins.BCash.Instance.Mainnet);
+
+                /*
+                if (address.StartsWith("1")) {
+                    var bch = new BitcoinPubKeyAddress(address, NBitcoin.Altcoins.BCash.Instance.Mainnet);
+                }
+                else if (address.StartsWith("q")) {
+                    var bch = new BitcoinPubKeyAddress(address, NBitcoin.Altcoins.BCash.Instance.Mainnet);
+                }
+                else {
+                    throw new Exception("Invalid address");
+                }
+                */
+
+                break;
 
                 case CoinType.DOGE:
 
                 if (!address.StartsWith("D")) throw new Exception("Invalid address");
 
-                break;
+                var doge = new BitcoinPubKeyAddress(address, NBitcoin.Altcoins.Dogecoin.Instance.Mainnet);
 
-                //  TODO: validate address string
+                break;
 
                 case CoinType.LTC:
 
-                if (!address.StartsWith("L") && !address.StartsWith("M") && !address.StartsWith("ltc1q"))
+                if (address.StartsWith("L"))
+                {
+                    var addr = new BitcoinPubKeyAddress(address, NBitcoin.Altcoins.Litecoin.Instance.Mainnet);
+                }
+                else if(address.StartsWith("M"))
+                {
+                    var addr = new BitcoinScriptAddress(address, NBitcoin.Altcoins.Litecoin.Instance.Mainnet);
+                }
+                else if (address.StartsWith("ltc1q"))
+                {
+                    var addr = new BitcoinWitPubKeyAddress(address, NBitcoin.Altcoins.Litecoin.Instance.Mainnet);
+                }
+                else
+                {
                     throw new Exception("Invalid address");
-
-                //  TODO: validate address string
+                }
 
                 break;
 
