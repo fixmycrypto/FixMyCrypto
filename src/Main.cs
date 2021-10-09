@@ -71,6 +71,15 @@ namespace FixMyCrypto {
                 PauseAndExit(1);
             }
 
+            //  Validate phrase
+            try {
+                Phrase.Validate(Settings.phrase);
+            }
+            catch (Exception e) {
+                Log.Error($"Invalid phrase: {e}");
+                PauseAndExit(1);
+            }
+
             ConcurrentQueue<Work> phraseQueue = new ConcurrentQueue<Work>();
             ConcurrentQueue<Work> addressQueue = new ConcurrentQueue<Work>();
             Stopwatch stopWatch = new Stopwatch();
@@ -122,6 +131,19 @@ namespace FixMyCrypto {
             List<Thread> p2aThreads = new List<Thread>();
             for (int i = 0; i < phraseToAddressCount; i++) {
                 p2a[i] = PhraseToAddress.Create(Settings.coinType, phraseQueue, addressQueue, i, phraseToAddressCount);
+
+                if (i == 0 && Settings.knownAddresses != null) {
+                    //  Validate addresses
+                    foreach (string address in Settings.knownAddresses) {
+                        try {
+                            p2a[i].ValidateAddress(address);
+                        }
+                        catch (Exception e) {
+                            Log.Error($"Invalid known address: {address}: {e}. Please check the known addresses.");
+                            PauseAndExit(1);
+                        }
+                    }
+                }
 
                 Thread thread = new Thread (p2a[i].Consume);
                 thread.Name = "P2A" + i;

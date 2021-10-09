@@ -184,10 +184,17 @@ namespace FixMyCrypto {
 
                 dynamic secret = coin.Value;
 
+                //  Validate phrase
+                Phrase.Validate(secret.phrase.Value);
+
                 //  Test address derivation
                 if (secret.knownAddresses != null) {
                     foreach (dynamic known in secret.knownAddresses) {
                         string address = known.address.Value;
+
+                        //  Validate address
+                        PhraseToAddress.ValidateAddress(ct, address);
+
                         string path = null;
                         if (known.path != null) path = known.path.Value;
                         List<Address> addresses = TestDerivation(secret.phrase.Value, secret.passphrase.Value, ct, path);
@@ -231,6 +238,9 @@ namespace FixMyCrypto {
                 }
 
                 dynamic secret = coin.Value;
+
+                //  Validate phrase
+                Phrase.Validate(secret.phrase.Value);
 
                 TestKnownPhrase(secret.phrase.Value, secret.passphrase.Value, ct, secret.path != null ? secret.path.Value : null, (int)secret.txCount.Value, (double)secret.coins.Value);
             }

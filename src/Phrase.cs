@@ -64,5 +64,29 @@ namespace FixMyCrypto {
             set { ix[i] = value; }
         }
 
+        public static void Validate(string phrase) {
+            string[] split = phrase.Split(' ');
+
+            switch (split.Length) {
+                case 12:
+                case 15:
+                case 18:
+                case 24:
+
+                break;
+
+                default:
+
+                throw new Exception("Phrase must be 12/15/18/24 words separated by spaces");
+            }
+
+            int invalid = 0;
+
+            foreach (string word in split) {
+                if (!PhraseProducer.originalWordlist.Contains(word)) invalid++;
+            }
+
+            if (invalid > 5) throw new Exception("Phrase has too many non-BIP39 words");
+        }
     }
 }

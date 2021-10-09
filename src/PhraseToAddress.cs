@@ -66,6 +66,13 @@ namespace FixMyCrypto {
         public abstract Object DeriveMasterKey(Phrase phrase, string passphrase);
         protected abstract Object DeriveChildKey(Object parentKey, uint index);
         protected abstract Address DeriveAddress(PathNode node);
+        public abstract void ValidateAddress(string address);
+
+        public static void ValidateAddress(CoinType coin, string address) {
+            PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null, 0, 0);
+            p2a.ValidateAddress(address);
+        }
+
         private Object mutex;
 
         protected virtual string GetStakePath() { return null; }
@@ -335,6 +342,18 @@ namespace FixMyCrypto {
             string address = PkToAddress(pk);
             return new Address(address, node.GetPath());
         }
+
+        public override void ValidateAddress(string address) {
+            if (address.Length != 42) throw new Exception("ETH address length should be 42 chars");
+
+            if (!address.StartsWith("0x")) throw new Exception("ETH address should start with 0x");
+
+            string stripped = address.Substring(2);
+
+            string checksum = Checksum(stripped);
+
+            if (checksum != address) Log.Warning($"ETH address checksum is incorrect, should be: {checksum}");
+        }
     }
     class PhraseToAddressBitAltcoin : PhraseToAddress {
         private Network network;
@@ -503,6 +522,43 @@ namespace FixMyCrypto {
             string address = pk.GetPublicKey().GetAddress(GetKeyType(path), this.network).ToString();
             return new Address(address, path);
         }
+
+        public override void ValidateAddress(string address) {
+            switch (this.coinType) {
+                case CoinType.BTC:
+                case CoinType.BCH:
+
+                if (!address.StartsWith("1") && !address.StartsWith("3") && !address.StartsWith("bc1q"))
+                    throw new Exception("Invalid address");
+
+                break;
+
+                //  TODO: validate address string
+
+                case CoinType.DOGE:
+
+                if (!address.StartsWith("D")) throw new Exception("Invalid address");
+
+                break;
+
+                //  TODO: validate address string
+
+                case CoinType.LTC:
+
+                if (!address.StartsWith("L") && !address.StartsWith("M") && !address.StartsWith("ltc1q"))
+                    throw new Exception("Invalid address");
+
+                //  TODO: validate address string
+
+                break;
+
+                //  TODO: other coins
+
+                default:
+
+                break;
+            }
+        }
     }
 
     class PhraseToAddressCardano : PhraseToAddress {
@@ -642,6 +698,15 @@ namespace FixMyCrypto {
 
             return new CardanoSharp.Wallet.Models.Keys.Mnemonic(phrase.ToPhrase(), entropy);
         }
+
+        public override void ValidateAddress(string address) {
+            if (!address.StartsWith("addr1q")) throw new Exception("ADA address must start with addr1q");
+
+            if (address.Length != 103) throw new Exception("ADA address incorrect length");
+
+            //  TODO: validate characters
+        }
+
     }
 
     class PhraseToAddressCardanoLedger : PhraseToAddressCardano {
@@ -954,5 +1019,10 @@ namespace FixMyCrypto {
             string address = Base58.Encode(pub);
             return new Address(address, node.GetPath());
         }
+
+        public override void ValidateAddress(string address) {
+            //  TODO
+        }
+
     }
 }

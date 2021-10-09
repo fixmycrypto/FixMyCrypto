@@ -14,7 +14,7 @@ namespace FixMyCrypto {
         int threadNum, threadMax, internalThreads;
         int valid = 0, invalid = 0, dupes = 0;
         string[] phrase;
-        static IList<string> originalWordlist = Wordlist.English.GetWords();
+        public static IList<string> originalWordlist = Wordlist.English.GetWords();
 
         //  Array of word strings, indexed by word index
         public static string[] wordArray = null;
