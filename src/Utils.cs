@@ -225,7 +225,8 @@ namespace FixMyCrypto
             StreamWriter writer = File.CreateText("results.json");
             writer.WriteLine(result);
             writer.Close();
-            Log.All($"\n!!! FOUND WALLET !!!\nSample address:\n{best.address} ({best.path})\n\nEncrypted Recovery Phrase written to: results.json\n\n");
+            Log.All($"\n!!! FOUND WALLET !!!\nSample address:\n{best.address} ({best.path})\n\nRecovery Phrase written to: results.json\n");
+            Log.All("To support the developers, please donate to one of these addresses:\nBTC: bc1q477afku8x7964gmzlsapgj8705e63ch89p8k4z\nETH: 0x0327DF6652D07eE6cc670626b034edFfceD1B20C\nDOGE: DT8iZF8RbqpRftgrWdiq34EZdJpCGiWBwG\nADA: addr1qxhjru35kv8fq66afxxdnjzf720anfcppktchh6mjuwxma3e876gh3czzkq0guls5qrkghexsuh543h7k2xqlje5lskqfp2elv\n");
         }
 
         public static List<Address> GetUsedAddresses(LookupAddress la, CoinType coin, Phrase phrase, string passphrase, string path, ref Address best) {
