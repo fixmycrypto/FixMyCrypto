@@ -23,6 +23,19 @@
 * BIP39 passphrase support
 * Blockchain search mode (requires local node & indexer)
 
+# Support
+
+For technical support or help with any crypto recovery needs, please contact us via [e-mail](mailto:help@fixmycrypto.com) or via our commercial site <https://www.fixmycrypto.com>
+
+# Donations / Tips
+
+If you found this software useful, please consider donating to fund future development.
+
+* BTC: bc1q477afku8x7964gmzlsapgj8705e63ch89p8k4z
+* ETH: 0x0327DF6652D07eE6cc670626b034edFfceD1B20C
+* DOGE: DT8iZF8RbqpRftgrWdiq34EZdJpCGiWBwG
+* ADA: addr1qxhjru35kv8fq66afxxdnjzf720anfcppktchh6mjuwxma3e876gh3czzkq0guls5qrkghexsuh543h7k2xqlje5lskqfp2elv
+
 # Build
 
 See BUILD.md
@@ -143,19 +156,37 @@ Ledger & Trezor hardware wallets use unique methods to convert your recovery phr
 
 * The other settings can generally be left alone.
 
+# Blockchain Search Mode
+
+### Advanced uesrs only
+
+Blockchain search mode can be used if you have a partially valid recovery phrase but don't know any of the addresses associated with this phrase. For example, if your computer was lost or stolen and you don't have any transaction logs to refer to.
+
+## Blockchain search requirements
+
+* Locally running up-to-date node with a fully complete initial block download
+    * This allows the search to be performed offline
+    * Ideally you don't want to use an online indexer API since they require internet access and limit or throttle requests unless you pay for API access
+* Supported indexers:
+    * BTC: Mempool + Electrs (in theory bitcore should work, but it's too slow to index BTC)
+    * BCH, DOGE, LTC, other BTC-alts: bitcore
+    * ETH: geth (serves as both the node and indexer)
+    * ADA: cardano-graphql (docker-compose runs both the node and the indexer)
+* Refer to node/indexer documentation for setting up the node
+* Allow IBD and index to complete, then take system offline before entering recovery phrase & starting the search.
+
+To use blockchain search mode, leave the knownAddresses field blank. You must specify the API path in the settings.json file:
+
+    "adaApi": "http://localhost:3100", "adaApiType": "graphql",
+
+    "btcApi": "http://localhost:8081", "btcApiType": "mempool",
+
+    "ethApi": "http://localhost:8545", "ethApiType": "gethrpc",
+
+    "altcoinApi": "http://localhost:3000", "altcoinApiType": "bitcore",
+
 # Current Limitations
 
-* Only English BIP39 wordlist is currently implemented.
+* Only English BIP39 wordlist and QWERTY keyboard layouts are currently implemented
+* BCH only supports legacy (1...) style addresses
 
-# Support
-
-For technical support or help with any crypto recovery needs, please contact us via [e-mail](mailto:help@fixmycrypto.com) or via our commercial site <https://www.fixmycrypto.com>
-
-# Donations / Tips
-
-If you found this software useful, please consider donating to fund future development.
-
-* BTC: bc1q477afku8x7964gmzlsapgj8705e63ch89p8k4z
-* ETH: 0x0327DF6652D07eE6cc670626b034edFfceD1B20C
-* DOGE: DT8iZF8RbqpRftgrWdiq34EZdJpCGiWBwG
-* ADA: addr1qxhjru35kv8fq66afxxdnjzf720anfcppktchh6mjuwxma3e876gh3czzkq0guls5qrkghexsuh543h7k2xqlje5lskqfp2elv
