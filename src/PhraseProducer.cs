@@ -250,15 +250,13 @@ namespace FixMyCrypto {
             Global.done = true;
             lock(queue) { Monitor.PulseAll(queue); }
         }
-        private static HashSet<Phrase> testedPhrases = new HashSet<Phrase>();
+        private static HashSet<Phrase> testedPhrases = new HashSet<Phrase>((int)1e8);
         private void TestPhrase(short[] phraseArray) {
             Phrase p = new Phrase(phraseArray);
+
             if (testedPhrases.Contains(p)) {
                 dupes++;
                 return;
-            }
-            lock (testedPhrases) {
-                testedPhrases.Add(p);
             }
 
             //  Check if phrase has valid BIP39 checksum
@@ -266,6 +264,17 @@ namespace FixMyCrypto {
             bool isValid = VerifyChecksum(phraseArray);
             
             if (isValid) {
+                //  don't retest valid phrases
+                lock (testedPhrases) {
+                    try {
+                        testedPhrases.Add(p);
+                    }
+                    catch (Exception) {
+                        testedPhrases.Clear();
+                        testedPhrases.Add(p);
+                    }
+                }
+
                 valid++;
                 Work w = new Work(p, null);
 
