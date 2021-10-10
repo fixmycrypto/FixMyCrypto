@@ -107,6 +107,7 @@ namespace FixMyCrypto {
             PhraseToAddress.ValidateAddress(CoinType.LTC, "MFn6qthNdwqYyFGdq6TzEtev5rTupUjSVh");
             PhraseToAddress.ValidateAddress(CoinType.LTC, "ltc1q55zt0pq7dy9p9n7va9fyqhxldnp7ajcyhv84tx");
             PhraseToAddress.ValidateAddress(CoinType.DOGE, "D6NBFwSBkhYt88B1NCpE6Ecawym7m5w6i6");
+            PhraseToAddress.ValidateAddress(CoinType.BCH, "1PVKjS1SueNyqLHXbWSP6Tb7YNo541tShZ");
             PhraseToAddress.ValidateAddress(CoinType.BCH, "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
             PhraseToAddress.ValidateAddress(CoinType.BCH, "qp3wjpa3tjlj042z2wv7hahsldgwhwy0rq9sywjpyy");
 
