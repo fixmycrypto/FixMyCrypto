@@ -54,7 +54,7 @@ See BUILD.md
 
 ### Required
 
-Specify which cryptocurrency you are searching for. (“BTC”, “ETH”, “ADA”, “DOGE”, “LTC”, etc.). (For ADA used with a hardware wallet, see “Cardano special use cases” below.)
+Specify which cryptocurrency you are searching for. (“BTC”, “ETH”, “ADA”, “DOGE”, “LTC”, "SOL", etc.). (For ADA used with a hardware wallet, see “Cardano special use cases” below.)
 
     "coin": "BTC",
 
@@ -66,7 +66,7 @@ Enter your recovery phrase between the quotation marks. The number of words must
 
     "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon kiwi strawberry",
 
-Hint: You might be tempted to fix any invalid words (words not on the BIP39 list), but it is better to leave any mistakes as-is. First, by leaving the invalid words in place, the software will immediately know which word(s) need to be changed, instead of trying every word in the phrase. Second, the program will probably do a better job of guessing which typos were made.
+Hint: You might be tempted to fix any invalid words (words not on the BIP39 list), but it is better to leave any mistakes as-is. First, by leaving the invalid words in place, the software will immediately know which word(s) need to be changed first, instead of trying every word in the phrase. Second, the program will probably do a better job than you of guessing which typos were made and which replacement words should be tested.
 
 ## Known Addresses:
 
@@ -98,7 +98,7 @@ If you know more than one address, it should look like this:
 
 “indices” specifies the range of address indices to check against. By default we search to see if any of the known addresses are in the first 5 addresses of the wallet, hence “0-4”. This means at least one of the known addresses you provide must be one of the first five addresses used with this wallet. If you know that your address is between index 5 and 10, use “5-10”. Ranges can be specified using hyphens: e.g. “0-5”, commas: e.g. “2,4,6”, or a mix of both e.g.: “0,2,4,10-12”. The more addresses you search, the longer it will take. Ideally, if you know you have provided your address 0, then you can set this to “0” to speed things up a bit. However, if your known address is address index 5, and you specify the range as “0-4”, it won’t find your address at all. So make sure this range is big enough to include at least one of the known addresses you’ve provided.
 
-For ETH, typically only address index "0" is used.
+For ETH and SOL, typically only address index "0" is used.
 
 Similarly, “accounts” specifies the range of accounts to check against. For most users, if you had only one account for a particular coin tied to this recovery phrase, the account will be “0”. As with “indicies”, you can specify a range using hyphens and commas.
 
