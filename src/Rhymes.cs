@@ -24,6 +24,16 @@ namespace FixMyCrypto {
             List<string> rhymes = token.rhymes.ToObject<List<string>>();
             List<string> soundslike = token.soundsLike.ToObject<List<string>>();
 
+            //  Also perform reverse search, since some are missing
+            //  e.g. cereal sounds like series, but series doesn't sound like cereal?
+            foreach (var w in rhymeWords.Keys) {
+              List<string> r = rhymeWords[w].rhymes.ToObject<List<string>>();
+              List<string> s = rhymeWords[w].soundsLike.ToObject<List<string>>();
+
+              if (r.Contains(word)) rhymes.Add(w);
+              if (s.Contains(word)) rhymes.Add(w);
+            }
+
             var l = new List<string>();
             l.AddRange(rhymes);
             l.AddRange(soundslike);
