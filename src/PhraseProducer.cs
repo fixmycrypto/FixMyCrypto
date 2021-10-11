@@ -254,11 +254,11 @@ namespace FixMyCrypto {
         private void TestPhrase(short[] phraseArray) {
             //  Check if phrase has valid BIP39 checksum
 
-            bool isValid = VerifyChecksum(phraseArray);
+            (bool isValid, int hash) = VerifyChecksum(phraseArray);
             
             if (isValid) {
                 //  don't retest valid phrases
-                Phrase p = new Phrase(phraseArray);
+                Phrase p = new Phrase(phraseArray, hash);
 
                 if (testedPhrases.Contains(p)) {
                     dupes++;
@@ -843,7 +843,7 @@ namespace FixMyCrypto {
             Finish();
         }
 
-        public bool VerifyChecksum(short[] indices) {
+        public (bool, Int32) VerifyChecksum(short[] indices) {
             // Compute and check checksum
             int MS = indices.Length;
             int ENTCS = MS * 11;
@@ -912,7 +912,7 @@ namespace FixMyCrypto {
             byte[] hashOfEntropy = hash.ComputeHash(entropy);
             byte actualChecksum = (byte)(hashOfEntropy[0] >> (8 - CS));
 
-            return (expectedChecksum == actualChecksum);
+            return ((expectedChecksum == actualChecksum), BitConverter.ToInt32(hashOfEntropy));
         }
     }
 }

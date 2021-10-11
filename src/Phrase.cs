@@ -3,10 +3,11 @@ using System;
 namespace FixMyCrypto {
     public class Phrase {
         private short[] ix;
+        private int hash;
 
         public int Length { get { return ix.Length; } }
         public short[] Indices { get { return ix; } }
-        public Phrase(short[] indices) { ix = indices; }
+        public Phrase(short[] indices, int hash) { ix = indices; this.hash = hash; }
         public Phrase(string[] phrase) {
             ix = new short[phrase.Length];
             for (int i = 0; i < phrase.Length; i++) ix[i] = PhraseProducer.GetWordIndex(phrase[i]);
@@ -25,28 +26,12 @@ namespace FixMyCrypto {
         }
 
         public override int GetHashCode() {
-            
-            //  Slow?
-            int result = 0;
-            int shift = 0;
-            for (int i = 0; i < ix.Length; i++)
-            {
-                shift = (shift + 11) % 21;
-                result ^= (ix[i] + 1024) << shift;
-            }
-            return result;
-
-            //  Slower?
-            // return this.ToString().GetHashCode();
+            return hash;
         }
-
-        // public override string ToString() {
-        //     return String.Join(' ', ix);
-        // }
 
         public Phrase Clone() {
             short[] i = ix.Copy();
-            return new Phrase(i);
+            return new Phrase(i, hash);
         }
 
         public string[] ToWords() {
