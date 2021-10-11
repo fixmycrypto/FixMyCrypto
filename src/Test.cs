@@ -110,6 +110,7 @@ namespace FixMyCrypto {
             PhraseToAddress.ValidateAddress(CoinType.BCH, "1PVKjS1SueNyqLHXbWSP6Tb7YNo541tShZ");
             PhraseToAddress.ValidateAddress(CoinType.BCH, "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
             PhraseToAddress.ValidateAddress(CoinType.BCH, "qp3wjpa3tjlj042z2wv7hahsldgwhwy0rq9sywjpyy");
+            PhraseToAddress.ValidateAddress(CoinType.SOL, "uqYc2vewvfag8m6Ys6WWYekXf2BzKwWyLxBh1mftMPF");
 
             //  Should fail
             FailValidate(CoinType.BTC, "14NPVhtZo8c5vxuZwTOGYxJPd8HbtqEJpu");
@@ -117,6 +118,7 @@ namespace FixMyCrypto {
             FailValidate(CoinType.ETH, "0x67cFdcFF9d22ED77F612043547f44980e679385");
             FailValidate(CoinType.LTC, "btc1q55zt0pq7dy9p9n7va9fyqhxldnp7ajcyhv84tx");
             FailValidate(CoinType.DOGE, "D6NBFwSBkhYt88B1NCpE6Ecawym7m5w6i6o");
+            FailValidate(CoinType.SOL, "uqYc2vewvfag8m6Ys6WWYekXf2BzKwWyLxBh1mftMPFu");
 
             //  Test vectors
             //  TODO: Test addresses
@@ -206,13 +208,13 @@ namespace FixMyCrypto {
                         bool found = false;
                         foreach (Address a in addresses) {
                             if (a.address == address && (path == null || a.path == path)) {
-                                Log.Debug($"Derived {ct} address: {address} {path}");
+                                Log.Debug($"Derived {ct} address: {address} ({a.path})");
                                 found = true;
                             }
                         }
 
                         if (!found) {
-                            Log.Error($"{ct} failed to derive: {address} {path}. Found:");
+                            Log.Error($"{ct} failed to derive: {address} ({path}). Found:");
                             foreach (Address a in addresses) {
                                 Log.Error($"{a.address} {a.path}");
                             }

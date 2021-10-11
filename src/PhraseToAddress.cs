@@ -881,7 +881,6 @@ namespace FixMyCrypto {
     //  TODO: Not working
     class PhraseToAddressSolana : PhraseToAddress {
         private HMACSHA512 HMAC512;
-        protected KeyService keyService;
         public enum KeyType {
             Public,
             Private
@@ -893,20 +892,17 @@ namespace FixMyCrypto {
                 this.data = data;
                 this.cc = cc;
             }
-            public byte[] GetPublicKey() {
-                return Chaos.NaCl.Ed25519.GetPublicKey(this.data);
-            }
         }
         public PhraseToAddressSolana(ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
-            this.keyService = new KeyService();
             this.HMAC512 = new HMACSHA512(ed25519_seed);
         }
         public override CoinType GetCoinType() { return CoinType.SOL; }
         public override string[] GetDefaultPaths(string[] knownAddresses) {
             string[] p = { 
-                "m/44'/501'/{index}'",
+                "m/44'/501'/{account}'",
                 "m/44'/501'/{account}'/{index}'",
-                "m/44'/501'/{account}'/0'/{index}'"
+                // not sure how to implement non-hardened derivation
+                // "m/501'/{account}'/0/{index}" 
                 };
             return p;
         }
@@ -929,11 +925,11 @@ namespace FixMyCrypto {
         }
         protected override Object DeriveChildKey(Object parentKey, uint index) {
             //  https://github.com/LedgerHQ/speculos/blob/c0311aef48412e40741a55f113939469da78e8e5/src/bolos/os_bip32.c#L342
-            
+            //  https://github.com/alepop/ed25519-hd-key/blob/d8c0491bc39e197c86816973e80faab54b9cbc26/src/index.ts#L33
+
             if (!PathNode.IsHardened(index)) {
-                throw new NotSupportedException();
+                throw new NotSupportedException("SOL non-hardened path not supported");
             }
-            index = PathNode.Soften(index);
 
             Key x = (Key)parentKey;
 
@@ -952,119 +948,18 @@ namespace FixMyCrypto {
             return new Key(I.Slice(0, 32), I.Slice(32));
         }
 
-        /*
-        //  https://github.com/LedgerHQ/speculos/blob/c0311aef48412e40741a55f113939469da78e8e5/src/bolos/cx_ec.c#L311
-        static byte[] C_cx_Ed25519_Bx = {
-            0x21, 0x69, 0x36, 0xd3, 0xcd, 0x6e, 0x53, 0xfe, 0xc0, 0xa4, 0xe2,
-            0x31, 0xfd, 0xd6, 0xdc, 0x5c, 0x69, 0x2c, 0xc7, 0x60, 0x95, 0x25,
-            0xa7, 0xb2, 0xc9, 0x56, 0x2d, 0x60, 0x8f, 0x25, 0xd5, 0x1a
-        };
-        static byte[] C_cx_Ed25519_By = {
-            0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-            0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-            0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x58
-        };
-        */
-        private static void le2be(ref byte[] v, int len) {
-            byte t;
-            int i, j;
-            j = len - 1;
-            len /= 2;
-
-            for (i = 0; len > 0; i++, j--, len--) {
-                t = v[i];
-                v[i] = v[j];
-                v[j] = t;
-                i++;
-                j--;
-            }   
-        }
-        /*
-        private struct Point {
-            int x, y;
-        }
-        private void scalarmult_ed25519(out BigInteger Qx, out BigInteger Qy, ref BigInteger Px, ref BigInteger Py, ref BigInteger e) {
-            //  https://github.com/LedgerHQ/speculos/blob/4332534cae06b2bd105d434a8a9cb229cadd8fa2/src/bolos/cx_ed25519.c#L114
-
-            Qx = new BigInteger(0);
-            Qy = new BigInteger(1);
-        }
-        */
-
         protected override Address DeriveAddress(PathNode node) {
-            //  https://github.com/LedgerHQ/app-solana/blob/53fdfe914639ebcfd43aa066283f3c199f57cb36/src/utils.c#L8
-
             Key key = (Key)node.key;
 
-            /*
-            //  https://github.com/LedgerHQ/speculos/blob/c0311aef48412e40741a55f113939469da78e8e5/src/bolos/cx_ec.c#L420
-            //  sys_cx_eddsa_get_public_key
-
-            SHA512 sha = SHA512.Create();
-            byte[] digest = sha.ComputeHash(key.data);
-
-            digest[0] &= 0xf8;
-            digest[31] &= 0x7f;
-            digest[31] |= 0x40;
-
-            le2be(ref digest, 32);
-
-            byte[] pu = new byte[65];
-            pu[0] = 0x04;
-            System.Buffer.BlockCopy(C_cx_Ed25519_Bx, 0, pu, 1, C_cx_Ed25519_Bx.Length);
-            System.Buffer.BlockCopy(C_cx_Ed25519_By, 0, pu, 1 + 32, C_cx_Ed25519_By.Length);
-
-            BigInteger Px, Py, Qx, Qy, e;
-
-            Px = new BigInteger(ByteArray.Slice(pu, 1, 32));
-            Py = new BigInteger(ByteArray.Slice(pu, 33, 32));
-            e = new BigInteger(digest);
-
-            scalarmult_ed25519(out Qx, out Qy, ref Px, ref Py, ref e);
-
-            byte[] Qxout = Qx.ToByteArray();
-            byte[] Qyout = Qy.ToByteArray();
-
-            System.Buffer.BlockCopy(Qxout, 0, pu, 1, 32);
-            System.Buffer.BlockCopy(Qyout, 0, pu, 33, 32);
-
-            //  return sys_cx_ecfp_scalar_mult(CX_CURVE_Ed25519, pu_key->W, pu_key->W_len,
-            //                                 digest, 32);
-
-                        //  https://github.com/LedgerHQ/speculos/blob/c0311aef48412e40741a55f113939469da78e8e5/src/bolos/cx_ec.h#L151
-            //  struct cx_ecfp_256_public_key_s { W[65] .. }
-            */
-
-            SHA512 sha = SHA512.Create();
-            byte[] digest = sha.ComputeHash(key.data);
-
-            digest[0] &= 0xf8;
-            digest[31] &= 0x7f;
-            digest[31] |= 0x40;
-
-            // le2be(ref digest, 32);
-
-            Key dKey = new Key(digest.Slice(0, 32), digest.Slice(32));
-
-            // byte[] pub = Chaos.NaCl.Ed25519.PublicKeyFromSeed(key.data);
-
-            byte[] pub = dKey.GetPublicKey();
-
-            // var hmac = new HMACSHA512(key.cc);
-            // var I = HMAC512.ComputeHash(key.data);
-
-            // Key k = new Key(I.Slice(0, 32), I.Slice(32));
-
-            // byte[] pub = key.GetPublicKey();
-            byte[] pubR = new byte[32];
-            for (int i = 0; i < 32; i++) pubR[i] = pub[31 - i];
+            byte[] pub = Chaos.NaCl.Ed25519.PublicKeyFromSeed(key.data);
 
             string address = Base58.Encode(pub);
             return new Address(address, node.GetPath());
         }
 
         public override void ValidateAddress(string address) {
-            //  TODO
+            var tmp = Base58.Decode(address);
+            if (tmp.Length != 32) throw new Exception("invalid SOL address length");
         }
 
     }

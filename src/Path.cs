@@ -18,7 +18,7 @@ namespace FixMyCrypto {
             if (p.Contains("{index}")) {
                 p = p.Replace("{index}", "" + index);
             }
-            else {
+            else if (!path.StartsWith("m/44'/501'")) {
                 p = p.Substring(0, p.LastIndexOf("/") + 1) + index;
                 if (path.EndsWith("'")) p += "'";
             }
@@ -53,6 +53,14 @@ namespace FixMyCrypto {
 
             Int32.TryParse(indexPath.Substring(indexPath.LastIndexOf("/") + 1), out index);
 
+            if (path.StartsWith("m/44'/501'")) {
+                //  SOL special case
+
+                account = index;
+                index = 0;
+                return;                
+            }
+
             if (!path.EndsWith("'")) {
                 string accountPath = path.Substring(0, path.LastIndexOf("'"));
 
@@ -64,7 +72,7 @@ namespace FixMyCrypto {
         {
             string p = path;
 
-            if (p.EndsWith("'")) p = p.Substring(0, p.Length - 1);
+            if (p.EndsWith("'") && !path.StartsWith("m/44'/501'/")) p = p.Substring(0, p.Length - 1);
 
             if (!path.Contains("{account}")) {
                string accountPath = p.Substring(0, p.LastIndexOf("'"));
@@ -76,7 +84,12 @@ namespace FixMyCrypto {
                p = accountPath + "{account}'" + indexPath;
             }
 
-            if (!path.Contains("{index}")) {
+            //  SOL is a weird exception
+            if (path.StartsWith("m/44'/501'/"))
+            {
+                return p;
+            }
+            else if (!path.Contains("{index}")) {
                 p = p.Substring(0, p.LastIndexOf("/")) + "/{index}";
             }
 
