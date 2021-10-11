@@ -1,0 +1,21 @@
+{
+    "phrase": "recall lake example diamond region account series museum cabin suggest train badge",
+
+    "passphrase": "",
+
+    "paths": [
+
+    ],
+
+    "knownAddresses":  [
+        "5LxksmHvtSsBk9pQZ25eqc5Q2L1sq5v4UUoey4zBaBhs"
+    ],
+
+    "accounts": "0-1",
+
+    "indices": "0",
+
+    "coin": "SOL",  //  "BTC", "ADA", "ETH", "DOGE", "LTC"
+
+    "logLevel": 5      //  Debug = 5, Info = 4, Warning = 3, Error = 2, None = 0,
+}

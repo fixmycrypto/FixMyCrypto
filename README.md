@@ -17,6 +17,7 @@
     * LTC
     * DOGE
     * ADA (Cardano) - including special mode for recovering hardware Ledger/Trezor wallets
+    * SOL
 * Simultaneous search of multiple derivation paths (including non-standard paths)
 * Search a specified range of accounts and indices
 * Highly multi-threaded, efficient key reuse when searching multiple paths/accounts
@@ -172,6 +173,7 @@ Blockchain search mode can be used if you have a partially valid recovery phrase
     * BCH, DOGE, LTC, other BTC-alts: bitcore
     * ETH: geth (serves as both the node and indexer)
     * ADA: cardano-graphql (docker-compose runs both the node and the indexer)
+    * SOL: (not yet supported)
 * Refer to node/indexer documentation for setting up the node
 * Allow IBD and index to complete, then take system offline before entering recovery phrase & starting the search.
 
@@ -189,4 +191,6 @@ To use blockchain search mode, leave the knownAddresses field blank. You must sp
 
 * Only English BIP39 wordlist and QWERTY keyboard layouts are currently implemented
 * BCH only supports legacy (1...) style addresses
+* SOL deprecated derivation path m/501'/{account}'/0/{index} not supported
+* SOL blockchain search not implemented
 
