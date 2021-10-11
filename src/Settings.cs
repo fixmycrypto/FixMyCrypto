@@ -61,6 +61,9 @@ namespace FixMyCrypto {
                 case CoinType.XRP:
                 return Settings.altcoinApi;
 
+                case CoinType.SOL:
+                return null;
+
                 default:
                 throw new NotSupportedException();
             }

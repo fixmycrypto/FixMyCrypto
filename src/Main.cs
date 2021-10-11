@@ -116,6 +116,8 @@ namespace FixMyCrypto {
 
             stopWatch.Start();
 
+            if (Settings.GetApiPath(Settings.coinType) == null) addressLookupCount = 0;
+
             LookupAddress[] la = new LookupAddress[addressLookupCount];
             List<Thread> laThreads = new List<Thread>();
             for (int i = 0; i < addressLookupCount; i++) {
