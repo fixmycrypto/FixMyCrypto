@@ -158,7 +158,7 @@ Ledger & Trezor hardware wallets use unique methods to convert your recovery phr
 
 # Blockchain Search Mode
 
-### Advanced uesrs only
+### Advanced users only
 
 Blockchain search mode can be used if you have a partially valid recovery phrase but don't know any of the addresses associated with this phrase. For example, if your computer was lost or stolen and you don't have any transaction logs to refer to.
 
