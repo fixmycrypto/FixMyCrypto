@@ -1,6 +1,7 @@
 # Develop
 
-VS Code project files are included. Prereqs: .NET 5.0
+Prereqs: .NET 5.0 SDK
+VS Code project files are included.
 
 # Build:
 
@@ -15,5 +16,7 @@ VS Code project files are included. Prereqs: .NET 5.0
 
 # Test:
 
-* run Test configuration in VS Code (or run FixMyCrypto -t)
-* cd tests && tests\tests.bat
+* Unit tests: run Test configuration in VS Code (or run FixMyCrypto -t)
+* Unit tests require phrases and addresses specified in secrets.json (see secrets.example.json)
+    * Blockchain search tests require some coins to be deposited in those addresses
+* Job tests: cd tests && .\tests.bat
