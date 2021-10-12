@@ -66,15 +66,15 @@ Enter your recovery phrase between the quotation marks. The number of words must
 
     "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon kiwi strawberry",
 
-Hint: You might be tempted to fix any invalid words (words not on the BIP39 list), but it is better to leave any mistakes as-is. First, by leaving the invalid words in place, the software will immediately know which word(s) need to be changed first, instead of trying every word in the phrase. Second, the program will probably do a better job than you of guessing which typos were made and which replacement words should be tested.
+Hint: You might be tempted to fix any invalid words (words not on the BIP39 list), but it is better to leave any mistakes as-is. First, by leaving the invalid words in place, the software will immediately know which word(s) need to be changed first, instead of needing to try every word in the phrase. Second, the program will probably do a better job than you of guessing which typos were made and which replacement words should be tested.
 
 ## Known Addresses:
 
-### Recommended
+### Strongly Recommended
 
-“knownAddresses” is very important. Here, you should put at least 1 or more addresses that you are certain belong to this wallet. Ideally, you should put the first address that was created by the wallet (address 0). If you aren’t sure which address is address 0, put as many addresses in here as you can. Adding more addresses here does NOT slow the search down, in fact it is more likely to speed things up. Check your transaction history with exchanges, wallets, e-mail receipts, etc. to find the receive address(es) you used with this wallet. If you don’t know ANY of your addresses, please contact us for further instructions on using blockchain search mode.
+Provide 1 or more addresses that you are certain belong to this wallet. Ideally, you should put the first address that was created by the wallet (address 0). If you aren’t sure which address is address 0, put as many addresses in here as you can. Adding more addresses here does NOT slow the search down, in fact it is more likely to speed things up. Check your transaction history with exchanges, wallets, e-mail receipts, etc. to find the receive address(es) you used with this wallet. If you don’t know ANY of your addresses, please see below for further instructions on using blockchain search mode.
 
-In the case of Ethereum, only one address (index 0) is typically used because the same address is used for every transaction.
+In the case of Ethereum, only one address (index 0) is typically used because the same address is used for every transaction on the same account.
 
 If you only know one address, it should be filled out like this:
 
@@ -92,15 +92,23 @@ If you know more than one address, it should look like this:
             "3A7Wg827LsxcEiaMmpeaKoKMGPfUfCGH4X",
         ],
 
-## Indices and Accounts:
+## Indices:
 
 ### Recommended
 
-“indices” specifies the range of address indices to check against. By default we search to see if any of the known addresses are in the first 5 addresses of the wallet, hence “0-4”. This means at least one of the known addresses you provide must be one of the first five addresses used with this wallet. If you know that your address is between index 5 and 10, use “5-10”. Ranges can be specified using hyphens: e.g. “0-5”, commas: e.g. “2,4,6”, or a mix of both e.g.: “0,2,4,10-12”. The more addresses you search, the longer it will take. Ideally, if you know you have provided your address 0, then you can set this to “0” to speed things up a bit. However, if your known address is address index 5, and you specify the range as “0-4”, it won’t find your address at all. So make sure this range is big enough to include at least one of the known addresses you’ve provided.
+“indices” specifies the range of address indices to check against. UTXO-based blockchains such as BTC and Cardano use a different address index (new address) for each transaction. Each index represents one address from the wallet. 
 
-For ETH and SOL, typically only address index "0" is used.
+The default setting is to check if the known address(es) are in the first 5 addresses of the wallet, hence “0-4”. This means one of the known addresses you provide must belong to one of the first five transactions received by this wallet. If you know that your address is between index 5 and 10, use “5-10”. Ranges can be specified using hyphens: e.g. “0-5”, commas: e.g. “2,4,6”, or a mix of both e.g.: “0,2,4,10-12”. The more indices you search, the longer it will take. Ideally, if you know you have provided your address 0, then you can set this to “0” to speed things up a bit. However, if your known address is address index 5, and you specify the range as “0-4”, it won’t find your address at all. So make sure this range is big enough to include at least one of the known addresses you’ve provided.
 
-Similarly, “accounts” specifies the range of accounts to check against. For most users, if you had only one account for a particular coin tied to this recovery phrase, the account will be “0”. As with “indicies”, you can specify a range using hyphens and commas.
+For ETH and SOL, typically only address index "0" is used. Your other ETH or SOL addresses will typically belong to a different account number instead of a different index, see below.
+
+## Accounts:
+
+### Recommended
+
+Similar to indices, “accounts” specifies the range of accounts to check against. For most users, if you had only one account for a particular coin tied to this recovery phrase, the account will be “0”. As with “indicies”, you can specify a range using hyphens and commas.
+
+ETH and SOL tend to use different account numbers instead of different indices.
 
 ## Paths:
 
@@ -116,7 +124,7 @@ If you used old versions of Ledger or Coinomi to generate legacy BTC addresses w
         "m/44'/0'/{account}'/{index}"
     ],
 
-Note that the search will fail if none of the paths you specify matches the one used to generate your wallet addresses.
+Note that the search will fail if none of the paths you specify match the one used to generate your wallet addresses.
 
 ## Ethereum special use cases:
 
@@ -138,12 +146,12 @@ If you used older versions of Metamask together with a Ledger hardware wallet, s
 
 Use “ETH” for the coin type, and use one or more of the following paths:
 
-* m/44’/60’/{account}’/0/{index} – Pre-split ETH/ETC wallet
-* m/44’/61’/{account}’/0/{index} – Post-split ETC wallet
-* m/44’/60’/160720’/0/{index} – Ledger ETC
-* m/44’/60’/160720’/0’/{index} – Old Ledger, Vintage MEW
+* m/44'/60'/{account}'/0/{index} – Pre-split ETH/ETC wallet
+* m/44'/61'/{account}'/0/{index} – Post-split ETC wallet
+* m/44'/60'/160720'/0/{index} – Ledger ETC
+* m/44'/60'/160720'/0'/{index} – Old Ledger, Vintage MEW
 
-See https://medium.com/myetherwallet/hd-wallets-and-derivation-paths-explained-865a643c7bf2 for other possible paths used by ETC and other ETH-derived coins.
+See https://medium.com/myetherwallet/hd-wallets-and-derivation-paths-explained-865a643c7bf2 for other possible paths used by ETC and other ETH-derived coins. You can search multiple paths at the same time if you aren't sure which one to use.
 
 ## Cardano special use cases:
 
@@ -153,9 +161,13 @@ Ledger & Trezor hardware wallets use unique methods to convert your recovery phr
 
 ## Other settings:
 
-* If you used a “BIP39 passphrase” (a.k.a. “25th word”, NOT your wallet password or spending password) when you created the wallet, put it between the quotes next to “passphrase”. Note: If you used a passphrase, you must provide the EXACT passphrase used. The program doesn’t currently attempt to guess or change the passphrase, but this may be added to a future version.
+* "passphrase": If you used a “BIP39 passphrase” (a.k.a. “25th word”, NOT your wallet password or spending password) when you created the wallet, you must provide the EXACT passphrase used. It can be any string of characters, not necessarily one of the standard BIP39 words. The program doesn’t currently attempt to guess or change the passphrase, but this may be added to a future version.
 
-* The other settings can generally be left alone.
+* "difficulty" (default 0, range 0-4) controls which algorithms (different types of word substitutions, swaps, etc.) will be tested. Leave this at default unless the program fails to find your correct phrase. If you're sure that your known addresses and paths are correct, you can try increasing the difficulty setting to 1-4. Higher settings will take MUCH longer to run.
+
+* "wordDistance" (default 2.0, range 0 - 10) controls the sensitivity to typos. Increasing this setting will allow more substitute words to be tested, at a substantial increase in run time. If you think you made multiple or unlikely typos in your phrase, you can try increasing this value.
+
+* "logLevel" (default)
 
 # Blockchain Search Mode
 
