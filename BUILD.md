@@ -1,12 +1,17 @@
 # Develop
 
 Prereqs: .NET 5.0 SDK
+
 VS Code project files are included.
 
 # Build:
 
     dotnet restore
     dotnet build
+
+# Debug
+
+Debug Run configuration in VS Code, or run bin/Debug/net5.0/FixMyCrypto
 
 ## Release builds:
 
