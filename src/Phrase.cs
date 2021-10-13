@@ -11,6 +11,8 @@ namespace FixMyCrypto {
         public Phrase(string[] phrase) {
             ix = new short[phrase.Length];
             for (int i = 0; i < phrase.Length; i++) ix[i] = PhraseProducer.GetWordIndex(phrase[i]);
+            (bool b, int hash) = PhraseProducer.VerifyChecksum(ix);
+            this.hash = hash;
         }
         public Phrase(string phrase) : this(phrase.Split(' ', StringSplitOptions.RemoveEmptyEntries)) { }
 

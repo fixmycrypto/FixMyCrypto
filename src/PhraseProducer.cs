@@ -843,7 +843,7 @@ namespace FixMyCrypto {
             Finish();
         }
 
-        public (bool, Int32) VerifyChecksum(short[] indices) {
+        public static (bool, int) VerifyChecksum(short[] indices) {
             // Compute and check checksum
             int MS = indices.Length;
             int ENTCS = MS * 11;
