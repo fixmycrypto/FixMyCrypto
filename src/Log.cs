@@ -1,15 +1,15 @@
 using System;
 
 namespace FixMyCrypto {
-    class Log {
-        public enum LogLevel {
-            Debug = 5,
-            Info = 4,
-            Warning = 3,
-            Error = 2,
-            None = 0,
-        }
+    public enum LogLevel {
+        Debug = 5,
+        Info = 4,
+        Warning = 3,
+        Error = 2,
+        None = 0,
+    }
 
+    class Log {
         private static void LogStdout(string str = null) {
             Console.WriteLine(str);
         }

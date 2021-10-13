@@ -167,7 +167,7 @@ Ledger & Trezor hardware wallets use unique methods to convert your recovery phr
 
 * "wordDistance" (default 2.0, range 0 - 10) controls the sensitivity to typos. Increasing this setting will allow more substitute words to be tested, at a substantial increase in run time. If you think you made multiple or unlikely typos in your phrase, you can try increasing this value.
 
-* "logLevel" (default)
+* "logLevel" (default = "Warning") sets the log verbosity level. From least to most verbose: None, Error, Warning, Info, Debug (0-5)
 
 # Blockchain Search Mode
 
