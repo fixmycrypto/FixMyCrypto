@@ -26,7 +26,7 @@
 
 # Support
 
-For technical support or help with any crypto recovery needs, please contact us via [e-mail](mailto:help@fixmycrypto.com) or via our commercial site <https://www.fixmycrypto.com>
+For technical support or help with any crypto recovery needs, please contact us via [e-mail](mailto:help@fixmycrypto.com) or via our website <https://www.fixmycrypto.com>
 
 # Donations / Tips
 
@@ -106,7 +106,7 @@ For ETH and SOL, typically only address index "0" is used. Your other ETH or SOL
 
 ### Recommended
 
-Similar to indices, “accounts” specifies the range of accounts to check against. For most users, if you had only one account for a particular coin tied to this recovery phrase, the account will be “0”. As with “indicies”, you can specify a range using hyphens and commas.
+Similar to indices, “accounts” specifies the range of accounts to check against. For most users, if you had only one account for a particular coin tied to this recovery phrase, the account will be “0”. As with “indices”, you can specify a range using hyphens and commas.
 
 ETH and SOL tend to use different account numbers instead of different indices.
 
