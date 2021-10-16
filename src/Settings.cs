@@ -10,7 +10,7 @@ namespace FixMyCrypto {
         public static int[] indices, accounts;
         public static string phrase { get { return result.phrase; } }
 
-        public static string passphrase { get { if (result.passphrase != null) return result.passphrase; else return ""; } }
+        public static dynamic passphrase { get { return result.passphrase; } }
 
         public static string[] knownAddresses { get { return result.knownAddresses.ToObject<string[]>(); } }
 

@@ -161,6 +161,11 @@ namespace FixMyCrypto {
 
             DeriveAddresses(tree.root, addresses);
 
+            foreach (Address address in addresses) {
+                address.phrase = phrase;
+                address.passphrase = passphrase;
+            }
+
             return addresses;
         }
         public abstract string[] GetDefaultPaths(string[] knownAddresses);
@@ -202,67 +207,72 @@ namespace FixMyCrypto {
                 }
 
                 if (w != null) {
-                    //  Convert phrase to address
+                    Passphrase p = Passphrase.Create(Settings.passphrase);
 
-                    List<Address> addresses = null;
-                    try {
-                        stopWatch.Start();
-                        if (Settings.knownAddresses != null && Settings.knownAddresses.Length > 0) {
-                            //  Try to generate the known address
-                            addresses = GetAddresses(w.phrase, Settings.passphrase, Settings.paths, Settings.accounts, Settings.indices);
-                            count++;
-                        } 
-                        else {
-                            //  Generate address for account 0 index 0
-                            addresses = GetAddresses(w.phrase, Settings.passphrase, 0, 0, Settings.paths);
-                            count++;
+                    foreach (string passphrase in p.Next()) {
+                        //  Convert phrase to address
+
+                        List<Address> addresses = null;
+                        try {
+                            stopWatch.Start();
+                            if (Settings.knownAddresses != null && Settings.knownAddresses.Length > 0) {
+                                //  Try to generate the known address
+                                addresses = GetAddresses(w.phrase, passphrase, Settings.paths, Settings.accounts, Settings.indices);
+                                count++;
+                            } 
+                            else {
+                                //  Generate address for account 0 index 0
+                                addresses = GetAddresses(w.phrase, passphrase, 0, 0, Settings.paths);
+                                count++;
+                            }
                         }
-                    }
-                    catch (Exception e) {
-                        Log.Error("P2A error: " + e.Message);
-                    }
-                    finally {
-                        stopWatch.Stop();
-                    }
+                        catch (Exception e) {
+                            Log.Error("P2A error: " + e.Message);
+                        }
+                        finally {
+                            stopWatch.Stop();
+                        }
 
-                    if (addresses == null) continue;
+                        if (addresses == null) continue;
 
-                    if (Settings.knownAddresses != null && Settings.knownAddresses.Length > 0) {
-                        //  See if we generated the known address
-                        foreach (Address address in addresses) {
-                            foreach (string knownAddress in Settings.knownAddresses) {
-                                if (address.address.Equals(knownAddress, StringComparison.OrdinalIgnoreCase)) {
-                                    //  Found known address
-                                    Finish();
+                        if (Settings.knownAddresses != null && Settings.knownAddresses.Length > 0) {
+                            //  See if we generated the known address
+                            foreach (Address address in addresses) {
+                                foreach (string knownAddress in Settings.knownAddresses) {
+                                    if (address.address.Equals(knownAddress, StringComparison.OrdinalIgnoreCase)) {
+                                        //  Found known address
+                                        Finish();
 
-                                    FoundResult.DoFoundResult(this.GetCoinType(), w.phrase, Settings.passphrase, address);
+                                        FoundResult.DoFoundResult(this.GetCoinType(), address);
+                                    }
                                 }
                             }
                         }
-                    }
-                    else {
-                        //  Need to search blockchain for address
+                        else {
+                            //  Need to search blockchain for address
 
-                        Work w2 = new Work(w.phrase, addresses);
+                            Work w2 = new Work(w.phrase, addresses);
 
-                        //  Enqueue address
+                            //  Enqueue address
 
-                        lock (addressQueue) {
-                            queueWaitTime.Start();
-                            while (addressQueue.Count > Settings.threads) {
-                                if (Global.done) break;
-                                //Log.Debug("P2A thread " + threadNum + " waiting on full address queue");
-                                Monitor.Wait(addressQueue);
+                            lock (addressQueue) {
+                                queueWaitTime.Start();
+                                while (addressQueue.Count > Settings.threads) {
+                                    if (Global.done) break;
+                                    //Log.Debug("P2A thread " + threadNum + " waiting on full address queue");
+                                    Monitor.Wait(addressQueue);
+                                }
+                                queueWaitTime.Stop();
+
+                                addressQueue.Enqueue(w2);
+                                //Log.Debug("P2A thread " + threadNum + " enqueued address: \"" + w2 + "\", queue size: " + addressQueue.Count);
+                                Monitor.Pulse(addressQueue);
                             }
-                            queueWaitTime.Stop();
-
-                            addressQueue.Enqueue(w2);
-                            //Log.Debug("P2A thread " + threadNum + " enqueued address: \"" + w2 + "\", queue size: " + addressQueue.Count);
-                            Monitor.Pulse(addressQueue);
                         }
                     }
                 }
             }
+
             if (count > 0) Log.Info("P2A" + threadNum + " done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, time/req: {(count != 0 ? ((double)stopWatch.ElapsedMilliseconds/count) : 0):F2}ms/req, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
             Finish();
         }

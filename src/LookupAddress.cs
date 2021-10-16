@@ -114,7 +114,7 @@ namespace FixMyCrypto {
                             if (lookup.txCount > 0 || lookup.coins > 0) {
                                 Finish();
 
-                                FoundResult.DoFoundResult(this.GetCoinType(), w.phrase, Settings.passphrase, address);
+                                FoundResult.DoFoundResult(this.GetCoinType(), address);
                             }
                         }
                     }

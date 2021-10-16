@@ -87,28 +87,6 @@ namespace FixMyCrypto
         }
 
     }
-    public class Address {
-        public string address, path;
-        public Address(string address, string path = null) { this.address = address; this.path = path; }
-
-        public override string ToString() {
-            return this.address;
-        }
-
-        public override bool Equals(object obj) {
-            if (obj == null) return false;
-
-            Address b = (Address)obj;
-
-            return (this.address == b.address && this.path == b.path);
-        }
-
-        public override int GetHashCode() {
-            string s = address + path;
-
-            return s.GetHashCode();
-        }
-    }
     class Work {
         public Phrase phrase;
         public IList<Address> addresses;
@@ -130,7 +108,7 @@ namespace FixMyCrypto
 
     class FoundResult {
 
-        public static void DoFoundResult(CoinType coin, Phrase phrase, string passphrase, Address addr) {
+        public static void DoFoundResult(CoinType coin, Address addr) {
             Global.found = true;
 
             Address best = addr;
@@ -143,7 +121,7 @@ namespace FixMyCrypto
 
                 LookupAddress la = LookupAddress.Create(coin, null, 0, 0);
 
-                List<Address> addresses = GetUsedAddresses(la, coin, phrase, passphrase, addr.path, ref best);
+                List<Address> addresses = GetUsedAddresses(la, coin, addr, ref best);
 
                 int totalTx = 0;
 
@@ -199,7 +177,7 @@ namespace FixMyCrypto
                 int[] accounts = { account };
                 string[] paths = { addr.path };
 
-                List<Address> addresses = p2a.GetAddresses(phrase, passphrase, paths, accounts, indices.ToArray());
+                List<Address> addresses = p2a.GetAddresses(addr.phrase, addr.passphrase, paths, accounts, indices.ToArray());
 
                 foreach (Address address in addresses) {
                     Log.All($"Possible related address {address.path}: {address.address}");
@@ -218,8 +196,8 @@ namespace FixMyCrypto
                 address = best.address,
                 path = best.path,
                 wrongPhrase = Settings.phrase,
-                correctedPhrase = phrase.ToPhrase(),
-                passphrase = passphrase
+                correctedPhrase = addr.phrase.ToPhrase(),
+                passphrase = addr.passphrase
             };
             string result = JsonConvert.SerializeObject(resultData, Formatting.Indented);
             StreamWriter writer = File.CreateText("results.json");
@@ -229,7 +207,7 @@ namespace FixMyCrypto
             Log.All("To support the developers, please donate to one of these addresses:\nBTC: bc1q477afku8x7964gmzlsapgj8705e63ch89p8k4z\nETH: 0x0327DF6652D07eE6cc670626b034edFfceD1B20C\nDOGE: DT8iZF8RbqpRftgrWdiq34EZdJpCGiWBwG\nADA: addr1qxhjru35kv8fq66afxxdnjzf720anfcppktchh6mjuwxma3e876gh3czzkq0guls5qrkghexsuh543h7k2xqlje5lskqfp2elv\n");
         }
 
-        public static List<Address> GetUsedAddresses(LookupAddress la, CoinType coin, Phrase phrase, string passphrase, string path, ref Address best) {
+        public static List<Address> GetUsedAddresses(LookupAddress la, CoinType coin, Address addr, ref Address best) {
             PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null, -1, 0);
             // int end = Math.Max(Settings.indexMax, Settings.indexMin + 20);
             double maxCoins = -1;
@@ -244,8 +222,8 @@ namespace FixMyCrypto
             }
  
             try {
-                string[] paths = { path };
-                List<Address> addresses = p2a.GetAddresses(phrase, passphrase, paths, Settings.accounts, indices.ToArray());
+                string[] paths = { addr.path };
+                List<Address> addresses = p2a.GetAddresses(addr.phrase, addr.passphrase, paths, Settings.accounts, indices.ToArray());
                 foreach (Address address in addresses) {
                     Log.All($"Lookup related address {address.path}: {address.address}");
                     LookupAddress.LookupResult result = la.GetContents(address.address);
