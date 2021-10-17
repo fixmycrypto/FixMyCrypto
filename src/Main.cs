@@ -92,8 +92,7 @@ namespace FixMyCrypto {
             Log.All($"Coin type: {Settings.coinType}");
             Log.All($"Phrase to test: \"{Settings.phrase}\"");
 
-            // TODO
-            // if (!String.IsNullOrEmpty(Settings.passphrase)) Log.All($"passphrase: \"{Settings.passphrase}\"");
+            if (!String.IsNullOrEmpty(Settings.passphrase)) Log.All($"passphrase: \"{Settings.passphrase}\"");
             
             if (Settings.paths != null) {
                 foreach (string path in Settings.paths) {
