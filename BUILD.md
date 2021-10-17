@@ -2,16 +2,17 @@
 
 Prereqs: .NET 5.0 SDK
 
-VS Code project files are included.
+VS Code project files are included, install "C# for Visual Studio Code (powered by OmniSharp)" extension.
 
-# Build:
+# Build & Run from command line:
 
     dotnet restore
     dotnet build
+    dotnet run
 
 # Debug
 
-Debug Run configuration in VS Code, or run `bin/Debug/net5.0/FixMyCrypto`
+Debug Run configuration in VS Code.
 
 ## Release builds:
 
@@ -22,6 +23,6 @@ Debug Run configuration in VS Code, or run `bin/Debug/net5.0/FixMyCrypto`
 # Test:
 
 * Unit tests: run Test configuration in VS Code (or run `FixMyCrypto -t`)
-* Unit tests require phrases and addresses specified in secrets.json (see secrets.example.json)
+* Unit tests require phrases and addresses specified in `secrets.json` (see `secrets.example.json`)
     * Blockchain search tests require some coins to be deposited in those addresses
-* Job tests: `cd tests && .\tests.bat`
+* Production tests: `cd tests && .\tests.bat`

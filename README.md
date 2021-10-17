@@ -4,10 +4,11 @@
 
 # FixMyCrypto Features
 
-* Automatically fixes most common mistakes which result in an "invalid recovery phrase" error
+* Automatically fixes most common mistakes which result in an "invalid recovery phrase" error:
     * Invalid words (e.g. fax -> fix)
     * Valid but incorrect words (e.g. fix -> fox/fit/fog etc.)
     * Swapped word order
+    * Missing words
 * BIP39 passphrase support, including wildcards / brute forcing
 * Runs totally offline so your recovery phrase is never exposed to the internet
 * Smart typo detection drastically reduces the search time
@@ -62,25 +63,25 @@ Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`
 
 ### Required
 
-Enter your recovery phrase between the quotation marks. The number of words must be the same number as the length of your original recovery phrase (12, 15, 18, or 24). If you don't know all the words, guess whichever words you don't know. Try your best to keep the words in the original order!
+Enter your recovery phrase between the quotation marks. The number of words must be the same number as the length of your original recovery phrase (12, 15, 18, or 24). If you don't know all the words, guess whichever words you don't know (add words to the end until you get to the correct number of words). Try your best to keep the words you know in their original order!
 
     "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon kiwi strawberry",
 
-Hint: You might be tempted to replace any invalid words (words not on the BIP39 list) with valid words from the list, but it's actually better to leave any mistakes as-is. First, by leaving the invalid words in place, the software will immediately know which word(s) need to be changed first, instead of needing to try every word in the phrase. Second, the program will probably do a better job than you of guessing which typos were made and which replacement words should be tested.
+Hint: You might be tempted to replace any invalid words (words not on the BIP39 list) with valid words from the list, but it's actually better to leave any mistakes as-is. First, by leaving the invalid words in place, the software will immediately know which word(s) need to be changed first, instead of needing to try every word in the phrase. Second, the program may do a better job than you of guessing which typos were made and which replacement words should be tested.
 
-Repairing up to 3 invalid / incorrect words is typically feasible, sometimes 4 if the typos aren't too bad, but each additional incorrect word will exponentially increase the search time.
+Repairing up to 3 invalid / incorrect words is typically feasible, sometimes 4 if the typos aren't too bad, but each additional incorrect word will increase the search time exponentially.
 
 ## Passphrase:
 
 ### Required
 
-If you used a "BIP39 passphrase" (a.k.a. "25th word" or "advanced security", NOT your wallet password or spending password) when you created the wallet, try to provide the exact passphrase that you used:
+If you used a "BIP39 passphrase" (a.k.a. "extra word", "25th word", or "advanced security", NOT your wallet password or spending password) when you created the wallet, try to provide the exact passphrase that you used:
 
     "passphrase": "ThePassphrase!",
 
 If your passphrase contains left (opening) square brackets `[` or left (opening) parenthesis `(` then you must escape these characters by putting an extra set of square brackets around them, see below.
 
-If you have a pretty good but not exact idea of what the passphrase is, you can use the following wildcards. Keep in mind that each wildcard will increase the search time exponentially. **Brute forcing a long passphrase is not feasible.**
+If you have a pretty good but not exact idea of what the passphrase is, you can use the following wildcards. Keep in mind that each wildcard used will increase the search time exponentially. **Brute forcing the entirety of a long passphrase is not feasible.**
 
 * If you know part of the passphrase is one of a range of characters, put the range in square brackets with a hyphen between the values, similar to regex expressions.
     * `[a-z]` will match one lower case letter a-z
