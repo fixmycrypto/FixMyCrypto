@@ -20,6 +20,7 @@ namespace FixMyCrypto {
         protected int threadNum, threadMax;
         string[] defaultPaths;
         PathTree tree;
+        Passphrase passphrases;
         public static PhraseToAddress Create(CoinType coin, ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax) {
             switch (coin) {
                 case CoinType.ADA:
@@ -62,6 +63,15 @@ namespace FixMyCrypto {
             this.threadNum = threadNum;
             this.threadMax = threadMax;
             this.mutex = new object();
+
+            if (Settings.passphraseGuess != null)
+            {
+                this.passphrases = new ComplexPassphrase(Settings.passphraseGuess);
+            }
+            else
+            {
+                this.passphrases = new SimplePassphrase(Settings.passphraseExact);
+            }
         }
         public abstract Object DeriveMasterKey(Phrase phrase, string passphrase);
         protected abstract Object DeriveChildKey(Object parentKey, uint index);
@@ -207,9 +217,8 @@ namespace FixMyCrypto {
                 }
 
                 if (w != null) {
-                    Passphrase p = Passphrase.Create(Settings.passphrase);
-
-                    foreach (string passphrase in p.Next()) {
+ 
+                    foreach (string passphrase in this.passphrases.Next()) {
                         //  Convert phrase to address
 
                         List<Address> addresses = null;

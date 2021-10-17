@@ -92,7 +92,34 @@ namespace FixMyCrypto {
                 throw new Exception("test failed");
             }
         }
+
+        public static void TestPassphrase(string pattern, string expect) {
+            Log.Debug($"Test Passphrase: {pattern}");
+
+            Passphrase ph = new ComplexPassphrase(pattern);
+            bool found = false;
+            foreach (string pass in ph.Next()) {
+                Log.Debug(pass);
+                if (pass == expect) found = true;
+            }
+
+            if (!found) throw new Exception($"Passphrase pattern: \"{pattern}\" failed to generate: \"{expect}\"");
+        }
         public static void Run(int count, string opts) {
+
+            //  Test passphrase expansion
+            TestPassphrase("(H|h)ello", "hello");
+            TestPassphrase("(H|h)ello[0-9]", "Hello7");
+            TestPassphrase("Hello[$%^]?", "Hello");
+            TestPassphrase("Hello[$%^]?", "Hello$");
+            TestPassphrase("(H|h)ello[0-24-5]", "hello4");
+            TestPassphrase("[(] [)] [[] []]", "( ) [ ]");
+            TestPassphrase("(something or |)nothing", "something or nothing");
+            TestPassphrase("(something or |)nothing", "nothing");
+            TestPassphrase("(something or )?nothing", "something or nothing");
+            TestPassphrase("(something or )?nothing", "nothing");
+            TestPassphrase("Hello( Dolly|)[!@#$%^&*()]?", "Hello Dolly!");
+            TestPassphrase("Hello( Dolly|)[!@#$%^&*()]?", "Hello*");
 
             //  Needed to init word lists
             PhraseProducer pp = new PhraseProducer(null, 0, 0, null);
