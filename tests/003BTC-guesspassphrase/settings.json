@@ -1,0 +1,21 @@
+{
+    "phrase": "siren bottom inform vehicle else donkey dirt task cook tide general when",
+
+    "passphrase": "(The|the)(P|p)assphrase[0-9]?[!@#$%^&*()]?",
+
+    "paths": [
+
+    ],
+
+    "knownAddresses":  [
+        "bc1qf6t6xr4wkr9tjpsvujhjch5fydj5sams45uvef"
+    ],
+
+    "accounts": "0",
+
+    "indices": "0-4",
+
+    "coin": "BTC",  //  "BTC", "ADA", "ETH", "DOGE", "LTC"
+
+    "logLevel": 5      //  Debug = 5, Info = 4, Warning = 3, Error = 2, None = 0,
+}

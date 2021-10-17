@@ -3,98 +3,15 @@ using System.Collections;
 using System.Collections.Generic;
 
 namespace FixMyCrypto {
-    abstract class Passphrase {
-        public abstract IEnumerable<string> Next();
-
-        public abstract override string ToString();
-
-    }
-
-    class SimplePassphrase : Passphrase {
-        private string passphrase;
-
-        public SimplePassphrase(string passphrase) {
-            this.passphrase = passphrase;
-            if (this.passphrase == null) this.passphrase = "";
-        }
-
-        public override IEnumerable<string> Next() {
-            yield return this.passphrase;
-        }
-
-        public override string ToString() {
-            return this.passphrase;
-        }
-    }
-    abstract class Part {
-        /*
-        public static bool IsStartDelimiter(string s) {
-            switch (s[0]) {
-                case '[':
-                case '(':
-
-                return true;
-            }
-
-            return false;
-        }
-
-        public static bool IsEndDelimiter(string s)
-        {
-            char c = s[s.Length - 1];
-            if (c == '?') c = s[s.Length - 2];
-            switch (c)
-            {
-                case ']':
-                case ')':
-
-                    return true;
-            }
-
-            return false;
-        }
-        */
-
-        public abstract int Min {get;}
-
-        public abstract int Max {get;}
-
-        public abstract IEnumerable<string> Next();
-
-        public static Part Create(string p) {
-            Log.Debug($"Part.Create(\"{p}\")");
-            // if (IsStartDelimiter(p) && IsEndDelimiter(p)) {
-                return new VariablePart(p);
-            // }
-            // else {
-            //     return new FixedPart(p);
-            // }
-        }
-
-    }
-    class FixedPart : Part {
-        string val;
-        public FixedPart(string s) {
-            val = s;
-        }
-        public override int Min { get { return 1; }}
-
-        public override int Max { get { return 1; }}
-
-        public override IEnumerable<string> Next() {
-            yield return val;
-        }
-    }
-    class VariablePart : Part {
-        int minCount, maxCount;
+     class Part {
         List<string> values;
-        public VariablePart(string set) {
-            minCount = 1;
-            maxCount = 1;
+        public Part(string set) {
+            // Log.Debug($"Part(\"{set}\")");
+
             values = new List<string>();
+
             if (set.EndsWith("?")) {
-                minCount = 0;
-                maxCount = 1;
+                values.Add("");
                 set = set.Substring(0, set.Length - 1);
             }
 
@@ -140,24 +57,19 @@ namespace FixMyCrypto {
                 values.Add(set);
             }
 
-            foreach (string v in values) {
-                Log.Debug($"part min:{Min} value: {v}");
-            }
+            // foreach (string v in values) {
+            //     Log.Debug($"part value: {v}");
+            // }
         }
 
-        public override int Min { get { return minCount; } }
-
-        public override int Max { get { return maxCount; } }
-
-        public override IEnumerable<string> Next() {
+        public IEnumerable<string> Next() {
             foreach (string val in this.values) {
                 yield return val;
             }
         }
     }
 
-    class ComplexPassphrase : Passphrase
-    {
+    class Passphrase {
         public bool IsStartDelimiter(char c) {
             switch (c) {
                 case '[':
@@ -183,7 +95,7 @@ namespace FixMyCrypto {
 
         List<Part> parts;
 
-        public ComplexPassphrase(string passphrase) {
+        public Passphrase(string passphrase) {
             parts = new List<Part>();
             string current = "";
             bool inBlock = false;
@@ -192,7 +104,7 @@ namespace FixMyCrypto {
             for (int i = 0; i < passphrase.Length; i++) {
                 if (!inBlock && IsStartDelimiter(passphrase[i])) {
                     if (current.Length > 0) {
-                        Part p = Part.Create(current);
+                        Part p = new Part(current);
                         parts.Add(p);
                         current = "";
                     }
@@ -220,7 +132,7 @@ namespace FixMyCrypto {
                         }
                     }
 
-                    Part p = Part.Create(current);
+                    Part p = new Part(current);
                     parts.Add(p);
                     current = "";
 
@@ -231,19 +143,17 @@ namespace FixMyCrypto {
                 }
             }
 
-            if (current.Length > 0) parts.Add(Part.Create(current));
+            if (inBlock) {
+                throw new Exception("Invalid passphrase format (check for unescaped characters)");
+            }
+
+            if (current.Length > 0) parts.Add(new Part(current));
         }
 
         private IEnumerable<string> Recurse(string prefix, List<Part> parts, int start = 0) {
             if (start >= parts.Count) {
                 yield return prefix;
                 yield break;
-            }
-
-            if (parts[start].Min == 0) {
-                foreach (string r in Recurse(prefix, parts, start + 1)) {
-                    yield return r;
-                }
             }
 
             foreach (string p in parts[start].Next()) {
@@ -253,7 +163,7 @@ namespace FixMyCrypto {
             }
         }
 
-        public override IEnumerable<string> Next() {
+        public IEnumerable<string> Enumerate() {
             foreach (string r in Recurse("", this.parts)) yield return r;
         }
 

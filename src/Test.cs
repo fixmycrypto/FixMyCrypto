@@ -96,18 +96,30 @@ namespace FixMyCrypto {
         public static void TestPassphrase(string pattern, string expect) {
             Log.Debug($"Test Passphrase: {pattern}");
 
-            Passphrase ph = new ComplexPassphrase(pattern);
+            Passphrase ph = new Passphrase(pattern);
             bool found = false;
-            foreach (string pass in ph.Next()) {
-                Log.Debug(pass);
+            foreach (string pass in ph.Enumerate()) {
+                // Log.Debug(pass);
                 if (pass == expect) found = true;
             }
 
             if (!found) throw new Exception($"Passphrase pattern: \"{pattern}\" failed to generate: \"{expect}\"");
         }
+
+        public static void FailPassphrase(string pattern, string expect) {
+            try {
+                TestPassphrase(pattern, expect);
+            }
+            catch (Exception) {
+                return;
+            }
+
+            throw new Exception($"TestPassphrase({pattern}, {expect}) didn't throw an exception");
+        }
         public static void Run(int count, string opts) {
 
             //  Test passphrase expansion
+            TestPassphrase("Passphrase!", "Passphrase!");
             TestPassphrase("(H|h)ello", "hello");
             TestPassphrase("(H|h)ello[0-9]", "Hello7");
             TestPassphrase("Hello[$%^]?", "Hello");
@@ -119,7 +131,17 @@ namespace FixMyCrypto {
             TestPassphrase("(something or )?nothing", "something or nothing");
             TestPassphrase("(something or )?nothing", "nothing");
             TestPassphrase("Hello( Dolly|)[!@#$%^&*()]?", "Hello Dolly!");
+            TestPassphrase("Hello( Dolly|)[!@#$%^&*()]?", "Hello");
             TestPassphrase("Hello( Dolly|)[!@#$%^&*()]?", "Hello*");
+            TestPassphrase("(Big|Bunny)(Big|Bunny)", "BigBunny");
+            TestPassphrase("(Big|Bunny)(Big|Bunny)", "BunnyBig");
+            TestPassphrase("(Big|Bunny)(Big|Bunny)", "BunnyBunny");
+            TestPassphrase("[a-zA-Z]", "Q");
+            TestPassphrase("[a-zA-Z][0-9]", "B4");
+
+            //  should fail
+            FailPassphrase("(stuff", "stuff");
+            FailPassphrase("(Big|Bunny)(Big|Bunny)", "");
 
             //  Needed to init word lists
             PhraseProducer pp = new PhraseProducer(null, 0, 0, null);

@@ -64,14 +64,7 @@ namespace FixMyCrypto {
             this.threadMax = threadMax;
             this.mutex = new object();
 
-            if (Settings.passphraseGuess != null)
-            {
-                this.passphrases = new ComplexPassphrase(Settings.passphraseGuess);
-            }
-            else
-            {
-                this.passphrases = new SimplePassphrase(Settings.passphraseExact);
-            }
+            this.passphrases = new Passphrase(Settings.passphrase);
         }
         public abstract Object DeriveMasterKey(Phrase phrase, string passphrase);
         protected abstract Object DeriveChildKey(Object parentKey, uint index);
@@ -218,7 +211,7 @@ namespace FixMyCrypto {
 
                 if (w != null) {
  
-                    foreach (string passphrase in this.passphrases.Next()) {
+                    foreach (string passphrase in this.passphrases.Enumerate()) {
                         //  Convert phrase to address
 
                         List<Address> addresses = null;
