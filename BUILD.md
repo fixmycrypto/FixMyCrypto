@@ -11,7 +11,7 @@ VS Code project files are included.
 
 # Debug
 
-Debug Run configuration in VS Code, or run bin/Debug/net5.0/FixMyCrypto
+Debug Run configuration in VS Code, or run `bin/Debug/net5.0/FixMyCrypto`
 
 ## Release builds:
 
@@ -21,7 +21,7 @@ Debug Run configuration in VS Code, or run bin/Debug/net5.0/FixMyCrypto
 
 # Test:
 
-* Unit tests: run Test configuration in VS Code (or run FixMyCrypto -t)
+* Unit tests: run Test configuration in VS Code (or run `FixMyCrypto -t`)
 * Unit tests require phrases and addresses specified in secrets.json (see secrets.example.json)
     * Blockchain search tests require some coins to be deposited in those addresses
-* Job tests: cd tests && .\tests.bat
+* Job tests: `cd tests && .\tests.bat`
