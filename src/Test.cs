@@ -138,6 +138,12 @@ namespace FixMyCrypto {
             TestPassphrase("(Big|Bunny)(Big|Bunny)", "BunnyBunny");
             TestPassphrase("[a-zA-Z]", "Q");
             TestPassphrase("[a-zA-Z][0-9]", "B4");
+            TestPassphrase("(Correct|Horse|Battery)?Staple", "Staple");
+            TestPassphrase("(Correct|Horse|Battery)?Staple", "CorrectStaple");
+            TestPassphrase("(Correct|Horse|Battery)?Staple", "HorseStaple");
+            TestPassphrase("(Correct|Horse|Battery)?Staple", "BatteryStaple");
+            TestPassphrase("(H|h)ello(D|d)olly[!@#$%^&*][0-9][0-9]?", "hellodolly!1");
+            TestPassphrase("(H|h)ello(D|d)olly[!@#$%^&*][0-9][0-9]?", "Hellodolly*69");
 
             //  should fail
             FailPassphrase("(stuff", "stuff");
