@@ -108,7 +108,13 @@ namespace FixMyCrypto {
                 }
             }
             Log.All($"difficulty: {Settings.difficulty}, wordDistance: {Settings.wordDistance}");
-            Log.All($"API Server: {Settings.GetApiPath(Settings.coinType)}");
+            string api = Settings.GetApiPath(Settings.coinType);
+            if (!String.IsNullOrEmpty(api)) {
+                Log.All($"API Server: {api}");
+            }
+            else {
+                addressLookupCount = 0;
+            }
 
             System.Timers.Timer timer = new System.Timers.Timer(30 * 1000);
             timer.Elapsed += (StringReader, args) => { 
@@ -117,8 +123,6 @@ namespace FixMyCrypto {
             timer.Start();
 
             stopWatch.Start();
-
-            if (Settings.GetApiPath(Settings.coinType) == null) addressLookupCount = 0;
 
             LookupAddress[] la = new LookupAddress[addressLookupCount];
             List<Thread> laThreads = new List<Thread>();

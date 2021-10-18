@@ -67,7 +67,7 @@ namespace FixMyCrypto {
             if (o != path) throw new Exception($"{o} != {path}");
         }
 
-        public static void FailValidate(CoinType ct, string address) {
+        public static void FailValidateAddress(CoinType ct, string address) {
             try {
                 PhraseToAddress.ValidateAddress(ct, address);
             }
@@ -76,6 +76,16 @@ namespace FixMyCrypto {
             }
 
             throw new Exception($"validation should have failed: {ct} {address}");
+        }
+        public static void FailValidatePhrase(string phrase) {
+            try {
+                Phrase.Validate(phrase);
+            }
+            catch (Exception) {
+                return;
+            }
+
+            throw new Exception($"validation should have failed: {phrase}");
         }
         public static void TestCardanoKeyVector(string name, string phrase, string passphrase, CoinType coin, string expectSK, string expectCC) {
             PhraseToAddress p = PhraseToAddress.Create(coin, null, null, 0, 0);
@@ -192,12 +202,21 @@ namespace FixMyCrypto {
             PhraseToAddress.ValidateAddress(CoinType.SOL, "uqYc2vewvfag8m6Ys6WWYekXf2BzKwWyLxBh1mftMPF");
 
             //  Should fail
-            FailValidate(CoinType.BTC, "14NPVhtZo8c5vxuZwTOGYxJPd8HbtqEJpu");
-            FailValidate(CoinType.BTC, "bc1qmr9cmy3p3q695mkn5rnmz27csvnvr2ja05wa4b");
-            FailValidate(CoinType.ETH, "0x67cFdcFF9d22ED77F612043547f44980e679385");
-            FailValidate(CoinType.LTC, "btc1q55zt0pq7dy9p9n7va9fyqhxldnp7ajcyhv84tx");
-            FailValidate(CoinType.DOGE, "D6NBFwSBkhYt88B1NCpE6Ecawym7m5w6i6o");
-            FailValidate(CoinType.SOL, "uqYc2vewvfag8m6Ys6WWYekXf2BzKwWyLxBh1mftMPFu");
+            FailValidateAddress(CoinType.BTC, "14NPVhtZo8c5vxuZwTOGYxJPd8HbtqEJpu");
+            FailValidateAddress(CoinType.BTC, "bc1qmr9cmy3p3q695mkn5rnmz27csvnvr2ja05wa4b");
+            FailValidateAddress(CoinType.ETH, "0x67cFdcFF9d22ED77F612043547f44980e679385");
+            FailValidateAddress(CoinType.LTC, "btc1q55zt0pq7dy9p9n7va9fyqhxldnp7ajcyhv84tx");
+            FailValidateAddress(CoinType.DOGE, "D6NBFwSBkhYt88B1NCpE6Ecawym7m5w6i6o");
+            FailValidateAddress(CoinType.SOL, "uqYc2vewvfag8m6Ys6WWYekXf2BzKwWyLxBh1mftMPFu");
+
+            //  test phrase validation (with unknown/missing/bad lengths/etc)
+            Phrase.Validate("siren bottom inform vehicle else donkey dirt task cook tide general when");
+            Phrase.Validate("siren bottom inform vehicle * donkey task cook tide general when ?");
+            
+            FailValidatePhrase("siren bottom inform vehicle else donkey dirt task cook tide general");
+            FailValidatePhrase("siren bottom inform vehicle else donkey dirt task cook tide general when when");
+            FailValidatePhrase("siren bottom inform vehicle ? donkey dirt task cook tide general when");
+            FailValidatePhrase("nope nope nope nope nope donkey dirt task cook tide general when");
 
             //  Test vectors
             //  TODO: Test addresses

@@ -8,7 +8,7 @@
     * Invalid words (e.g. fax -> fix)
     * Valid but incorrect words (e.g. fix -> fox/fit/fog etc.)
     * Swapped word order
-    * Missing words
+    * Missing or unknown words
 * BIP39 passphrase support, including wildcards / brute forcing
 * Runs totally offline so your recovery phrase is never exposed to the internet
 * Smart typo detection drastically reduces the search time
@@ -47,7 +47,7 @@ See BUILD.md
 * **Disconnect from the network (unplug Ethernet cable, shut off WiFi).**
 * Copy or rename "settings.example.json" to "settings.json"
 * Edit the `settings.json` file, filling in the details as described below.
-* Run `bin/Debug/net5.0/FixMyCrypto` or `bin/Release/net5.0/(platform)/publish/FixMyCrypto` (or load the project is VS Code and use the Run configuration)
+* In a terminal, type `dotnet run`, or load the project is VS Code and use the Run configuration
 
 # Configuration (settings.json file):
 
@@ -63,13 +63,27 @@ Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`
 
 ### Required
 
-Enter your recovery phrase between the quotation marks. The number of words must be the same number as the length of your original recovery phrase (12, 15, 18, or 24). If you don't know all the words, guess whichever words you don't know (add words to the end until you get to the correct number of words). Try your best to keep the words you know in their original order!
+Enter your recovery phrase between the quotation marks. The total number of words must be the same number as the length of your original recovery phrase (12, 15, 18, or 24). 
 
     "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon kiwi strawberry",
 
-Hint: You might be tempted to replace any invalid words (words not on the BIP39 list) with valid words from the list, but it's actually better to leave any mistakes as-is. First, by leaving the invalid words in place, the software will immediately know which word(s) need to be changed first, instead of needing to try every word in the phrase. Second, the program may do a better job than you of guessing which typos were made and which replacement words should be tested.
+### Unknown / Invalid Words:
+
+If you know the position of a word but you have absolutely no idea what that word is supposed to be, replace it with an asterisk (`*`). For example, if you're certain that you're missing the 2nd to last word, you would put:
+
+    "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon * kiwi",
+
+**Hint:** You might be tempted to replace any invalid words (words you wrote down that aren't on the BIP39 list) with a valid word from the list or a `*`, but it's actually better to leave any mistakes as-is. First, by leaving the invalid words in place, the software will immediately know which word(s) need to be changed first, instead of needing to check every word in the phrase. Second, the program may do a better job than you of guessing which typos were made and which replacement words should be tested.
 
 Repairing up to 3 invalid / incorrect words is typically feasible, sometimes 4 if the typos aren't too bad, but each additional incorrect word will increase the search time exponentially.
+
+### Missing Words:
+
+If you are missing some words and don't know where they go or which position(s) are missing, add a question mark (`?`) to the end of the phrase for each missing word. For example, if you only have 11 out of 12 words, you would put:
+
+    "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon kiwi ?",
+
+A single missing word (one `?`) can be solved quickly, but multiple missing words can take a VERY long time to solve, since the program must try every possible word in every possible position, so try to avoid using multiple question marks if at all possible.
 
 ## Passphrase:
 
@@ -85,22 +99,24 @@ If you did use a BIP39 passphrase, try to provide the exact passphrase that you 
 
 If you have a pretty good but not exact idea of what the passphrase is, you can use the following wildcards. Keep in mind that each wildcard used will increase the search time exponentially. **Brute forcing the entirety of a long passphrase is not feasible.**
 
-* If you know part of the passphrase is one of a range of characters, put the range in square brackets with a hyphen between the values, similar to regex expressions.
+## Passphrase Guessing:
+
+* If you know part of the passphrase is one of two or more options, put that part in parenthesis `( )` using a vertical bar `|` as the "or" separator between options, e.g.:
+    * `(T|t)he` will match "The" or "the"
+    * `(Correct|Horse|Battery)` will match "Correct", "Horse", or "Battery"
+* If you know one character is a certain type of character, specify the range in square brackets with a hyphen between the values. You can also specify more than one range, similar to regex expressions:
     * `[a-z]` will match one lower case letter a-z
     * `[a-zA-Z]` will match one lower or upper case letter a-z or A-Z
-    * `[aeiou]` will match one lower case vowel letter, e.g. "a"
+    * `[aeiou]` will match one lower case vowel letter
     * `[0-9]` will match one digit
     * `[!@#$%^&*()]` will match one of the listed special symbols
     * `[[]`, `[]]`, `[(]`, `[)]` will escape a left/right square bracket or left/right parenthesis, respectively
     * `[?]` will escape a question mark (only needed if it comes immediately after a right square bracket or right parenthesis)
-    * A caret `^` at the start of a bracket expression means to exclude all the listed items, i.e. match any ASCII printable character except for those that are listed.
-        * `[^a-zA-Z]` will match any non-letter character (matches digits and symbols)
-        * `[^a-zA-Z0-9]` will match any non-alphanumeric character (matches symbols)
-        * `[^^]` Two carets will escape a caret (`[^^$]` will match "^" or "$")
-* If you know part of the passphrase is one of two or more options, you can put that part in parenthesis using a vertical bar `|` as the "or" separator, i.e.:
-    * `(T|t)he` will match "The" or "the"
-    * `(Correct|Horse|Battery)` will match "Correct", "Horse", or "Battery"
-* A parenthesis or bracket expression can be followed by a question mark "?" to indicate that the enclosed item is optional (i.e. it occurs zero or one times)
+    * `^` at the start of a bracket expression means to exclude all the listed items, i.e. match any ASCII printable character except for those that are listed.
+        * `[^a-zA-Z]` will match any non-letter character (matches one digit or symbol)
+        * `[^a-zA-Z0-9]` will match any non-alphanumeric character
+        * `[^^]` Two carets will escape a caret (matches "^"); `[^^$]` will match "^" or "$"
+* `?` after a parenthesis or bracket expression indicates that the enclosed item is optional (i.e. it occurs zero or one times)
     * `(T|t)?he` will match "The", "the", or "he"
     * `Hello Dolly[!$]?` will match "Hello Dolly", "Hello Dolly!", or "Hello Dolly$"
     * `[0-9][0-9]?` will match any one or two digit number (0 - 99)
@@ -142,7 +158,7 @@ If you know more than one address, it should look like this:
 
 "indices" specifies the range of address indices to check against. UTXO-based blockchains such as Bitcoin and Cardano use a different address index (new address) for each transaction. Each index represents one address from the wallet. 
 
-The default setting is to check if the known address(es) are in the first 5 addresses of the wallet, hence `"0-4"`. This means one of the known addresses you provide must belong to one of the first five transactions received by this wallet. If you know that your address is between index 5 and 10, use `"5-10"`. Ranges can be specified using hyphens: e.g. `"0-5"`, commas: e.g. `"2,4,6"`, or a mix of both e.g.: `"0,2,4,10-12"`. The more indices you search, the longer it will take. Ideally, if you know you have provided your address 0, then you can set this to `"0"` to speed things up a bit. However, if your known address is address index 5, and you specify the range as `"0-4"`, it won't find your address at all. So make sure this range is big enough to include at least one of the known addresses you've provided.
+The default setting is to check if the known address(es) are in the first 5 addresses of the wallet, hence `"0-4"`. This means one of the known addresses you provide must belong to one of the first five transactions received by this wallet. If you know that your address is between index 5 and 10, use `"5-10"`. Ranges can be specified using hyphens: e.g. `"0-5"`, commas: e.g. `"2,4,6"`, or a mix of both e.g.: `"0,2,4,10-12"`. The more indices you search, the longer it will take. Ideally, if you know you have provided your address 0, then you can set this to `"0"` to speed things up a bit. However, if your known address is address index 5, and you specify the range as `"0-4"`, it won't find your address at all. **Make sure this range is big enough to include at least one of the known addresses you've provided.**
 
 For ETH and SOL, typically only address index 0 is used, so you should change this to `"0"` to speed things up. Your other ETH or SOL addresses will typically belong to a different account number instead of a different index, see below.
 
@@ -209,7 +225,7 @@ Ledger & Trezor hardware wallets use unique methods to convert your recovery phr
 
 * `wordDistance` (default 2.0, range 0 - 10) controls the sensitivity to typos. Increasing this setting will allow more substitute words to be tested, at a substantial increase in run time. If you think you made multiple or unlikely typos in your phrase, you can try increasing this value.
 
-* `logLevel` (default = "Warning") sets the log verbosity level. From least to most verbose: `None`, `Error`, `Warning`, `Info`, `Debug` (0-5)
+* `logLevel` (default = "Info") sets the log verbosity level. From least to most verbose: `None`, `Error`, `Warning`, `Info`, `Debug` (0-5)
 
 # Blockchain Search Mode
 

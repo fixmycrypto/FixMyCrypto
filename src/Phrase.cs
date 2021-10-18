@@ -46,6 +46,12 @@ namespace FixMyCrypto {
             return String.Join(' ', this.ToWords());
         }
 
+        public static string ToPhrase(short[] ix) {
+            string[] words = new string[ix.Length];
+            for (int i = 0; i < ix.Length; i++) words[i] = PhraseProducer.GetWord(ix[i]);
+            return String.Join(' ', words);
+        }
+
         public short this[int i] {
             get { return ix[i]; }
             set { ix[i] = value; }
@@ -67,13 +73,24 @@ namespace FixMyCrypto {
                 throw new Exception("Phrase must be 12/15/18/24 words separated by spaces");
             }
 
+            if (phrase.Contains("?")) {
+                int i = split.Length - 1;
+                for (; i >= 0; i--) {
+                    if (split[i] != "?") break;
+                }
+
+                for (; i >= 0; i--) {
+                    if (split[i] == "?") throw new Exception("All missing words (?) must be at the end of the phrase");
+                }
+            }
+
             int invalid = 0;
 
             foreach (string word in split) {
                 if (!PhraseProducer.originalWordlist.Contains(word)) invalid++;
             }
 
-            if (invalid > 5) throw new Exception("Phrase has too many non-BIP39 words");
+            if (invalid > 4) throw new Exception("Phrase has too many missing or non-BIP39 words");
         }
     }
 }

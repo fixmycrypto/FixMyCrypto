@@ -403,6 +403,10 @@ namespace FixMyCrypto {
             return new Range(start, end);           
         }
         private IList<short> GetReplacementWords(short word, SwapMode swapMode) {
+            if (wordArray[word] == "*" || wordArray[word] == "?") {
+                return sortedWords[word];
+            }
+
             IList<short> words;
 
             switch (swapMode) {
@@ -599,6 +603,37 @@ namespace FixMyCrypto {
             if (Global.done) return;
         }
 
+        private void FixMissing(short[] phrase, int missing, int wrong, bool runAlgorithms, int difficulty, int threads) {
+            if (Global.done) return;
+
+            if (missing == 0) {
+                FixInvalid(phrase, wrong, wrong, runAlgorithms, SwapMode.Similar, difficulty, threads);
+                return;
+            }
+
+            //  Try inserting every word into every position
+
+            ParallelOptions po = new ParallelOptions();
+            po.MaxDegreeOfParallelism = threads;
+
+            Parallel.For(0, originalWordlist.Count, po, word => {
+                if (Global.done) return;
+                for (int i = 0; i <= phrase.Length; i++) {
+                    if (Global.done) return;
+
+                    short[] copy = new short[phrase.Length + 1];
+
+                    if (i > 0) Array.Copy(phrase, 0, copy, 0, i);
+                    copy[i] = (short)word;
+                    if (phrase.Length - i > 0) Array.Copy(phrase, i, copy, i + 1, phrase.Length - i);
+
+                    // Log.Debug($"try (missing = {missing}): {Phrase.ToPhrase(copy)}");
+
+                    FixMissing(copy, missing - 1, wrong, runAlgorithms, difficulty, 1);
+                }
+            });
+        }
+
         private void FixInvalid(short[] phrase, int depth, int maxDepth, bool runAlgorithms, SwapMode mode, int difficulty, int threads) {
             if (Global.done) return;
 
@@ -793,13 +828,18 @@ namespace FixMyCrypto {
         public void ProduceWork() {
             Log.Debug("PP" + threadNum + " start");
 
-            int wrongWords = 0;
+            int wrongWords = 0, missingWords = 0;
             foreach (string word in this.phrase) {
-                if (!originalWordlist.Contains(word)) {
+                if (word == "?") {
+                    missingWords++;
+                }
+                else if (!originalWordlist.Contains(word)) {
                     wrongWords++;
                     Log.Debug($"invalid word {wrongWords}: {word}");
                 }
             }
+
+            if (wrongWords > 0 || missingWords > 0) Log.Info($"Phrase contains {missingWords} missing and {wrongWords} invalid/unknown words");
 
             Phrase p = new Phrase(this.phrase);
             short[] phrase = p.Indices;
@@ -807,7 +847,16 @@ namespace FixMyCrypto {
             Stopwatch sw1 = new Stopwatch();
             sw1.Start();
 
-            if (wrongWords == 0) {
+            if (missingWords > 0) {
+                Log.Info($"PP{threadNum} replace {missingWords} missing words (no swaps/changes)");
+                FixMissing(phrase.Slice(0, phrase.Length - missingWords), missingWords, wrongWords, false, Settings.difficulty, this.internalThreads);
+                if (Global.done) return;
+
+                Log.Info($"PP{threadNum} replace {missingWords} missing words (+ swaps/changes)");
+                FixMissing(phrase.Slice(0, phrase.Length - missingWords), missingWords, wrongWords, true, Settings.difficulty, this.internalThreads);
+                if (Global.done) return;
+            }
+            else if (wrongWords == 0) {
                 TestPhrase(phrase);
 
                 //  Run all algorithms with a bit extra difficulty
@@ -816,7 +865,7 @@ namespace FixMyCrypto {
             }
             else {
                 //  Try fixing invalid words only without any swaps/changes, starting with similar words
-                Log.Info($"PP{threadNum} replace {wrongWords} invalid words with similar words");
+                Log.Info($"PP{threadNum} replace {wrongWords} invalid words with similar words (no swaps/changes)");
                 FixInvalid(phrase, wrongWords, wrongWords, false, SwapMode.Similar, Settings.difficulty, this.internalThreads);
 
                 //  Try fixing invalid words plus swaps/changes
