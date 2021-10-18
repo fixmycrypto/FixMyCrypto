@@ -40,7 +40,7 @@ namespace FixMyCrypto {
 
         public static int difficulty {get { if (result.difficulty != null) return (int)result.difficulty.Value; else return 0; } }
 
-        public static LogLevel logLevel {get { if (result.logLevel != null) return (LogLevel)Enum.Parse(typeof(LogLevel), result.logLevel.Value.ToString(), true); else return LogLevel.Warning; } }
+        public static LogLevel logLevel {get { if (result.logLevel != null) return (LogLevel)Enum.Parse(typeof(LogLevel), result.logLevel.Value.ToString(), true); else return LogLevel.Info; } }
 
         public static string GetApiPath(CoinType coin) {
             switch (coin) {
