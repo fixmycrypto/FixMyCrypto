@@ -75,11 +75,13 @@ Repairing up to 3 invalid / incorrect words is typically feasible, sometimes 4 i
 
 ### Required
 
-If you used a "BIP39 passphrase" (a.k.a. "extra word", "25th word", or "advanced security", NOT your wallet password or spending password) when you created the wallet, try to provide the exact passphrase that you used:
+If you didn't use a "BIP39 passphrase" (a.k.a. "extra word", "25th word", or "advanced security", NOT your wallet password or spending password) when you created the wallet, then leave this as blank:
+
+    "passphrase": "",
+
+If you did use a BIP39 passphrase, try to provide the exact passphrase that you used:
 
     "passphrase": "ThePassphrase!",
-
-If your passphrase contains left (opening) square brackets `[` or left (opening) parenthesis `(` then you must escape these characters by putting an extra set of square brackets around them, see below.
 
 If you have a pretty good but not exact idea of what the passphrase is, you can use the following wildcards. Keep in mind that each wildcard used will increase the search time exponentially. **Brute forcing the entirety of a long passphrase is not feasible.**
 

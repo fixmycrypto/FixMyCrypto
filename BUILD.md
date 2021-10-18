@@ -1,14 +1,14 @@
-# Develop
-
-Prereqs: .NET 5.0 SDK
-
-VS Code project files are included, install "C# for Visual Studio Code (powered by OmniSharp)" extension.
-
 # Build & Run from command line:
 
     dotnet restore
     dotnet build
     dotnet run
+
+# Develop
+
+Prereqs: .NET 5.0 SDK
+
+VS Code project files are included, install "C# for Visual Studio Code (powered by OmniSharp)" extension.
 
 # Debug
 
