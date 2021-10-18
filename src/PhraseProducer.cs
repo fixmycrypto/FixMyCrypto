@@ -299,7 +299,7 @@ namespace FixMyCrypto {
 
         private void SwapTwo(short[] phrase) {
             // for (int i = 0; i < phrase.Length - 1; i++) {
-            Parallel.For(0, phrase.Length, this.parallelOptions, i => {
+            Parallel.For(0, phrase.Length - 1, this.parallelOptions, i => {
 
                 for (int j = i + 1; j < phrase.Length; j++) {
                     short[] p = phrase.Copy();
@@ -315,8 +315,8 @@ namespace FixMyCrypto {
         }
         private void SwapThree(short[] phrase) {
             // for (int i = 0; i < phrase.Length - 1; i++) {
-            Parallel.For(0, phrase.Length, this.parallelOptions, i => {
-                for (int j = i + 1; j < phrase.Length; j++) {
+            Parallel.For(0, phrase.Length - 2, this.parallelOptions, i => {
+                for (int j = i + 1; j < phrase.Length - 1; j++) {
                     
                     // Range range = GetRange(j + 1);
 
@@ -338,8 +338,8 @@ namespace FixMyCrypto {
 
                         temp = p[i];
                         p[i] = p[k];
-                        p[j] = temp;
                         p[k] = p[j];
+                        p[j] = temp;
 
                         TestPhrase(p);
                         if (Global.done) return;                      
@@ -349,9 +349,9 @@ namespace FixMyCrypto {
         }
         private void SwapFour(short[] phrase) {
             // for (int i = 0; i < phrase.Length - 1; i++) {
-            Parallel.For(0, phrase.Length, this.parallelOptions, i => {
-                for (int j = i + 1; j < phrase.Length; j++) {
-                    for (int k = j + 1; k < phrase.Length; k++) {
+            Parallel.For(0, phrase.Length - 3, this.parallelOptions, i => {
+                for (int j = i + 1; j < phrase.Length - 2; j++) {
+                    for (int k = j + 1; k < phrase.Length - 1; k++) {
 
                         // Range range = GetRange(k + 1);
 
@@ -425,7 +425,7 @@ namespace FixMyCrypto {
         }
         private void SwapTwoCOW(short[] phrase, SwapMode swapMode) {
             //  for (int i = 0; i < phrase.Length - 1; i++) {
-            Parallel.For(0, phrase.Length, this.parallelOptions, i => {
+            Parallel.For(0, phrase.Length - 1, this.parallelOptions, i => {
                 if (Global.done) return;
 
                 if (i > 0) Log.Info($"PP{threadNum} S2C1W ({swapMode}) progress: {(100*i/phrase.Length)}%");
@@ -447,7 +447,7 @@ namespace FixMyCrypto {
                     */
 
                     for (int k = 0; k < phrase.Length; k++) {
-                        IList<short> words = GetReplacementWords(phrase[k], swapMode);
+                        IList<short> words = GetReplacementWords(swapped[k], swapMode);
 
                         foreach (short word in words) {
                             //  COW on swapped
