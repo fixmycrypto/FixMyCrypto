@@ -26,6 +26,14 @@ namespace FixMyCrypto {
             }
             else if (set.StartsWith("[") && set.EndsWith("]")) {
                 set = set.Substring(1, set.Length - 2);
+                bool exclude = false;
+
+                if (set.StartsWith("^")) {
+                    set = set.Substring(1);
+                    if (set.Length > 0 && set[0] != '^') {
+                        exclude = true;
+                    }
+                }
                 
                 int start = 0;
 
@@ -52,6 +60,14 @@ namespace FixMyCrypto {
                 }
 
                 for (int i = start; i < set.Length; i++) values.Add($"{set[i]}");
+
+                if (exclude) {
+                    List<string> rValues = new List<string>();
+                    for (char i = (char)0x20; i < 0x7f; i++) {
+                        if (!values.Contains($"{i}")) rValues.Add($"{i}");
+                    }
+                    values = rValues;
+                }
             }
             else {
                 values.Add(set);

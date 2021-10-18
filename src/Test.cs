@@ -116,6 +116,21 @@ namespace FixMyCrypto {
 
             throw new Exception($"TestPassphrase({pattern}, {expect}) didn't throw an exception");
         }
+
+        public static void BenchmarkPassphrase(string pattern) {
+            Log.Debug($"Benchmark passphrase: {pattern}");
+            Passphrase p = new Passphrase(pattern);
+            int count = 0;
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            foreach (string pass in p.Enumerate()) {
+                // Log.Debug(pass);
+                count++;
+            }
+            sw.Stop();
+            Log.Debug($"Generated {count} results in {sw.ElapsedMilliseconds}ms ({1000.0 * (double)sw.ElapsedMilliseconds/count:F4}us/attempt)");
+
+        }
         public static void Run(int count, string opts) {
 
             //  Test passphrase expansion
@@ -144,10 +159,19 @@ namespace FixMyCrypto {
             TestPassphrase("(Correct|Horse|Battery)?Staple", "BatteryStaple");
             TestPassphrase("(H|h)ello(D|d)olly[!@#$%^&*][0-9][0-9]?", "hellodolly!1");
             TestPassphrase("(H|h)ello(D|d)olly[!@#$%^&*][0-9][0-9]?", "Hellodolly*69");
+            TestPassphrase("[^a-zA-Z0-9]", "~");
+            TestPassphrase("[^^]", "^");
+            TestPassphrase("[^^$]", "^");
+            TestPassphrase("[^^$]", "$");
 
             //  should fail
             FailPassphrase("(stuff", "stuff");
             FailPassphrase("(Big|Bunny)(Big|Bunny)", "");
+            FailPassphrase("[^a-zA-Z0-9]", "a");
+
+            //  Benchmark
+            //  992436543 results in 211609ms (0.2132us/attempt)
+            // BenchmarkPassphrase("[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?");
 
             //  Needed to init word lists
             PhraseProducer pp = new PhraseProducer(null, 0, 0, null);

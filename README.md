@@ -91,6 +91,10 @@ If you have a pretty good but not exact idea of what the passphrase is, you can 
     * `[!@#$%^&*()]` will match one of the listed special symbols
     * `[[]`, `[]]`, `[(]`, `[)]` will escape a left/right square bracket or left/right parenthesis, respectively
     * `[?]` will escape a question mark (only needed if it comes immediately after a right square bracket or right parenthesis)
+    * A caret `^` at the start of a bracket expression means to exclude all the listed items, i.e. match any ASCII printable character except for those that are listed.
+        * `[^a-zA-Z]` will match any non-letter character (matches digits and symbols)
+        * `[^a-zA-Z0-9]` will match any non-alphanumeric character (matches symbols)
+        * `[^^]` Two carets will escape a caret (`[^^$]` will match "^" or "$")
 * If you know part of the passphrase is one of two or more options, you can put that part in parenthesis using a vertical bar `|` as the "or" separator, i.e.:
     * `(T|t)he` will match "The" or "the"
     * `(Correct|Horse|Battery)` will match "Correct", "Horse", or "Battery"
