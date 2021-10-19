@@ -111,90 +111,13 @@ namespace FixMyCrypto
         public static void DoFoundResult(CoinType coin, Address addr) {
             Global.found = true;
 
-            Address best = addr;
             Log.All("\n\n\n\n");
-
-            if (!String.IsNullOrEmpty(Settings.GetApiPath(coin))) {
-                Log.All("Found result! Please wait while searching related addresses...");
-
-                //  Check blockchain for other related addresses for txs
-
-                LookupAddress la = LookupAddress.Create(coin, null, 0, 0);
-
-                List<Address> addresses = GetUsedAddresses(la, coin, addr, ref best);
-
-                int totalTx = 0;
-
-                foreach (Address address in addresses) {
-                    Log.All($"Found used address: {address.path}: {address.address}");
-
-                    try {
-                        List<string> txs = Task.Run<List<string>>(async () => await la.GetTransactions(address.address)).Result;
-
-                        if (txs.Count > 0) {
-                            Log.All($"Found {txs.Count} transactions:");
-                            
-                            foreach (string tx in txs) {
-                                Log.All($"tx hash: {tx}");
-                            }
-                        }
-
-                        totalTx += txs.Count;
-                    }
-                    catch (Exception) {}
-                }
-
-                if (totalTx > 0) {
-                    Log.All("Verify listed addresses & TX hashes on blockchain explorer!");
-                }
-                else if (addresses.Count > 0) {
-                    Log.All("Verify listed addresses on blockchain explorer!");
-                }
-            }
-            else {
-                //  No blockchain available - show possible related addresses
-
-                Log.All($"Found known address {addr.path}: {addr.address}");
-
-                int index = 0;
-
-                int account = 0;
-
-                Path.GetAccountIndex(addr.path, out account, out index);
-
-                int min = Math.Max(index - 2, 0);
-
-                int max = index + (5 - (index - min));
-
-                int count = 0;
-
-                List<int> indices = new List<int>();
-
-                for (int i = min; i <= max; i++) if (i != index) indices.Add(i);
-
-                PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null, -1, 0);
-
-                int[] accounts = { account };
-                string[] paths = { addr.path };
-
-                List<Address> addresses = p2a.GetAddresses(addr.phrase, addr.passphrase, paths, accounts, indices.ToArray());
-
-                foreach (Address address in addresses) {
-                    Log.All($"Possible related address {address.path}: {address.address}");
-                    count++;
-                }
-
-                if (count > 0) {
-                    Log.All("Verify listed addresses on blockchain explorer!");
-                }
-
-            }
 
             var resultData = new {
                 instructions = "Contact help@fixmycrypto.com if you require further assistance.",
                 coin = $"{coin}",
-                address = best.address,
-                path = best.path,
+                address = addr.address,
+                path = addr.path,
                 wrongPhrase = Settings.phrase,
                 correctedPhrase = addr.phrase.ToPhrase(),
                 passphrase = addr.passphrase
@@ -203,48 +126,9 @@ namespace FixMyCrypto
             StreamWriter writer = File.CreateText("results.json");
             writer.WriteLine(result);
             writer.Close();
-            Log.All($"\n!!! FOUND WALLET !!!\nSample address:\n{best.address} ({best.path})\n\nRecovery Phrase written to: results.json\n");
+            Log.All($"\n!!! FOUND WALLET !!!\nAddress:\n{addr.address} ({addr.path})\n\nRecovery Phrase written to: results.json\n");
             Log.All("To support the developers, please donate to one of these addresses:\nBTC: bc1q477afku8x7964gmzlsapgj8705e63ch89p8k4z\nETH: 0x0327DF6652D07eE6cc670626b034edFfceD1B20C\nDOGE: DT8iZF8RbqpRftgrWdiq34EZdJpCGiWBwG\nADA: addr1qxhjru35kv8fq66afxxdnjzf720anfcppktchh6mjuwxma3e876gh3czzkq0guls5qrkghexsuh543h7k2xqlje5lskqfp2elv\n");
         }
 
-        public static List<Address> GetUsedAddresses(LookupAddress la, CoinType coin, Address addr, ref Address best) {
-            PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null, -1, 0);
-            // int end = Math.Max(Settings.indexMax, Settings.indexMin + 20);
-            double maxCoins = -1;
-            List<Address> usedAddresses = new List<Address>();
-            List<int> indices = new List<int>(Settings.indices);
-
-            //  Ensure we test at least 5 addresses
-            int next = indices[indices.Count - 1] + 1;
-            while (indices.Count < 5) {
-                if (!indices.Contains(next)) indices.Add(next);
-                next++;
-            }
- 
-            try {
-                string[] paths = { addr.path };
-                List<Address> addresses = p2a.GetAddresses(addr.phrase, addr.passphrase, paths, Settings.accounts, indices.ToArray());
-                foreach (Address address in addresses) {
-                    Log.All($"Lookup related address {address.path}: {address.address}");
-                    LookupAddress.LookupResult result = la.GetContents(address.address);
-
-                    if (result.coins > 0 || result.txCount > 0) {
-                        Log.Debug($"found active address: {address} : {address.path} {result}");
-
-                        usedAddresses.Add(address);
-    
-                        // end = index + 20;
-
-                        if (result.coins > maxCoins) {
-                            best = address;
-                            maxCoins = result.coins;
-                        }
-                    }
-                }
-            }
-            catch (Exception) {}
-
-            return usedAddresses;
-        }
     }
 }
