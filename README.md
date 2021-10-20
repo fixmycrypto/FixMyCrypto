@@ -73,7 +73,7 @@ If you know the position of a word but you have absolutely no idea what that wor
 
     "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon * kiwi",
 
-**Hint:** You might be tempted to replace any invalid words (words you wrote down that aren't on the BIP39 list) with a valid word from the list or a `*`, but it's actually better to leave any mistakes as-is. First, by leaving the invalid words in place, the software will immediately know which word(s) need to be changed first, instead of needing to check every word in the phrase. Second, the program may do a better job than you of guessing which typos were made and which replacement words should be tested.
+**Hint:** You might be tempted to replace any invalid words (words you wrote down that aren't on the BIP39 list) with a valid word from the list or a `*`, but it's actually better to leave any mistakes as-is. By leaving the invalid words in place, the software will immediately know which word(s) need to be changed first, instead of needing to check every word in the phrase. Also, the program may do a better job than you of guessing which typos were made and which replacement words should be tested.
 
 Repairing up to 3 invalid / incorrect words is typically feasible, sometimes 4 if the typos aren't too bad, but each additional incorrect word will increase the search time exponentially.
 
@@ -83,7 +83,7 @@ If you are missing some words and don't know where they go or which position(s) 
 
     "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon kiwi ?",
 
-A single missing word (one `?`) can be solved quickly, but multiple missing words can take a VERY long time to solve, since the program must try every possible word in every possible position, so try to avoid using multiple question marks if at all possible.
+A single missing word (one `?`) can be solved quickly, two missing words will take a few hours, but 3 or more missing words can take a VERY long time to solve, since the program must try every possible word in every possible position, so try to avoid using multiple question marks if at all possible.
 
 ## Passphrase:
 
