@@ -686,6 +686,7 @@ namespace FixMyCrypto {
             return data;         
         }
 
+        //  TODO: Refactor to ElevenToEight
         public CardanoSharp.Wallet.Models.Keys.Mnemonic Restore(Phrase phrase)
         {
             short[] indices = phrase.Indices;
@@ -823,6 +824,7 @@ namespace FixMyCrypto {
 
         public override CoinType GetCoinType() { return CoinType.ADATrezor; }
 
+        //  TODO: Refactor to ElevenToEight
         //  Returns the seed entropy including the checksum bits
         //  See: https://github.com/trezor/trezor-firmware/issues/1387
         public static CardanoSharp.Wallet.Models.Keys.Mnemonic RestoreWithChecksum(Phrase phrase)

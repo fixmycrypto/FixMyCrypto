@@ -139,9 +139,26 @@ namespace FixMyCrypto {
             }
             sw.Stop();
             Log.Debug($"Generated {count} results in {sw.ElapsedMilliseconds}ms ({1000.0 * (double)sw.ElapsedMilliseconds/count:F4}us/attempt)");
+        }
 
+        public static void TestPhraseChecksum(string phrase) {
+            (bool valid, int hash) = Phrase.VerifyChecksum(new Phrase(phrase).Indices);
+            if (!valid) throw new Exception($"invalid checksum for: {phrase}");
+        }
+
+        public static void FailPhraseChecksum(string phrase) {
+            try {
+                TestPhraseChecksum(phrase);
+            }
+            catch (Exception) {
+                return;
+            }
+
+            throw new Exception($"checksum should've failed: {phrase}");
         }
         public static void Run(int count, string opts) {
+            //  Needed to init word lists
+            PhraseProducer pp = new PhraseProducer(null, 0, 0, null);
 
             //  Test passphrase expansion
             TestPassphrase("Passphrase!", "Passphrase!");
@@ -179,12 +196,23 @@ namespace FixMyCrypto {
             FailPassphrase("(Big|Bunny)(Big|Bunny)", "");
             FailPassphrase("[^a-zA-Z0-9]", "a");
 
+            //  test phrase checksums
+            TestPhraseChecksum("multiply saddle magic timber churn void lake wide reflect ball slender apple actress myself stock print mango notice slot emotion joke wage trend above wall");
+            TestPhraseChecksum("fantasy curious recycle slot tilt forward call jar fashion concert around symbol");
+            TestPhraseChecksum("script degree trigger excite acid neither nut safe warrior burden lift bone hand squeeze try");
+            TestPhraseChecksum("moon garage horse outer when glow task loan crane roof note lonely culture eight sunset business unknown emotion");
+            TestPhraseChecksum("chronic snap between hand attack purity say airport expect depend below sunset useless winner old edit permit concert dwarf cake virus split first resource");
+
+            //  fail phrase checksums
+            FailPhraseChecksum("multiply saddle magic timber churn void abandon wide reflect ball slender apple actress myself stock print mango notice slot emotion joke wage trend above wall");
+            FailPhraseChecksum("fantasy curious recycle abandon tilt forward call jar fashion concert around symbol");
+            FailPhraseChecksum("script degree trigger excite abandon neither nut safe warrior burden lift bone hand squeeze try");
+            FailPhraseChecksum("moon garage horse outer when glow task abandon crane roof note lonely culture eight sunset business unknown emotion");
+            FailPhraseChecksum("chronic snap between abandon attack purity say airport expect depend below sunset useless winner old edit permit concert dwarf cake virus split first resource");
+
             //  Benchmark
             //  992436543 results in 211609ms (0.2132us/attempt)
             // BenchmarkPassphrase("[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?");
-
-            //  Needed to init word lists
-            PhraseProducer pp = new PhraseProducer(null, 0, 0, null);
 
             //  Test address validation
             //  Should pass
