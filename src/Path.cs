@@ -72,6 +72,8 @@ namespace FixMyCrypto {
         {
             string p = path;
 
+            if (String.IsNullOrEmpty(p) || !p.Contains("/")) return p;
+
             if (p.EndsWith("'") && !path.StartsWith("m/44'/501'/")) p = p.Substring(0, p.Length - 1);
 
             if (!path.Contains("{account}")) {
@@ -125,6 +127,9 @@ namespace FixMyCrypto {
             }
             else if (path.StartsWith("m'/")) {
                 root.AddPath(path.Substring(3), valid);
+            }
+            else if (path.Equals("m")) {
+                root.end = valid;
             }
             else {
                 throw new NotSupportedException();

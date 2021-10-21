@@ -1,0 +1,21 @@
+{
+    "phrase": "multiply saddle magic timber churn void lake wide reflect ball slender apple actress myself stock print notice slot emotion joke wage trend above wall ?",
+
+    "passphrase": "",
+
+    "paths": [
+
+    ],
+
+    "knownAddresses":  [
+        "CA73GRGZZPMVE57DVFDPEBTHUHN3RT76RZGH4MGBZFJGAAL3ODN2WVDN7Q"
+    ],
+
+    "accounts": "0",
+
+    "indices": "0",
+
+    "coin": "ALGO",  //  "BTC", "ADA", "ETH", "DOGE", "LTC"
+
+    "logLevel": 5      //  Debug = 5, Info = 4, Warning = 3, Error = 2, None = 0,
+}

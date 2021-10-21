@@ -62,6 +62,7 @@ namespace FixMyCrypto {
                 return Settings.altcoinApi;
 
                 case CoinType.SOL:
+                case CoinType.ALGO:
                 return null;
 
                 default:

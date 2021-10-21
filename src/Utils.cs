@@ -24,7 +24,8 @@ namespace FixMyCrypto
         LTC,
         BCH,
         XRP,
-        SOL
+        SOL,
+        ALGO
     }
     public enum BtcApiType {
         blockcypher,
@@ -86,6 +87,29 @@ namespace FixMyCrypto
             return b;
         }
 
+        //  https://stackoverflow.com/questions/51431932/how-can-i-convert-an-arraybuffer-to-11-bits-values-and-back-again-in-javascript/51452614#51452614
+        public static byte[] ElevenToEight(this short[] src) {
+            byte[] b = new byte[(src.Length * 11) / 8];
+            int ix = 0;
+            int acc = 0;
+            int accBits = 0;
+
+            for (int i = 0; i < src.Length; i++) {
+                acc |= (src[i] << accBits);
+                accBits += 11;
+                while (accBits >= 8) {
+                    b[ix++] = (byte)(acc & 0xff);
+                    acc >>= 8;
+                    accBits -= 8;
+                }
+            }
+
+            if (accBits > 0) {
+                b[ix++] = (byte)acc;
+            }
+
+            return b;
+        }
     }
     class Work {
         public Phrase phrase;

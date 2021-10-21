@@ -51,6 +51,10 @@ namespace FixMyCrypto {
 
                 return new PhraseToAddressSolana(phrases, addresses, threadNum, threadMax);
 
+                case CoinType.ALGO:
+
+                return new PhraseToAddressAlgorand(phrases, addresses, threadNum, threadMax);
+
                 default:
 
                 throw new NotSupportedException();
@@ -280,6 +284,16 @@ namespace FixMyCrypto {
         }
 
         protected static byte[] ed25519_seed = Encoding.ASCII.GetBytes("ed25519 seed");
+
+        public class Key {
+            public byte[] data;
+            public byte[] cc;
+            public Key(byte[] data, byte[] cc) {
+                this.data = data;
+                this.cc = cc;
+            }
+        }
+
     }
    class PhraseToAddressEth : PhraseToAddress {
         public PhraseToAddressEth(ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
@@ -890,20 +904,11 @@ namespace FixMyCrypto {
         }
     }
 
-    //  TODO: Not working
     class PhraseToAddressSolana : PhraseToAddress {
         private HMACSHA512 HMAC512;
         public enum KeyType {
             Public,
             Private
-        }
-        class Key {
-            public byte[] data;
-            public byte[] cc;
-            public Key(byte[] data, byte[] cc) {
-                this.data = data;
-                this.cc = cc;
-            }
         }
         public PhraseToAddressSolana(ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
             this.HMAC512 = new HMACSHA512(ed25519_seed);
@@ -973,6 +978,131 @@ namespace FixMyCrypto {
             var tmp = Base58.Decode(address);
             if (tmp.Length != 32) throw new Exception("invalid SOL address length");
         }
+    }
 
+    class PhraseToAddressAlgorand : PhraseToAddress {
+        public PhraseToAddressAlgorand(ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
+        }
+
+        public override CoinType GetCoinType() { return CoinType.ALGO; }
+
+        public override string[] GetDefaultPaths(string[] knownAddresses) {
+            string[] p = { "m" };
+            return p;
+        }
+ 
+        //  https://github.com/algorand/js-algorand-sdk/blob/a80a1e6d683aef12bf72431c6842530b1bb26235/src/mnemonic/mnemonic.ts
+
+        public Key Restore(Phrase phrase) {
+            if (phrase.Length != 25) throw new NotSupportedException();
+
+            // for (int i = 0; i < phrase.Length; i++) Log.Debug($"word {i}: {phrase[i]} {Convert.ToString(phrase[i], 2).PadLeft(11, '0')}");
+
+            short[] indices = phrase.Indices;
+
+            byte[] entropy = indices.Slice(0, 24).ElevenToEight();
+
+            if (entropy.Length != 33 || entropy[entropy.Length - 1] != 0) throw new Exception("invalid ALGO entropy");
+
+            //  25th word is the entire CS
+            short expectedChecksum = indices[24];
+
+            // string iBits = "";
+            // for (int i = 0; i < indices.Length; i++) iBits += Convert.ToString(indices[i], 2).PadLeft(11, '0');
+            // string eBits = "";
+            // for (int i = 0; i < entropy.Length; i++) eBits += Convert.ToString(entropy[i], 2).PadLeft(8, '0');
+            // Log.Debug($"iBits {indices.Length}:\n" + iBits);
+            // Log.Debug($"\neBits {entropy.Length}:\n" + eBits);
+            
+            // Log.Debug($"expected checksum : {Convert.ToString(expectedChecksum, 2).PadLeft(11, '0')}\n");
+
+            //  Use SHA512/256 instead of SHA256
+            byte[] hash = new byte[256/8];
+            Org.BouncyCastle.Crypto.Digests.Sha512tDigest h = new Org.BouncyCastle.Crypto.Digests.Sha512tDigest(256);
+            h.BlockUpdate(entropy, 0, entropy.Length - 1);
+            h.DoFinal(hash, 0);
+            // Log.Debug($"hash first 2 bytes: {Convert.ToString(hash[0], 2).PadLeft(8, '0')} {Convert.ToString(hash[1], 2).PadLeft(8, '0')}");
+
+            //  use first 11 bits of hash, not 8
+            short actualChecksum = (short)((hash[1] & 7) << 8 | hash[0]);
+            // Log.Debug($"actual checksum   : {Convert.ToString(actualChecksum, 2).PadLeft(11, '0')}");
+
+            if (expectedChecksum != actualChecksum) {
+                throw new FormatException("Wrong checksum.");
+            }
+
+            return new Key(entropy.Slice(0, 32), null);
+        }
+        public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
+            return this.Restore(phrase);
+        }
+        protected override Object DeriveChildKey(Object parentKey, uint index) {
+            return parentKey;
+        }
+        protected override Address DeriveAddress(PathNode node) {
+            Key key = (Key)node.key;
+
+            byte[] pub = Chaos.NaCl.Ed25519.PublicKeyFromSeed(key.data);
+
+            byte[] hash = new byte[32];
+            Org.BouncyCastle.Crypto.Digests.Sha512tDigest h = new Org.BouncyCastle.Crypto.Digests.Sha512tDigest(256);
+            h.BlockUpdate(pub, 0, 32);
+            h.DoFinal(hash, 0);
+
+            byte[] addr = new byte[36];
+            Array.Copy(pub, addr, 32);
+            Array.Copy(hash, 32 - 4, addr, 32, 4);
+
+            string address = BytesToBase32(addr);
+            return new Address(address, node.GetPath());
+        }
+
+        public override void ValidateAddress(string address) {
+            if (address.Length != 58) throw new Exception("ALGO address length should be 58 chars");
+
+            byte[] data = Base32ToBytes(address);
+
+            byte[] pub = data.Slice(0, 32);
+            byte[] cs = data.Slice(32, 4);
+
+            byte[] hash = new byte[32];
+            Org.BouncyCastle.Crypto.Digests.Sha512tDigest h = new Org.BouncyCastle.Crypto.Digests.Sha512tDigest(256);
+            h.BlockUpdate(pub, 0, 32);
+            h.DoFinal(hash, 0);
+
+            for (int i = 0; i < 4; i++) if (cs[i] != hash[(32 - 4) + i]) throw new Exception("ALGO checksum invalid");
+        }
+
+        //  https://stackoverflow.com/a/42231034
+        private static string BytesToBase32(byte[] bytes) {
+            const string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+            string output = "";
+            for (int bitIndex = 0; bitIndex < bytes.Length * 8; bitIndex += 5) {
+                int dualbyte = bytes[bitIndex / 8] << 8;
+                if (bitIndex / 8 + 1 < bytes.Length)
+                    dualbyte |= bytes[bitIndex / 8 + 1];
+                dualbyte = 0x1f & (dualbyte >> (16 - bitIndex % 8 - 5));
+                output += alphabet[dualbyte];
+            }
+
+            return output;
+        }
+
+        private static byte[] Base32ToBytes(string base32) {
+            const string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+            List<byte> output = new List<byte>();
+            char[] bytes = base32.ToCharArray();
+            for (int bitIndex = 0; bitIndex < base32.Length * 5; bitIndex += 8) {
+                int dualbyte = alphabet.IndexOf(bytes[bitIndex / 5]) << 10;
+                if (bitIndex / 5 + 1 < bytes.Length)
+                    dualbyte |= alphabet.IndexOf(bytes[bitIndex / 5 + 1]) << 5;
+                if (bitIndex / 5 + 2 < bytes.Length)
+                    dualbyte |= alphabet.IndexOf(bytes[bitIndex / 5 + 2]);
+
+                dualbyte = 0xff & (dualbyte >> (15 - bitIndex % 5 - 8));
+                output.Add((byte)(dualbyte));
+            }
+            return output.ToArray();
+        }
     }
 }

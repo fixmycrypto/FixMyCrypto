@@ -66,12 +66,13 @@ namespace FixMyCrypto {
                 case 15:
                 case 18:
                 case 24:
+                case 25:    //  ALGO
 
                 break;
 
                 default:
 
-                throw new Exception("Phrase must be 12/15/18/24 words separated by spaces");
+                throw new Exception("Phrase must be 12/15/18/24/25 words separated by spaces");
             }
 
             if (phrase.Contains("?")) {
@@ -95,75 +96,100 @@ namespace FixMyCrypto {
         }
 
         public static (bool, int) VerifyChecksum(short[] indices) {
-            // Compute and check checksum
-            int MS = indices.Length;
-            int ENTCS = MS * 11;
-            int CS = ENTCS % 32;
-            int ENT = ENTCS - CS;
+            if (indices.Length == 25) {
+                //  ALGO
 
-            var entropy = new byte[ENT / 8];
+                byte[] entropy = indices.Slice(0, 24).ElevenToEight();
 
-            int itemIndex = 0;
-            int bitIndex = 0;
-            // Number of bits in a word
-            int toTake = 8;
-            // Indexes are held in a UInt32 but they are only 11 bits
-            int maxBits = 11;
-            for (int i = 0; i < entropy.Length; i++)
-            {
-                if (bitIndex + toTake <= maxBits)
-                {
-                    // All 8 bits are in one item
+                if (entropy.Length != 33 || entropy[entropy.Length - 1] != 0) return ((false, 0));
 
-                    // To take 8 bits (*) out of 00000000 00000000 00000xx* *******x:
-                    // 1. Shift right to get rid of extra bits on right, then cast to byte to get rid of the rest
-                    // >> maxBits - toTake - bitIndex
-                    entropy[i] = (byte)(indices[itemIndex] >> (3 - bitIndex));
-                }
-                else
-                {
-                    // Only a part of 8 bits are in this item, the rest is in the next.
-                    // Since items are only 32 bits there is no other possibility (8<32)
+                //  25th word is the entire CS
+                short expectedChecksum = indices[24];
 
-                    // To take 8 bits(*) out of [00000000 00000000 00000xxx xxxx****] [00000000 00000000 00000*** *xxxxxxx]:
-                    // Take first item at itemIndex [00000000 00000000 00000xxx xxxx****]: 
-                    //    * At most 7 bits and at least 1 bit should be taken
-                    // 1. Shift left [00000000 00000000 0xxxxxxx ****0000] (<< 8 - (maxBits - bitIndex)) 8-max+bi
-                    // 2. Zero the rest of the bits (& (00000000 00000000 00000000 11111111))
+                //  Use SHA512/256 instead of SHA256
+                byte[] hash = new byte[32];
+                Org.BouncyCastle.Crypto.Digests.Sha512tDigest h = new Org.BouncyCastle.Crypto.Digests.Sha512tDigest(256);
+                h.BlockUpdate(entropy, 0, entropy.Length - 1);
+                h.DoFinal(hash, 0);
 
-                    // Take next item at itemIndex+1 [00000000 00000000 00000*** *xxxxxxx]
-                    // 3. Shift right [00000000 00000000 00000000 0000****]
-                    // number of bits already taken = maxBits - bitIndex
-                    // nuber of bits to take = toTake - (maxBits - bitIndex)
-                    // Number of bits on the right to get rid of= maxBits - (toTake - (maxBits - bitIndex))
-                    // 4. Add two values to each other using bitwise OR [****0000] | [0000****]
-                    entropy[i] = (byte)(((indices[itemIndex] << (bitIndex - 3)) & 0xff) |
-                                         (indices[itemIndex + 1] >> (14 - bitIndex)));
-                }
+                //  use first 11 bits of hash, not 8
+                short actualChecksum = (short)((hash[1] & 7) << 8 | hash[0]);
 
-                bitIndex += toTake;
-                if (bitIndex >= maxBits)
-                {
-                    bitIndex -= maxBits;
-                    itemIndex++;
-                }
+                return ((expectedChecksum == actualChecksum), BitConverter.ToInt32(hash));
             }
+            else {
+                //  TODO: use ElevenToEight
 
-            // Compute and compare checksum:
-            // CS is at most 8 bits and it is the remaining bits from the loop above and it is only from last item
-            // [00000000 00000000 00000xxx xxxx****]
-            // We already know the number of bits here: CS
-            // A simple & does the work
-            uint mask = (1U << CS) - 1;
-            byte expectedChecksum = (byte)(indices[itemIndex] & mask);
+                // Compute and check checksum
+                int MS = indices.Length;
+                int ENTCS = MS * 11;
+                int CS = ENTCS % 32;
+                int ENT = ENTCS - CS;
 
-            // Checksum is the "first" CS bits of hash: [****xxxx]
+                var entropy = new byte[ENT / 8];
 
-            using SHA256 hash = SHA256.Create();
-            byte[] hashOfEntropy = hash.ComputeHash(entropy);
-            byte actualChecksum = (byte)(hashOfEntropy[0] >> (8 - CS));
+                int itemIndex = 0;
+                int bitIndex = 0;
+                // Number of bits in a word
+                int toTake = 8;
+                // Indexes are held in a UInt32 but they are only 11 bits
+                int maxBits = 11;
+                for (int i = 0; i < entropy.Length; i++)
+                {
+                    if (bitIndex + toTake <= maxBits)
+                    {
+                        // All 8 bits are in one item
 
-            return ((expectedChecksum == actualChecksum), BitConverter.ToInt32(hashOfEntropy));
+                        // To take 8 bits (*) out of 00000000 00000000 00000xx* *******x:
+                        // 1. Shift right to get rid of extra bits on right, then cast to byte to get rid of the rest
+                        // >> maxBits - toTake - bitIndex
+                        entropy[i] = (byte)(indices[itemIndex] >> (3 - bitIndex));
+                    }
+                    else
+                    {
+                        // Only a part of 8 bits are in this item, the rest is in the next.
+                        // Since items are only 32 bits there is no other possibility (8<32)
+
+                        // To take 8 bits(*) out of [00000000 00000000 00000xxx xxxx****] [00000000 00000000 00000*** *xxxxxxx]:
+                        // Take first item at itemIndex [00000000 00000000 00000xxx xxxx****]: 
+                        //    * At most 7 bits and at least 1 bit should be taken
+                        // 1. Shift left [00000000 00000000 0xxxxxxx ****0000] (<< 8 - (maxBits - bitIndex)) 8-max+bi
+                        // 2. Zero the rest of the bits (& (00000000 00000000 00000000 11111111))
+
+                        // Take next item at itemIndex+1 [00000000 00000000 00000*** *xxxxxxx]
+                        // 3. Shift right [00000000 00000000 00000000 0000****]
+                        // number of bits already taken = maxBits - bitIndex
+                        // nuber of bits to take = toTake - (maxBits - bitIndex)
+                        // Number of bits on the right to get rid of= maxBits - (toTake - (maxBits - bitIndex))
+                        // 4. Add two values to each other using bitwise OR [****0000] | [0000****]
+                        entropy[i] = (byte)(((indices[itemIndex] << (bitIndex - 3)) & 0xff) |
+                                            (indices[itemIndex + 1] >> (14 - bitIndex)));
+                    }
+
+                    bitIndex += toTake;
+                    if (bitIndex >= maxBits)
+                    {
+                        bitIndex -= maxBits;
+                        itemIndex++;
+                    }
+                }
+
+                // Compute and compare checksum:
+                // CS is at most 8 bits and it is the remaining bits from the loop above and it is only from last item
+                // [00000000 00000000 00000xxx xxxx****]
+                // We already know the number of bits here: CS
+                // A simple & does the work
+                uint mask = (1U << CS) - 1;
+                byte expectedChecksum = (byte)(indices[itemIndex] & mask);
+
+                // Checksum is the "first" CS bits of hash: [****xxxx]
+
+                using SHA256 hash = SHA256.Create();
+                byte[] hashOfEntropy = hash.ComputeHash(entropy);
+                byte actualChecksum = (byte)(hashOfEntropy[0] >> (8 - CS));
+
+                return ((expectedChecksum == actualChecksum), BitConverter.ToInt32(hashOfEntropy));
+            }
         }
 
     }

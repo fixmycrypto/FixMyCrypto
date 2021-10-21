@@ -200,6 +200,8 @@ namespace FixMyCrypto {
             PhraseToAddress.ValidateAddress(CoinType.BCH, "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
             PhraseToAddress.ValidateAddress(CoinType.BCH, "qp3wjpa3tjlj042z2wv7hahsldgwhwy0rq9sywjpyy");
             PhraseToAddress.ValidateAddress(CoinType.SOL, "uqYc2vewvfag8m6Ys6WWYekXf2BzKwWyLxBh1mftMPF");
+            PhraseToAddress.ValidateAddress(CoinType.ALGO, "VCMJKWOY5P5P7SKMZFFOCEROPJCZOTIJMNIYNUCKH7LRO45JMJP6UYBIJA");
+            PhraseToAddress.ValidateAddress(CoinType.ALGO, "CA73GRGZZPMVE57DVFDPEBTHUHN3RT76RZGH4MGBZFJGAAL3ODN2WVDN7Q");
 
             //  Should fail
             FailValidateAddress(CoinType.BTC, "14NPVhtZo8c5vxuZwTOGYxJPd8HbtqEJpu");
