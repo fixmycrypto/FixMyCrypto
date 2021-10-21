@@ -210,6 +210,8 @@ namespace FixMyCrypto {
             FailValidateAddress(CoinType.LTC, "btc1q55zt0pq7dy9p9n7va9fyqhxldnp7ajcyhv84tx");
             FailValidateAddress(CoinType.DOGE, "D6NBFwSBkhYt88B1NCpE6Ecawym7m5w6i6o");
             FailValidateAddress(CoinType.SOL, "uqYc2vewvfag8m6Ys6WWYekXf2BzKwWyLxBh1mftMPFu");
+            FailValidateAddress(CoinType.ALGO, "CA73GRGZZPMVE57DVFDPEBTHUHN3RT76RZGH4MGBZFJGAAL3ODN2WVDN7");
+            FailValidateAddress(CoinType.ALGO, "CA73GRGZZPMVE57DVFDPEBTHUHM3RT76RZGH4MGBZFJGAAL3ODN2WVDN7Q");
 
             //  test phrase validation (with unknown/missing/bad lengths/etc)
             Phrase.Validate("siren bottom inform vehicle else donkey dirt task cook tide general when");
