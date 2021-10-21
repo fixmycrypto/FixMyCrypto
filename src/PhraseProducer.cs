@@ -571,6 +571,25 @@ namespace FixMyCrypto {
         }
 
         private void SwapColumns(short[] phrase) {
+            //  Transpose rows/columns
+            for (int rowCount = 2; rowCount <= phrase.Length / 2; rowCount++) {
+                int colCount = phrase.Length / rowCount;
+                if (rowCount * colCount == phrase.Length) {
+                    //  Transpose
+                    Log.Debug($"transpose {rowCount}x{colCount}");
+                    short[] t = new short[phrase.Length];
+
+                    for (int row = 0; row < rowCount; row++) {
+                        for (int col = 0; col < colCount; col++) {
+                            t[col * rowCount + row] = phrase[row * colCount + col];
+                        }
+                    }
+
+                    TestPhrase(t);
+                    if (Global.done) return;
+                }
+            }
+
             if (phrase.Length % 2 != 0) return;
 
             short[] p = new short[phrase.Length];
