@@ -996,8 +996,6 @@ namespace FixMyCrypto {
         public Key Restore(Phrase phrase) {
             if (phrase.Length != 25) throw new NotSupportedException();
 
-            // for (int i = 0; i < phrase.Length; i++) Log.Debug($"word {i}: {phrase[i]} {Convert.ToString(phrase[i], 2).PadLeft(11, '0')}");
-
             short[] indices = phrase.Indices;
 
             byte[] entropy = indices.Slice(0, 24).ElevenToEight();
@@ -1007,25 +1005,14 @@ namespace FixMyCrypto {
             //  25th word is the entire CS
             short expectedChecksum = indices[24];
 
-            // string iBits = "";
-            // for (int i = 0; i < indices.Length; i++) iBits += Convert.ToString(indices[i], 2).PadLeft(11, '0');
-            // string eBits = "";
-            // for (int i = 0; i < entropy.Length; i++) eBits += Convert.ToString(entropy[i], 2).PadLeft(8, '0');
-            // Log.Debug($"iBits {indices.Length}:\n" + iBits);
-            // Log.Debug($"\neBits {entropy.Length}:\n" + eBits);
-            
-            // Log.Debug($"expected checksum : {Convert.ToString(expectedChecksum, 2).PadLeft(11, '0')}\n");
-
             //  Use SHA512/256 instead of SHA256
             byte[] hash = new byte[256/8];
             Org.BouncyCastle.Crypto.Digests.Sha512tDigest h = new Org.BouncyCastle.Crypto.Digests.Sha512tDigest(256);
             h.BlockUpdate(entropy, 0, entropy.Length - 1);
             h.DoFinal(hash, 0);
-            // Log.Debug($"hash first 2 bytes: {Convert.ToString(hash[0], 2).PadLeft(8, '0')} {Convert.ToString(hash[1], 2).PadLeft(8, '0')}");
 
             //  use first 11 bits of hash, not 8
             short actualChecksum = (short)((hash[1] & 7) << 8 | hash[0]);
-            // Log.Debug($"actual checksum   : {Convert.ToString(actualChecksum, 2).PadLeft(11, '0')}");
 
             if (expectedChecksum != actualChecksum) {
                 throw new FormatException("Wrong checksum.");
