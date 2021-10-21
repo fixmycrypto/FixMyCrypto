@@ -56,7 +56,7 @@ See BUILD.md
 
 ### Required
 
-Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`, `LTC`, `SOL`, etc.). (For ADA used with a Ledger or Trezor hardware wallet, see "Cardano special use cases" below.)
+Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`, `LTC`, `SOL`, `ALGO`, etc.). (For ADA used with a Ledger or Trezor hardware wallet, see "Cardano special use cases" below.)
 
     "coin": "BTC",
 
@@ -84,13 +84,15 @@ If you are missing some words and don't know where they go or which position(s) 
 
     "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon kiwi ?",
 
-A single missing word (one `?`) can be solved quickly, two missing words will take a few hours, but 3 or more missing words can take a VERY long time to solve, since the program must try every possible word in every possible position, so try to avoid using multiple question marks if at all possible.
+A single missing word (one `?`) can be solved quickly, two missing words will take a few hours, but 3 or more missing words can take a VERY long time to solve, since the program must try every possible word in every possible position.
 
 ## Passphrase:
 
 ### Required
 
-If you didn't use a "BIP39 passphrase" (a.k.a. "extra word", "25th word" (not for ALGO), or "advanced security", NOT your wallet password or spending password) when you created the wallet, then leave this as blank:
+A BIP39 passphrase (a.k.a. "extra word" or "advanced security") is not to be confused with your spending password, wallet password, or app login.
+
+If you didn't use a "BIP39 passphrase" when you created the wallet, then leave this as blank:
 
     "passphrase": "",
 
@@ -102,16 +104,17 @@ If you have a pretty good but not exact idea of what the passphrase is, you can 
 
 ## Passphrase Guessing:
 
-* If you know part of the passphrase is one of two or more options, put that part in parenthesis `( )` using a vertical bar `|` as the "or" separator between options, e.g.:
-    * `(T|t)he` will match "The" or "the"
-    * `(Correct|Horse|Battery)` will match "Correct", "Horse", or "Battery"
+* If you know part of the passphrase is one of two or more options, put that part in parenthesis `( )` using a double vertical bar `||` as the "or" separator between options, e.g.:
+    * `(T||t)he` will match "The" or "the"
+    * `(Correct||Horse||Battery)` will match "Correct", "Horse", or "Battery"
 * If you know one character is a certain type of character, specify the range in square brackets with a hyphen between the values. You can also specify more than one range, similar to regex expressions:
     * `[a-z]` will match one lower case letter a-z
     * `[a-zA-Z]` will match one lower or upper case letter a-z or A-Z
     * `[aeiou]` will match one lower case vowel letter
     * `[0-9]` will match one digit
     * `[!@#$%^&*()]` will match one of the listed special symbols
-    * `[[]`, `[]]`, `[(]`, `[)]` will escape a left/right square bracket or left/right parenthesis, respectively
+    * `([)`, `(])` use parenthesis to escape a square bracket in the passphrase
+    * `[(]`, `[)]` use square brackets to escape a parenthesis in the passphrase
     * `[?]` will escape a question mark (only needed if it comes immediately after a right square bracket or right parenthesis)
     * `^` at the start of a bracket expression means to exclude all the listed items, i.e. match any ASCII printable character except for those that are listed.
         * `[^a-zA-Z]` will match any non-letter character (matches one digit or symbol)
@@ -137,13 +140,13 @@ Provide 1 or more addresses that you are certain belong to this wallet. Ideally,
 
 In the case of Ethereum, only one address (index 0) is typically used because the same address is used for every transaction on the same account.
 
-If you only know one address, it should be filled out like this:
+Example for one known address:
 
     "knownAddresses":  [
         "bc1qmr9cmy3p3q695mkn5rnmz27csvnvr2ja05wa4p"
     ],
 
-If you know more than one address, it should look like this:
+Example for multiple known addresses:
 
     "knownAddresses":  [
             "bc1qmr9cmy3p3q695mkn5rnmz27csvnvr2ja05wa4p",
@@ -161,15 +164,15 @@ If you know more than one address, it should look like this:
 
 The default setting is to check if the known address(es) are in the first 5 addresses of the wallet, hence `"0-4"`. This means one of the known addresses you provide must belong to one of the first five transactions received by this wallet. If you know that your address is between index 5 and 10, use `"5-10"`. Ranges can be specified using hyphens: e.g. `"0-5"`, commas: e.g. `"2,4,6"`, or a mix of both e.g.: `"0,2,4,10-12"`. The more indices you search, the longer it will take. Ideally, if you know you have provided your address 0, then you can set this to `"0"` to speed things up a bit. However, if your known address is address index 5, and you specify the range as `"0-4"`, it won't find your address at all. **Make sure this range is big enough to include at least one of the known addresses you've provided.**
 
-For ETH and SOL, typically only address index 0 is used, so you should change this to `"0"` to speed things up. Your other ETH or SOL addresses will typically belong to a different account number instead of a different index, see below.
+ETH and SOL typically only use address index 0, so you should change this to `"0"` to speed things up. Your other ETH or SOL addresses will typically belong to a different account number instead of a different index, see below.
+
+ALGO uses neither index nor account numbers.
 
 ## Accounts:
 
 ### Recommended
 
 Similar to indices, "accounts" specifies the range of accounts to check against. For most users, if you had only one account for a particular coin tied to this recovery phrase, the account should be set to `"0"`. As with "indices", you can specify a range using hyphens and commas.
-
-ETH and SOL tend to use different account numbers instead of different indices.
 
 ## Paths:
 

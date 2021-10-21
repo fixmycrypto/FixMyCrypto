@@ -109,7 +109,7 @@ namespace FixMyCrypto {
             Passphrase ph = new Passphrase(pattern);
             bool found = false;
             foreach (string pass in ph.Enumerate()) {
-                // Log.Debug(pass);
+                Log.Debug($"generated: {pass}");
                 if (pass == expect) found = true;
             }
 
@@ -162,30 +162,42 @@ namespace FixMyCrypto {
 
             //  Test passphrase expansion
             TestPassphrase("Passphrase!", "Passphrase!");
-            TestPassphrase("(H|h)ello", "hello");
-            TestPassphrase("(H|h)ello[0-9]", "Hello7");
+            TestPassphrase("(H||h)ello", "hello");
+            TestPassphrase("(H||h)ello[0-9]", "Hello7");
             TestPassphrase("Hello[$%^]?", "Hello");
             TestPassphrase("Hello[$%^]?", "Hello$");
-            TestPassphrase("(H|h)ello[0-24-5]", "hello4");
-            TestPassphrase("[(] [)] [[] []]", "( ) [ ]");
-            TestPassphrase("(something or |)nothing", "something or nothing");
-            TestPassphrase("(something or |)nothing", "nothing");
+            TestPassphrase("(H||h)ello[0-24-5]", "hello4");
+            TestPassphrase("[(] [)] ([) (])", "( ) [ ]");
+            TestPassphrase("(something or ||)nothing", "something or nothing");
+            TestPassphrase("(something or ||)nothing", "nothing");
             TestPassphrase("(something or )?nothing", "something or nothing");
             TestPassphrase("(something or )?nothing", "nothing");
-            TestPassphrase("Hello( Dolly|)[!@#$%^&*()]?", "Hello Dolly!");
-            TestPassphrase("Hello( Dolly|)[!@#$%^&*()]?", "Hello");
-            TestPassphrase("Hello( Dolly|)[!@#$%^&*()]?", "Hello*");
-            TestPassphrase("(Big|Bunny)(Big|Bunny)", "BigBunny");
-            TestPassphrase("(Big|Bunny)(Big|Bunny)", "BunnyBig");
-            TestPassphrase("(Big|Bunny)(Big|Bunny)", "BunnyBunny");
+            TestPassphrase("Hello( Dolly||)[!@#$%^&*()]?", "Hello Dolly!");
+            TestPassphrase("Hello( Dolly||)[!@#$%^&*()]?", "Hello");
+            TestPassphrase("Hello( Dolly||)[!@#$%^&*()]?", "Hello*");
+            TestPassphrase("(Big||Bunny)(Big||Bunny)", "BigBunny");
+            TestPassphrase("(Big||Bunny)(Big||Bunny)", "BunnyBig");
+            TestPassphrase("(Big||Bunny)(Big||Bunny)", "BunnyBunny");
             TestPassphrase("[a-zA-Z]", "Q");
             TestPassphrase("[a-zA-Z][0-9]", "B4");
-            TestPassphrase("(Correct|Horse|Battery)?Staple", "Staple");
-            TestPassphrase("(Correct|Horse|Battery)?Staple", "CorrectStaple");
-            TestPassphrase("(Correct|Horse|Battery)?Staple", "HorseStaple");
-            TestPassphrase("(Correct|Horse|Battery)?Staple", "BatteryStaple");
-            TestPassphrase("(H|h)ello(D|d)olly[!@#$%^&*][0-9][0-9]?", "hellodolly!1");
-            TestPassphrase("(H|h)ello(D|d)olly[!@#$%^&*][0-9][0-9]?", "Hellodolly*69");
+            TestPassphrase("(Correct||Horse||Battery)?Staple", "Staple");
+            TestPassphrase("(Correct||Horse||Battery)?Staple", "CorrectStaple");
+            TestPassphrase("(Correct||Horse||Battery)?Staple", "HorseStaple");
+            TestPassphrase("(Correct||Horse||Battery)?Staple", "BatteryStaple");
+            TestPassphrase("(Correct&&Horse)", "CorrectHorse");
+            TestPassphrase("(Correct&&Horse)", "HorseCorrect");
+            TestPassphrase("(1&&2&&3)", "123");
+            TestPassphrase("(1&&2&&3)", "132");
+            TestPassphrase("(1&&2&&3)", "213");
+            TestPassphrase("(1&&2&&3)", "231");
+            TestPassphrase("(1&&2&&3)", "312");
+            TestPassphrase("(1&&2&&3)", "321");
+            TestPassphrase("((Correct||correct)&&(Horse||horse))", "CorrectHorse");
+            TestPassphrase("((C||c)orrect&&(H||h)orse)", "correcthorse");
+            TestPassphrase("((C||c)orrect&&(H||h)orse)", "HorseCorrect");
+            TestPassphrase("((C||c)orrect&&(H||h)orse)", "horsecorrect");
+            TestPassphrase("(H||h)ello(D||d)olly[!@#$%^&*][0-9][0-9]?", "hellodolly!1");
+            TestPassphrase("(H||h)ello(D||d)olly[!@#$%^&*][0-9][0-9]?", "Hellodolly*69");
             TestPassphrase("[^a-zA-Z0-9]", "~");
             TestPassphrase("[^^]", "^");
             TestPassphrase("[^^$]", "^");
@@ -193,7 +205,8 @@ namespace FixMyCrypto {
 
             //  should fail
             FailPassphrase("(stuff", "stuff");
-            FailPassphrase("(Big|Bunny)(Big|Bunny)", "");
+            // FailPassphrase("((stuff)", "(stuff");
+            FailPassphrase("(Big||Bunny)(Big||Bunny)", "");
             FailPassphrase("[^a-zA-Z0-9]", "a");
 
             //  test phrase checksums

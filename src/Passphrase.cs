@@ -4,24 +4,62 @@ using System.Collections.Generic;
 
 namespace FixMyCrypto {
      class Part {
-        List<string> values;
+        List<Part> values;
+        string stringValue;
+
+        private static void Permute(string[] parts, int start, List<string[]> list) {
+            if (start >= parts.Length) {
+                list.Add(parts);
+                return;
+            }
+
+            for (int i = start; i < parts.Length; i++) {
+                string[] p = (string[])parts.Clone();
+
+                string tmp = p[start];
+                p[start] = p[i];
+                p[i] = tmp;
+
+                Permute(p, start + 1, list);
+            }
+        }
         public Part(string set) {
             // Log.Debug($"Part(\"{set}\")");
 
-            values = new List<string>();
+            values = new List<Part>();
+            stringValue = null;
 
             if (set.EndsWith("?")) {
-                values.Add("");
+                values.Add(new Part(""));
                 set = set.Substring(0, set.Length - 1);
             }
 
             if (set.StartsWith("(") && set.EndsWith(")")) {
                 set = set.Substring(1, set.Length - 2);
 
-                string[] parts = set.Split('|');
+                if (set.Contains("&&")) {
+                    Log.Debug($"&& set: {set}");
+                    string[] andParts = set.Split("&&");
 
-                foreach (string part in parts) {
-                    values.Add(part);
+                    List<string[]> parts = new List<string[]>();
+                    Permute(andParts, 0, parts);
+
+                    foreach (string[] part in parts) {
+                        string combined = String.Concat(part);
+                        Log.Debug($"&& part: {combined}");
+                        values.Add(new Part(combined));
+                    }
+                }
+                else if (set.Contains("||")) {
+                    Log.Debug($"|| set: {set}");
+                    string[] orParts = set.Split("||");
+                    foreach (string part in orParts) {
+                        Log.Debug($"|| part: {part}");
+                        values.Add(new Part(part));
+                    }
+                }
+                else {
+                    values.Add(new Part(set));
                 }
             }
             else if (set.StartsWith("[") && set.EndsWith("]")) {
@@ -48,29 +86,35 @@ namespace FixMyCrypto {
 
                     string p = set.Substring(start, dash - start - 1);
 
-                    if (p.Length > 0) values.Add(p);
+                    if (p.Length > 0) values.Add(new Part(p));
 
                     char a = set[dash - 1];
                     char z = set[dash + 1];
 
                     for (var i = a; i <= z; ++i)
-                        values.Add($"{i}");
+                        values.Add(new Part($"{i}"));
 
                     start = dash + 2;
                 }
 
-                for (int i = start; i < set.Length; i++) values.Add($"{set[i]}");
+                List<string> list = new List<string>();
+
+                for (int i = start; i < set.Length; i++) list.Add($"{set[i]}");
 
                 if (exclude) {
                     List<string> rValues = new List<string>();
                     for (char i = (char)0x20; i < 0x7f; i++) {
-                        if (!values.Contains($"{i}")) rValues.Add($"{i}");
+                        if (!list.Contains($"{i}")) rValues.Add($"{i}");
                     }
-                    values = rValues;
+                    list = rValues;
+                }
+
+                foreach (string s in list) {
+                    values.Add(new Part(s));
                 }
             }
             else {
-                values.Add(set);
+                this.stringValue = set;
             }
 
             // foreach (string v in values) {
@@ -78,9 +122,15 @@ namespace FixMyCrypto {
             // }
         }
 
-        public IEnumerable<string> Next() {
-            foreach (string val in this.values) {
-                yield return val;
+        public IEnumerable<string> Enumerate() {
+            if (this.stringValue != null) {
+                yield return this.stringValue;
+                yield break;
+            }
+            foreach (Part p in this.values) {
+                foreach (string s in p.Enumerate()) {
+                    yield return s;
+                }
             }
         }
     }
@@ -114,11 +164,11 @@ namespace FixMyCrypto {
         public Passphrase(string passphrase) {
             parts = new List<Part>();
             string current = "";
-            bool inBlock = false;
+            int depth = 0;
             char blockType = ' ';
 
             for (int i = 0; i < passphrase.Length; i++) {
-                if (!inBlock && IsStartDelimiter(passphrase[i])) {
+                if (depth == 0 && IsStartDelimiter(passphrase[i])) {
                     if (current.Length > 0) {
                         Part p = new Part(current);
                         parts.Add(p);
@@ -128,14 +178,9 @@ namespace FixMyCrypto {
                     current += passphrase[i];
 
                     blockType = passphrase[i];
-                    inBlock = true;
-
-                    if (i + 1 < passphrase.Length && passphrase[i+1] == GetEndDelimiter(passphrase[i])) {
-                        current += passphrase[i+1];
-                        i += 1;
-                    }
+                    depth++;
                 }
-                else if (inBlock && passphrase[i] == GetEndDelimiter(blockType)) {
+                else if (depth == 1 && passphrase[i] == GetEndDelimiter(blockType)) {
                     current += passphrase[i];
 
                     if (i + 1 < passphrase.Length) {
@@ -152,14 +197,17 @@ namespace FixMyCrypto {
                     parts.Add(p);
                     current = "";
 
-                    inBlock = false;
+                    depth--;
+                    blockType = ' ';
                 }
                 else {
                     current += passphrase[i];
+                    if (passphrase[i] == blockType) depth++;
+                    if (passphrase[i] == GetEndDelimiter(blockType)) depth--;
                 }
             }
 
-            if (inBlock) {
+            if (depth > 0) {
                 throw new Exception("Invalid passphrase format (check for unescaped characters)");
             }
 
@@ -172,7 +220,7 @@ namespace FixMyCrypto {
                 yield break;
             }
 
-            foreach (string p in parts[start].Next()) {
+            foreach (string p in parts[start].Enumerate()) {
                 foreach (string r in Recurse(prefix + p, parts, start + 1)) {
                     yield return r;
                 }
