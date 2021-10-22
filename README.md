@@ -90,9 +90,9 @@ A single missing word (one `?`) can be solved quickly, two missing words will ta
 
 ### Required
 
-A BIP39 passphrase (a.k.a. "extra word" or "advanced security") is not to be confused with your spending password, wallet password, or app login.
+A BIP39 passphrase (a.k.a. "extra word" or "advanced security") is not to be confused with your spending password, wallet password, or app login password.
 
-If you didn't use a "BIP39 passphrase" when you created the wallet, then leave this as blank:
+If you didn't use a "BIP39 passphrase" when you created the wallet or you're not sure what this is, then leave this as blank:
 
     "passphrase": "",
 
@@ -100,19 +100,19 @@ If you did use a BIP39 passphrase, try to provide the exact passphrase that you 
 
     "passphrase": "ThePassphrase!",
 
-If you have a pretty good but not exact idea of what the passphrase is, you can use the following wildcards. Keep in mind that each wildcard used will increase the search time exponentially. **Brute forcing the entirety of a long passphrase is not feasible.**
-
 ## Passphrase Guessing:
+
+If you have a pretty good but not exact idea of what the passphrase is, you can use the following wildcards. Keep in mind that each wildcard used will increase the search time exponentially. **Brute forcing the entirety of a long passphrase is not feasible.**
 
 * `( )` parenthesis expressions contain Boolean expressions using `&&` (and) and `||` (or) operators
     * `(T||t)he` will match "The" OR "the"
     * `(Correct||Horse||Battery)` will match "Correct", "Horse", OR "Battery"
     * `(Correct&&Horse&&Battery)` will match "CorrectHorseBattery", "CorrectBatteryHorse", "HorseCorrectBattery", etc. (all permutations of Correct AND Horse AND Battery)
     * You can nest Boolean expressions:
-        * `((C||c)orrect&&(H||h)orse)` will match "CorrectHorse", "Correcthorse", "HorseCorrect", "horseCorrect", etc. (all permutations)
-    * However, you cannot mix operators in a single Boolean expression:
+        * `((a||b)&&c)` will match "ac", "bc", "ca", or "cb" (but NOT "ab" or "abc")
+        * `((C||c)orrect&&(H||h)orse)` will match "CorrectHorse", "Correcthorse", "HorseCorrect", "horsecorrect", etc. (all permutations)
+    * However, you cannot mix and/or operators in a single Boolean expression:
         * `(a&&b||c)` is not valid
-        <!-- * `(a&&(b||c))` and `((a&&b)||c)` are acceptable -->
 * `[ ]` square bracket expressions match one of any of the characters or ranges contained within:
     * `[a-z]` will match one lower case letter: a-z
     * `[a-zA-Z]` will match one lower OR upper case letter: a-z OR A-Z
@@ -126,15 +126,15 @@ If you have a pretty good but not exact idea of what the passphrase is, you can 
         * `[^a-zA-Z]` will match any non-letter character (matches one digit or symbol)
         * `[^a-zA-Z0-9]` will match any non-alphanumeric character
         * `[^^]` Two carets will escape a caret (matches "^"); `[^^$]` will match "^" or "$"
+    * Nested square bracket expressions are not allowed
 * `?` after a parenthesis or bracket expression indicates that the enclosed item is optional (i.e. it occurs zero or one times)
     * `(T|t)?he` will match "The", "the", or "he"
     * `Hello Dolly[!$]?` will match "Hello Dolly", "Hello Dolly!", or "Hello Dolly$"
-    * `[0-9][0-9]?` will match any one or two digit number (0 - 99)
-* Nested search terms are not supported
+    * `[1-9]?[0-9]` will match any one or two digit number 0 - 99 (but NOT 00, 01, etc.)
 
 For example, let's say your passphrase contains the words "hello" and "dolly" (with uncertain capitalization), followed by one symbol out of `!@#$%^&*`, and finally one or two digits, you would specify:
 
-    "passphrase": "(H|h)ello(D|d)olly[!@#$%^&*][0-9][0-9]?",
+    "passphrase": "(H||h)ello(D||d)olly[!@#$%^&*][0-9][0-9]?",
 
 This would match "hellodolly!1", "HelloDolly$42", "Hellodolly*69", etc.
 

@@ -10,8 +10,73 @@ namespace FixMyCrypto {
         List<Part> orderedValues;
         string stringValue;
 
+        private static bool IsStartDelimiter(char c) {
+            switch (c) {
+                case '[':
+                case '(':
+                return true;
+
+                default:
+                return false;
+            }
+        }
+        private static char GetEndDelimiter(char c) {
+            switch (c) {
+                case '[':
+                return ']';
+
+                case '(':
+                return ')';
+
+                default:
+                return ' ';
+            }
+        }
+
+        private bool IsOperator(char c) {
+            switch (c) {
+                case '&':
+                case '|':
+
+                return true;
+
+                default:
+
+                return false;
+            }
+        }
+
+        private char GetOuterOperator(string set) {
+            int depth = 0;
+            char blockType = ' ';
+            for (int i = 0; i < set.Length - 1; i++) {
+                if (depth == 0 && IsStartDelimiter(set[i]) && set.Contains(GetEndDelimiter(set[i]))) {
+                    depth++;
+                    blockType = set[i];
+                }
+                else if (depth == 1 && set[i] == GetEndDelimiter(blockType)) {
+                    depth--;
+                    blockType = ' ';
+                }
+                else if (depth == 0 && IsOperator(set[i]) && set[i+1] == set[i]) {
+                    //  found top level operator
+
+                    return set[i];
+                }
+                else {
+                    if (set[i] == blockType) depth++;
+                    if (set[i] == GetEndDelimiter(blockType)) depth--;
+                }
+            }
+
+            return ' ';
+        }
         private void CreateBooleanSet(string set) {
-            if (set.Contains("&&")) {
+            // Log.Debug($"bool set: {set}");
+
+            char op = GetOuterOperator(set);
+
+            if (op == '&') {
                 // Log.Debug($"&& set: {set}");
                 string[] andParts = set.Split("&&");
 
@@ -20,7 +85,7 @@ namespace FixMyCrypto {
                     andValues.Add(new Part(part));
                 }
             }
-            else if (set.Contains("||")) {
+            else if (op == '|') {
                 // Log.Debug($"|| set: {set}");
                 string[] orParts = set.Split("||");
                 foreach (string part in orParts) {
@@ -107,7 +172,7 @@ namespace FixMyCrypto {
         }
 
         public Part(string set) {
-            Log.Debug($"Part: {set}");
+            // Log.Debug($"Part: {set}");
 
             orValues = new List<Part>();
             andValues = new List<Part>();
@@ -135,7 +200,7 @@ namespace FixMyCrypto {
                 char blockType = ' ';
 
                 for (int i = 0; i < set.Length; i++) {
-                    if (depth == 0 && Passphrase.IsStartDelimiter(set[i])) {
+                    if (depth == 0 && IsStartDelimiter(set[i])) {
                         if (current.Length > 0) {
                             Part p = new Part(current);
                             orderedValues.Add(p);
@@ -147,7 +212,7 @@ namespace FixMyCrypto {
                         blockType = set[i];
                         depth++;
                     }
-                    else if (depth == 1 && set[i] == Passphrase.GetEndDelimiter(blockType)) {
+                    else if (depth == 1 && set[i] == GetEndDelimiter(blockType)) {
                         current += set[i];
 
                         if (i + 1 < set.Length) {
@@ -170,7 +235,7 @@ namespace FixMyCrypto {
                     else {
                         current += set[i];
                         if (set[i] == blockType) depth++;
-                        if (set[i] == Passphrase.GetEndDelimiter(blockType)) depth--;
+                        if (set[i] == GetEndDelimiter(blockType)) depth--;
                     }
                 }
 
@@ -183,10 +248,6 @@ namespace FixMyCrypto {
             else {
                 this.stringValue = set;
             }
-
-            // foreach (string v in values) {
-            //     Log.Debug($"part value: {v}");
-            // }
         }
 
         private IEnumerable<string> Recurse(string prefix, List<Part> parts, int start = 0) {
@@ -252,47 +313,11 @@ namespace FixMyCrypto {
     }
 
     class Passphrase {
-        public static bool IsStartDelimiter(char c) {
-            switch (c) {
-                case '[':
-                case '(':
-                return true;
-
-                default:
-                return false;
-            }
-        }
-        public static char GetEndDelimiter(char c) {
-            switch (c) {
-                case '[':
-                return ']';
-
-                case '(':
-                return ')';
-
-                default:
-                return ' ';
-            }
-        }
-
         Part root;
 
         public Passphrase(string passphrase) {
             root = new Part(passphrase);
         }
-
-        // private IEnumerable<string> Recurse(string prefix, List<Part> parts, int start = 0) {
-        //     if (start >= parts.Count) {
-        //         yield return prefix;
-        //         yield break;
-        //     }
-
-        //     foreach (string p in parts[start].Enumerate()) {
-        //         foreach (string r in Recurse(prefix + p, parts, start + 1)) {
-        //             yield return r;
-        //         }
-        //     }
-        // }
 
         public IEnumerable<string> Enumerate() {
             foreach (string r in root.Enumerate()) yield return r;

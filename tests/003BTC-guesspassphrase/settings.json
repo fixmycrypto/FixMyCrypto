@@ -1,7 +1,7 @@
 {
     "phrase": "siren bottom inform vehicle else donkey dirt task cook tide general when",
 
-    "passphrase": "(The|the)(P|p)assphrase[0-9]?[!@#$%^&*()]?",
+    "passphrase": "(The||the)(P||p)assphrase[0-9]?[!@#$%^&*()]?",
 
     "paths": [
 

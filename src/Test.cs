@@ -104,13 +104,16 @@ namespace FixMyCrypto {
         }
 
         public static void TestPassphrase(string pattern, string expect) {
-            Log.Debug($"Test Passphrase: {pattern}");
+            // Log.Debug($"Test Passphrase: {pattern}");
 
             Passphrase ph = new Passphrase(pattern);
             bool found = false;
             foreach (string pass in ph.Enumerate()) {
-                Log.Debug($"generated: {pass}");
-                if (pass == expect) found = true;
+                // Log.Debug($"generated: {pass}");
+                if (pass == expect) {
+                    found = true;
+                    break;
+                }
             }
 
             if (!found) throw new Exception($"Passphrase pattern: \"{pattern}\" failed to generate: \"{expect}\"");
@@ -180,6 +183,9 @@ namespace FixMyCrypto {
             TestPassphrase("(Big||Bunny)(Big||Bunny)", "BunnyBunny");
             TestPassphrase("[a-zA-Z]", "Q");
             TestPassphrase("[a-zA-Z][0-9]", "B4");
+            TestPassphrase("[1-9]?[0-9]", "0");
+            TestPassphrase("[1-9]?[0-9]", "9");
+            TestPassphrase("[1-9]?[0-9]", "42");
             TestPassphrase("(Correct||Horse||Battery)?Staple", "Staple");
             TestPassphrase("(Correct||Horse||Battery)?Staple", "CorrectStaple");
             TestPassphrase("(Correct||Horse||Battery)?Staple", "HorseStaple");
@@ -208,21 +214,25 @@ namespace FixMyCrypto {
             TestPassphrase("(T||t)?he", "The");
             TestPassphrase("(T||t)?he", "the");
             TestPassphrase("(T||t)?he", "he");
-
-            //  Not working yet
-            // TestPassphrase("((a&&b)||c)", "ab");
-            // TestPassphrase("((a&&b)||c)", "ba");
-            // TestPassphrase("((a&&b)||c)", "c");
+            TestPassphrase("((a&&b)||c)", "ab");
+            TestPassphrase("((a&&b)||c)", "ba");
+            TestPassphrase("((a&&b)||c)", "c");
+            TestPassphrase("((a||b)&&c)", "ac");
+            TestPassphrase("((a||b)&&c)", "ca");
+            TestPassphrase("((a||b)&&c)", "bc");
+            TestPassphrase("((a||b)&&c)", "cb");
+            TestPassphrase("(The||the)(P||p)assphrase[0-9]?[!@#$%^&*()]?", "ThePassphrase!");
 
             //  should fail
             FailPassphrase("(stuff", "stuff");
             FailPassphrase("((stuff)", "(stuff");
             FailPassphrase("(Big||Bunny)(Big||Bunny)", "");
+            FailPassphrase("[1-9]?[0-9]", "00");
+            FailPassphrase("[1-9]?[0-9]", "01");
             FailPassphrase("[^a-zA-Z0-9]", "a");
-
-            //  Not working yet
-            // TestPassphrase("((a&&b)||c)", "ac");
-            // TestPassphrase("((a&&b)||c)", "bc");
+            FailPassphrase("((a&&b)||c)", "ac");
+            FailPassphrase("((a&&b)||c)", "bc");
+            FailPassphrase("((a||b)&&c)", "ab");
 
             //  test phrase checksums
             TestPhraseChecksum("multiply saddle magic timber churn void lake wide reflect ball slender apple actress myself stock print mango notice slot emotion joke wage trend above wall");
@@ -239,7 +249,7 @@ namespace FixMyCrypto {
             FailPhraseChecksum("chronic snap between abandon attack purity say airport expect depend below sunset useless winner old edit permit concert dwarf cake virus split first resource");
 
             //  Benchmark
-            //  992436543 results in 211609ms (0.2132us/attempt)
+            //  976683582 results in 329720ms (0.3376us/attempt)
             // BenchmarkPassphrase("[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?");
 
             //  Test address validation
