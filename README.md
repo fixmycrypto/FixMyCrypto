@@ -4,15 +4,13 @@
 
 # FixMyCrypto Features
 
+* Runs totally offline so your recovery phrase is never exposed to the internet
 * Automatically fixes most common mistakes which result in an "invalid recovery phrase" error:
     * Invalid words (e.g. fax -> fix)
     * Valid but incorrect words (e.g. fix -> fox/fit/fog etc.)
     * Swapped word order
     * Missing or unknown words
-* BIP39 passphrase support, including wildcards / brute forcing
-* Runs totally offline so your recovery phrase is never exposed to the internet
-* Smart typo detection drastically reduces the search time
-    * Words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
+* BIP39 passphrase cracking, including wildcards / partial brute forcing
 * Coin support: 
     * BTC (+ forks e.g. BCH, etc.)
     * ETH (+ forks e.g. ETC)
@@ -21,9 +19,11 @@
     * ADA (Cardano) - including special mode for recovering hardware Ledger/Trezor wallets
     * SOL
     * ALGO
+* Smart typo detection drastically reduces the search time
+    * Words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
 * Simultaneous search of multiple derivation paths (including non-standard paths)
 * Search a specified range of accounts and indices
-* Highly multi-threaded, efficient key reuse when searching multiple paths/accounts
+* Highly multi-threaded, efficient key reuse when searching multiple paths/accounts/indices
 * Blockchain search mode (requires local node & indexer)
 
 # Support
@@ -130,13 +130,28 @@ If you have a pretty good but not exact idea of what the passphrase is, you can 
 * `?` after a parenthesis or bracket expression indicates that the enclosed item is optional (i.e. it occurs zero or one times)
     * `(T|t)?he` will match "The", "the", or "he"
     * `Hello Dolly[!$]?` will match "Hello Dolly", "Hello Dolly!", or "Hello Dolly$"
+    * `[0-9][0-9]?` will match any one or two digits 0-9 and 00-99 (including 00, 01, etc.)
     * `[1-9]?[0-9]` will match any one or two digit number 0 - 99 (but NOT 00, 01, etc.)
 
-For example, let's say your passphrase contains the words "hello" and "dolly" (with uncertain capitalization), followed by one symbol out of `!@#$%^&*`, and finally one or two digits, you would specify:
+### Example 1: 
+Your passphrase contains the words "hello" and "dolly" (in that order, with uncertain capitalization), followed by one symbol out of `!@#$%^&*`, and finally one or two digits:
 
     "passphrase": "(H||h)ello(D||d)olly[!@#$%^&*][0-9][0-9]?",
 
-This would match "hellodolly!1", "HelloDolly$42", "Hellodolly*69", etc.
+This would match: 
+* "hellodolly!1"
+* "HelloDolly$42"
+* "Hellodolly*69", etc.
+
+### Example 2: 
+Your passphrase contains the words "correct", "horse", "battery", and "staple", in unknown order or capitalization, followed by a one or two digit number, and then one non-alphanumeric symbol:
+
+    "passphrase": "((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]",
+
+This would match: 
+* "CorrectHorseBatteryStaple1!"
+* "horseStaplebatteryCorrect42?"
+* "batterystaplecorrectHorse99@", etc.
 
 ## Known Addresses:
 
