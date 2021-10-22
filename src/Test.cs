@@ -193,21 +193,36 @@ namespace FixMyCrypto {
             TestPassphrase("(1&&2&&3)", "312");
             TestPassphrase("(1&&2&&3)", "321");
             TestPassphrase("((Correct||correct)&&(Horse||horse))", "CorrectHorse");
+            TestPassphrase("((Correct||correct)&&(Horse||horse))", "Correcthorse");
+            TestPassphrase("((Correct||correct)&&(Horse||horse))", "horseCorrect");
             TestPassphrase("((C||c)orrect&&(H||h)orse)", "correcthorse");
             TestPassphrase("((C||c)orrect&&(H||h)orse)", "HorseCorrect");
             TestPassphrase("((C||c)orrect&&(H||h)orse)", "horsecorrect");
             TestPassphrase("(H||h)ello(D||d)olly[!@#$%^&*][0-9][0-9]?", "hellodolly!1");
+            TestPassphrase("(H||h)ello(D||d)olly[!@#$%^&*][0-9][0-9]?", "hellodolly$42");
             TestPassphrase("(H||h)ello(D||d)olly[!@#$%^&*][0-9][0-9]?", "Hellodolly*69");
             TestPassphrase("[^a-zA-Z0-9]", "~");
             TestPassphrase("[^^]", "^");
             TestPassphrase("[^^$]", "^");
             TestPassphrase("[^^$]", "$");
+            TestPassphrase("(T||t)?he", "The");
+            TestPassphrase("(T||t)?he", "the");
+            TestPassphrase("(T||t)?he", "he");
+
+            //  Not working yet
+            // TestPassphrase("((a&&b)||c)", "ab");
+            // TestPassphrase("((a&&b)||c)", "ba");
+            // TestPassphrase("((a&&b)||c)", "c");
 
             //  should fail
             FailPassphrase("(stuff", "stuff");
-            // FailPassphrase("((stuff)", "(stuff");
+            FailPassphrase("((stuff)", "(stuff");
             FailPassphrase("(Big||Bunny)(Big||Bunny)", "");
             FailPassphrase("[^a-zA-Z0-9]", "a");
+
+            //  Not working yet
+            // TestPassphrase("((a&&b)||c)", "ac");
+            // TestPassphrase("((a&&b)||c)", "bc");
 
             //  test phrase checksums
             TestPhraseChecksum("multiply saddle magic timber churn void lake wide reflect ball slender apple actress myself stock print mango notice slot emotion joke wage trend above wall");

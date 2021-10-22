@@ -104,12 +104,18 @@ If you have a pretty good but not exact idea of what the passphrase is, you can 
 
 ## Passphrase Guessing:
 
-* If you know part of the passphrase is one of two or more options, put that part in parenthesis `( )` using a double vertical bar `||` as the "or" separator between options, e.g.:
-    * `(T||t)he` will match "The" or "the"
-    * `(Correct||Horse||Battery)` will match "Correct", "Horse", or "Battery"
-* If you know one character is a certain type of character, specify the range in square brackets with a hyphen between the values. You can also specify more than one range, similar to regex expressions:
-    * `[a-z]` will match one lower case letter a-z
-    * `[a-zA-Z]` will match one lower or upper case letter a-z or A-Z
+* `( )` parenthesis expressions contain Boolean expressions using `&&` (and) and `||` (or) operators
+    * `(T||t)he` will match "The" OR "the"
+    * `(Correct||Horse||Battery)` will match "Correct", "Horse", OR "Battery"
+    * `(Correct&&Horse&&Battery)` will match "CorrectHorseBattery", "CorrectBatteryHorse", "HorseCorrectBattery", etc. (all permutations of Correct AND Horse AND Battery)
+    * You can nest Boolean expressions:
+        * `((C||c)orrect&&(H||h)orse)` will match "CorrectHorse", "Correcthorse", "HorseCorrect", "horseCorrect", etc. (all permutations)
+    * However, you cannot mix operators in a single Boolean expression:
+        * `(a&&b||c)` is not valid
+        <!-- * `(a&&(b||c))` and `((a&&b)||c)` are acceptable -->
+* `[ ]` square bracket expressions match one of any of the characters or ranges contained within:
+    * `[a-z]` will match one lower case letter: a-z
+    * `[a-zA-Z]` will match one lower OR upper case letter: a-z OR A-Z
     * `[aeiou]` will match one lower case vowel letter
     * `[0-9]` will match one digit
     * `[!@#$%^&*()]` will match one of the listed special symbols
