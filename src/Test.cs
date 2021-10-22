@@ -222,6 +222,9 @@ namespace FixMyCrypto {
             TestPassphrase("((a||b)&&c)", "bc");
             TestPassphrase("((a||b)&&c)", "cb");
             TestPassphrase("(The||the)(P||p)assphrase[0-9]?[!@#$%^&*()]?", "ThePassphrase!");
+            TestPassphrase("((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]", "CorrectHorseBatteryStaple1!");
+            TestPassphrase("((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]", "horseStaplebatteryCorrect42?");
+            TestPassphrase("((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]", "batterystaplecorrectHorse99@");
 
             //  should fail
             FailPassphrase("(stuff", "stuff");
