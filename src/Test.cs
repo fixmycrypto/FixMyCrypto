@@ -234,23 +234,34 @@ namespace FixMyCrypto {
             FailPassphrase("((a&&b)||c)", "bc");
             FailPassphrase("((a||b)&&c)", "ab");
 
+            //  Benchmark
+            //  976683582 results in 329720ms (0.3376us/attempt)
+            // BenchmarkPassphrase("[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?");
+
             //  test phrase checksums
-            TestPhraseChecksum("multiply saddle magic timber churn void lake wide reflect ball slender apple actress myself stock print mango notice slot emotion joke wage trend above wall");
             TestPhraseChecksum("fantasy curious recycle slot tilt forward call jar fashion concert around symbol");
             TestPhraseChecksum("script degree trigger excite acid neither nut safe warrior burden lift bone hand squeeze try");
             TestPhraseChecksum("moon garage horse outer when glow task loan crane roof note lonely culture eight sunset business unknown emotion");
             TestPhraseChecksum("chronic snap between hand attack purity say airport expect depend below sunset useless winner old edit permit concert dwarf cake virus split first resource");
+            TestPhraseChecksum("multiply saddle magic timber churn void lake wide reflect ball slender apple actress myself stock print mango notice slot emotion joke wage trend above wall");
 
             //  fail phrase checksums
-            FailPhraseChecksum("multiply saddle magic timber churn void abandon wide reflect ball slender apple actress myself stock print mango notice slot emotion joke wage trend above wall");
             FailPhraseChecksum("fantasy curious recycle abandon tilt forward call jar fashion concert around symbol");
             FailPhraseChecksum("script degree trigger excite abandon neither nut safe warrior burden lift bone hand squeeze try");
             FailPhraseChecksum("moon garage horse outer when glow task abandon crane roof note lonely culture eight sunset business unknown emotion");
             FailPhraseChecksum("chronic snap between abandon attack purity say airport expect depend below sunset useless winner old edit permit concert dwarf cake virus split first resource");
+            FailPhraseChecksum("multiply saddle magic timber churn void abandon wide reflect ball slender apple actress myself stock print mango notice slot emotion joke wage trend above wall");
 
-            //  Benchmark
-            //  976683582 results in 329720ms (0.3376us/attempt)
-            // BenchmarkPassphrase("[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?");
+            //  test phrase validation (with unknown/missing/bad lengths/etc) - NOT checksums
+            Phrase.Validate("siren bottom inform vehicle else donkey dirt task cook tide general when");
+            Phrase.Validate("siren bottom inform vehicle * donkey task cook tide general when ?");
+            
+            FailValidatePhrase("siren bottom inform vehicle else donkey dirt task cook tide general");
+            FailValidatePhrase("siren bottom inform vehicle else donkey dirt task cook tide general when when");
+            FailValidatePhrase("siren bottom inform vehicle ? donkey dirt task cook tide general when");
+            FailValidatePhrase("nope nope nope nope nope donkey dirt task cook tide general when");
+
+            //  TODO: benchmark phrase checksums
 
             //  Test address validation
             //  Should pass
@@ -278,15 +289,6 @@ namespace FixMyCrypto {
             FailValidateAddress(CoinType.SOL, "uqYc2vewvfag8m6Ys6WWYekXf2BzKwWyLxBh1mftMPFu");
             FailValidateAddress(CoinType.ALGO, "CA73GRGZZPMVE57DVFDPEBTHUHN3RT76RZGH4MGBZFJGAAL3ODN2WVDN7");
             FailValidateAddress(CoinType.ALGO, "CA73GRGZZPMVE57DVFDPEBTHUHM3RT76RZGH4MGBZFJGAAL3ODN2WVDN7Q");
-
-            //  test phrase validation (with unknown/missing/bad lengths/etc)
-            Phrase.Validate("siren bottom inform vehicle else donkey dirt task cook tide general when");
-            Phrase.Validate("siren bottom inform vehicle * donkey task cook tide general when ?");
-            
-            FailValidatePhrase("siren bottom inform vehicle else donkey dirt task cook tide general");
-            FailValidatePhrase("siren bottom inform vehicle else donkey dirt task cook tide general when when");
-            FailValidatePhrase("siren bottom inform vehicle ? donkey dirt task cook tide general when");
-            FailValidatePhrase("nope nope nope nope nope donkey dirt task cook tide general when");
 
             //  Test vectors
             //  TODO: Test addresses
