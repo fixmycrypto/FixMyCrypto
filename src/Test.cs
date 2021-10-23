@@ -102,21 +102,23 @@ namespace FixMyCrypto {
                 throw new Exception("test failed");
             }
         }
-
         public static void TestPassphrase(string pattern, string expect) {
+            string[] s = { expect };
+            TestPassphrase(pattern, s);
+        }
+
+        public static void TestPassphrase(string pattern, string[] expect) {
             // Log.Debug($"Test Passphrase: {pattern}");
 
             Passphrase ph = new Passphrase(pattern);
-            bool found = false;
+            bool[] found = new bool[expect.Length];
             foreach (string pass in ph.Enumerate()) {
                 // Log.Debug($"generated: {pass}");
-                if (pass == expect) {
-                    found = true;
-                    break;
-                }
+                int i = Array.IndexOf(expect, pass);
+                if (i > -1) found[i] = true;
             }
 
-            if (!found) throw new Exception($"Passphrase pattern: \"{pattern}\" failed to generate: \"{expect}\"");
+            for (int i = 0; i < found.Length; i++) if (!found[i]) throw new Exception($"Passphrase pattern: \"{pattern}\" failed to generate: \"{expect[i]}\"");
         }
 
         public static void FailPassphrase(string pattern, string expect) {
@@ -144,6 +146,62 @@ namespace FixMyCrypto {
             Log.Debug($"Generated {count} results in {sw.ElapsedMilliseconds}ms ({1000.0 * (double)sw.ElapsedMilliseconds/count:F4}us/attempt)");
         }
 
+        public static void TestRandomPassphrase() {
+            Random rand = new Random();
+            int length = rand.Next(0, 12);
+            string expect = "";
+            string pattern = "";
+            for (int i = 0; i < length; i++) {
+                char c = (char)rand.Next(0x20, 0x7f);
+                expect += c;
+
+                switch (c) {
+                    case '(':
+                    case ')':
+
+                    pattern += $"[{c}]";
+
+                    break;
+
+                    case '[':
+                    case ']':
+
+                    pattern += $"({c})";
+
+                    break;
+
+                    case '?':
+
+                    if (pattern.Length > 0 && (pattern[pattern.Length - 1] == ')' || pattern[pattern.Length - 1] == ']')) {
+                        pattern += "[?]";
+                    }
+                    else {
+                        pattern += "?";
+                    }
+
+                    break;
+
+                    case '^':
+
+                    if (pattern.Length > 0 && pattern[pattern.Length - 1] == '[') {
+                        pattern += "^^";
+                    }
+                    else {
+                        pattern += "^";
+                    }
+
+                    break;
+
+                    default:
+
+                    pattern += c;
+
+                    break;
+                }
+            }
+            TestPassphrase(pattern, expect);
+        }
+
         public static void TestPhraseChecksum(string phrase) {
             (bool valid, int hash) = Phrase.VerifyChecksum(new Phrase(phrase).Indices);
             if (!valid) throw new Exception($"invalid checksum for: {phrase}");
@@ -167,64 +225,33 @@ namespace FixMyCrypto {
             TestPassphrase("Passphrase!", "Passphrase!");
             TestPassphrase("(H||h)ello", "hello");
             TestPassphrase("(H||h)ello[0-9]", "Hello7");
-            TestPassphrase("Hello[$%^]?", "Hello");
-            TestPassphrase("Hello[$%^]?", "Hello$");
+            TestPassphrase("Hello[$%^]?", new string[] { "Hello", "Hello$" });
             TestPassphrase("(H||h)ello[0-24-5]", "hello4");
             TestPassphrase("[(] [)] ([) (])", "( ) [ ]");
-            TestPassphrase("(something or ||)nothing", "something or nothing");
-            TestPassphrase("(something or ||)nothing", "nothing");
-            TestPassphrase("(something or )?nothing", "something or nothing");
-            TestPassphrase("(something or )?nothing", "nothing");
-            TestPassphrase("Hello( Dolly||)[!@#$%^&*()]?", "Hello Dolly!");
-            TestPassphrase("Hello( Dolly||)[!@#$%^&*()]?", "Hello");
-            TestPassphrase("Hello( Dolly||)[!@#$%^&*()]?", "Hello*");
-            TestPassphrase("(Big||Bunny)(Big||Bunny)", "BigBunny");
-            TestPassphrase("(Big||Bunny)(Big||Bunny)", "BunnyBig");
-            TestPassphrase("(Big||Bunny)(Big||Bunny)", "BunnyBunny");
+            TestPassphrase("(something or ||)nothing", new string[] { "something or nothing", "nothing" });
+            TestPassphrase("(something or )?nothing", new string[] { "something or nothing", "nothing" });
+            TestPassphrase("Hello( Dolly||)[!@#$%^&*()]?", new string[] { "Hello Dolly!", "Hello", "Hello*" });
+            TestPassphrase("(Big||Bunny)(Big||Bunny)", new string[] { "BigBunny", "BunnyBig", "BunnyBunny" });
             TestPassphrase("[a-zA-Z]", "Q");
             TestPassphrase("[a-zA-Z][0-9]", "B4");
-            TestPassphrase("[1-9]?[0-9]", "0");
-            TestPassphrase("[1-9]?[0-9]", "9");
-            TestPassphrase("[1-9]?[0-9]", "42");
-            TestPassphrase("(Correct||Horse||Battery)?Staple", "Staple");
-            TestPassphrase("(Correct||Horse||Battery)?Staple", "CorrectStaple");
-            TestPassphrase("(Correct||Horse||Battery)?Staple", "HorseStaple");
-            TestPassphrase("(Correct||Horse||Battery)?Staple", "BatteryStaple");
-            TestPassphrase("(Correct&&Horse)", "CorrectHorse");
-            TestPassphrase("(Correct&&Horse)", "HorseCorrect");
-            TestPassphrase("(1&&2&&3)", "123");
-            TestPassphrase("(1&&2&&3)", "132");
-            TestPassphrase("(1&&2&&3)", "213");
-            TestPassphrase("(1&&2&&3)", "231");
-            TestPassphrase("(1&&2&&3)", "312");
-            TestPassphrase("(1&&2&&3)", "321");
-            TestPassphrase("((Correct||correct)&&(Horse||horse))", "CorrectHorse");
-            TestPassphrase("((Correct||correct)&&(Horse||horse))", "Correcthorse");
-            TestPassphrase("((Correct||correct)&&(Horse||horse))", "horseCorrect");
-            TestPassphrase("((C||c)orrect&&(H||h)orse)", "correcthorse");
-            TestPassphrase("((C||c)orrect&&(H||h)orse)", "HorseCorrect");
-            TestPassphrase("((C||c)orrect&&(H||h)orse)", "horsecorrect");
-            TestPassphrase("(H||h)ello(D||d)olly[!@#$%^&*][0-9][0-9]?", "hellodolly!1");
-            TestPassphrase("(H||h)ello(D||d)olly[!@#$%^&*][0-9][0-9]?", "hellodolly$42");
-            TestPassphrase("(H||h)ello(D||d)olly[!@#$%^&*][0-9][0-9]?", "Hellodolly*69");
+            TestPassphrase("[1-9]?[0-9]", new string[] { "0", "9", "42" });
+            TestPassphrase("(Correct||Horse||Battery)?Staple", new string[] { "Staple", "CorrectStaple", "HorseStaple", "BatteryStaple" });
+            TestPassphrase("(Correct&&Horse)", new string[] { "CorrectHorse", "HorseCorrect" });
+            TestPassphrase("(1&&2&&3)", new string[] { "123", "132", "213", "231", "312", "321" });
+            TestPassphrase("((Correct||correct)&&(Horse||horse))", new string[] { "CorrectHorse", "Correcthorse", "horseCorrect" });
+            TestPassphrase("((C||c)orrect&&(H||h)orse)", new string[] { "correcthorse", "HorseCorrect", "horsecorrect" });
+            TestPassphrase("(H||h)ello(D||d)olly[!@#$%^&*][0-9][0-9]?", new string[] { "hellodolly!1", "hellodolly$42", "Hellodolly*69" });
             TestPassphrase("[^a-zA-Z0-9]", "~");
             TestPassphrase("[^^]", "^");
-            TestPassphrase("[^^$]", "^");
-            TestPassphrase("[^^$]", "$");
-            TestPassphrase("(T||t)?he", "The");
-            TestPassphrase("(T||t)?he", "the");
-            TestPassphrase("(T||t)?he", "he");
-            TestPassphrase("((a&&b)||c)", "ab");
-            TestPassphrase("((a&&b)||c)", "ba");
-            TestPassphrase("((a&&b)||c)", "c");
-            TestPassphrase("((a||b)&&c)", "ac");
-            TestPassphrase("((a||b)&&c)", "ca");
-            TestPassphrase("((a||b)&&c)", "bc");
-            TestPassphrase("((a||b)&&c)", "cb");
+            TestPassphrase("[^^$]", new string[] { "^", "$" });
+            TestPassphrase("(T||t)?he", new string[] { "The", "the", "he" });
+            TestPassphrase("((a&&b)||c)", new string[] { "ab", "ba", "c" });
+            TestPassphrase("((a||b)&&c)", new string[] { "ac", "ca", "bc", "cb" });
             TestPassphrase("(The||the)(P||p)assphrase[0-9]?[!@#$%^&*()]?", "ThePassphrase!");
-            TestPassphrase("((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]", "CorrectHorseBatteryStaple1!");
-            TestPassphrase("((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]", "horseStaplebatteryCorrect42?");
-            TestPassphrase("((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]", "batterystaplecorrectHorse99@");
+            TestPassphrase("((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]", new string[] { "CorrectHorseBatteryStaple1!", "horseStaplebatteryCorrect42?", "batterystaplecorrectHorse99@" });
+
+            //  fuzzing
+            for (int i = 0; i < 100000; i++) TestRandomPassphrase();
 
             //  should fail
             FailPassphrase("(stuff", "stuff");

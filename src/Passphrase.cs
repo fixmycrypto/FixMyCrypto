@@ -5,9 +5,15 @@ using System.Collections.Generic;
 namespace FixMyCrypto {
 
     class Part {
-        List<Part> orValues;
-        List<Part> andValues;
-        List<Part> orderedValues;
+
+        enum OpType {
+            Ordered,
+            Or,
+            And
+        }
+
+        OpType opType;
+        List<Part> values;
         string stringValue;
 
         private static bool IsStartDelimiter(char c) {
@@ -77,29 +83,33 @@ namespace FixMyCrypto {
             char op = GetOuterOperator(set);
 
             if (op == '&') {
+                this.opType = OpType.And;
                 // Log.Debug($"&& set: {set}");
                 string[] andParts = set.Split("&&");
 
                 foreach (string part in andParts) {
                     // Log.Debug($"&& part: {part}");
-                    andValues.Add(new Part(part));
+                    values.Add(new Part(part));
                 }
             }
             else if (op == '|') {
+                this.opType = OpType.Or;
                 // Log.Debug($"|| set: {set}");
                 string[] orParts = set.Split("||");
                 foreach (string part in orParts) {
                     // Log.Debug($"|| part: {part}");
-                    orValues.Add(new Part(part));
+                    values.Add(new Part(part));
                 }
             }
             else {
-                orValues.Add(new Part(set));
+                this.opType = OpType.Or;
+                values.Add(new Part(set));
             }
         }
 
         private void CreateOptionSet(string set) {
             bool exclude = false;
+            this.opType = OpType.Or;
 
             if (set.StartsWith("^")) {
                 set = set.Substring(1);
@@ -112,7 +122,7 @@ namespace FixMyCrypto {
 
             if (set.Length == 0) return;
 
-            List<string> values = new List<string>();
+            List<string> items = new List<string>();
             
             while (start < set.Length)
             {
@@ -123,29 +133,29 @@ namespace FixMyCrypto {
 
                 string p = set.Substring(start, dash - start - 1);
 
-                if (p.Length > 0) values.Add(p);
+                if (p.Length > 0) items.Add(p);
 
                 char a = set[dash - 1];
                 char z = set[dash + 1];
 
                 for (var i = a; i <= z; ++i)
-                    values.Add($"{i}");
+                    items.Add($"{i}");
 
                 start = dash + 2;
             }
 
-            for (int i = start; i < set.Length; i++) values.Add($"{set[i]}");
+            for (int i = start; i < set.Length; i++) items.Add($"{set[i]}");
 
             if (exclude) {
                 List<string> rValues = new List<string>();
                 for (char i = (char)0x20; i < 0x7f; i++) {
-                    if (!values.Contains($"{i}")) rValues.Add($"{i}");
+                    if (!items.Contains($"{i}")) rValues.Add($"{i}");
                 }
-                values = rValues;
+                items = rValues;
             }
 
-            foreach (string s in values) {
-                orValues.Add(new Part(s));
+            foreach (string s in items) {
+                values.Add(new Part(s));
             }
         }
 
@@ -174,13 +184,11 @@ namespace FixMyCrypto {
         public Part(string set) {
             // Log.Debug($"Part: {set}");
 
-            orValues = new List<Part>();
-            andValues = new List<Part>();
-            orderedValues = new List<Part>();
+            values = new List<Part>();
             stringValue = null;
 
             if ((set.StartsWith("(") && set.EndsWith(")?")) || (set.StartsWith("[") && set.EndsWith("]?"))) {
-                orValues.Add(new Part(""));
+                values.Add(new Part(""));
                 set = set.Substring(0, set.Length - 1);
             }
 
@@ -198,12 +206,13 @@ namespace FixMyCrypto {
                 string current = "";
                 int depth = 0;
                 char blockType = ' ';
+                this.opType = OpType.Ordered;
 
                 for (int i = 0; i < set.Length; i++) {
                     if (depth == 0 && IsStartDelimiter(set[i])) {
                         if (current.Length > 0) {
                             Part p = new Part(current);
-                            orderedValues.Add(p);
+                            values.Add(p);
                             current = "";
                         }
 
@@ -226,7 +235,7 @@ namespace FixMyCrypto {
                         }
 
                         Part p = new Part(current);
-                        orderedValues.Add(p);
+                        values.Add(p);
                         current = "";
 
                         depth--;
@@ -240,10 +249,10 @@ namespace FixMyCrypto {
                 }
 
                 if (depth > 0) {
-                    throw new Exception("Invalid passphrase format (check for unescaped characters)");
+                    throw new Exception($"Invalid passphrase format (check for unescaped characters): {set}");
                 }
 
-                if (current.Length > 0) orderedValues.Add(new Part(current));
+                if (current.Length > 0) values.Add(new Part(current));
             }
             else {
                 this.stringValue = set;
@@ -260,7 +269,6 @@ namespace FixMyCrypto {
                 foreach (string r in Recurse(prefix + p, parts, start + 1)) {
                     yield return r;
                 }
-
             }
         }
         private IEnumerable<string> Permute(List<Part> parts, int start = 0) {
@@ -286,7 +294,6 @@ namespace FixMyCrypto {
                     yield return s;
                 }
             }
-
         }
 
         public IEnumerable<string> Enumerate() {
@@ -294,16 +301,17 @@ namespace FixMyCrypto {
                 yield return this.stringValue;
                 yield break;
             }
-            if (this.orderedValues.Count > 0) {
-                foreach (string r in Recurse("", this.orderedValues)) yield return r;
+            if (this.opType == OpType.Ordered) {
+                foreach (string r in Recurse("", this.values)) yield return r;
             }
-            else if (this.andValues.Count > 0) {
-                foreach (string p in Permute(this.andValues)) {
+            else if (this.opType == OpType.And) {
+                foreach (string p in Permute(this.values)) {
                     yield return p;
                 }
             }
             else {
-                foreach (Part p in this.orValues) {
+                //  OR
+                foreach (Part p in this.values) {
                     foreach (string s in p.Enumerate()) {
                         yield return s;
                     }
