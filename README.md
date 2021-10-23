@@ -38,6 +38,8 @@ If you found this software useful, please consider donating to fund future devel
 * ETH: 0x0327DF6652D07eE6cc670626b034edFfceD1B20C
 * DOGE: DT8iZF8RbqpRftgrWdiq34EZdJpCGiWBwG
 * ADA: addr1qxhjru35kv8fq66afxxdnjzf720anfcppktchh6mjuwxma3e876gh3czzkq0guls5qrkghexsuh543h7k2xqlje5lskqfp2elv
+* SOL: 7ky2LTXNwPASogjMURv88LoPRHAAL4v49HeD7MYARuM4
+* ALGO: EPQZU6GMEMKKEQH4CP7U2U2NTQE2ZVMOYAS7F5WMCUYIAYUKNJVUHW5W5A
 
 # Build
 
