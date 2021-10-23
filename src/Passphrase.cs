@@ -13,7 +13,7 @@ namespace FixMyCrypto {
         }
 
         OpType opType;
-        List<Part> values;
+        Part[] parts;
         string stringValue;
 
         private static bool IsStartDelimiter(char c) {
@@ -77,8 +77,10 @@ namespace FixMyCrypto {
 
             return ' ';
         }
-        private void CreateBooleanSet(string set) {
+        private List<Part> CreateBooleanSet(string set) {
             // Log.Debug($"bool set: {set}");
+
+            List<Part> parts = new List<Part>();
 
             char op = GetOuterOperator(set);
 
@@ -89,7 +91,7 @@ namespace FixMyCrypto {
 
                 foreach (string part in andParts) {
                     // Log.Debug($"&& part: {part}");
-                    values.Add(new Part(part));
+                    parts.Add(new Part(part));
                 }
             }
             else if (op == '|') {
@@ -98,16 +100,18 @@ namespace FixMyCrypto {
                 string[] orParts = set.Split("||");
                 foreach (string part in orParts) {
                     // Log.Debug($"|| part: {part}");
-                    values.Add(new Part(part));
+                    parts.Add(new Part(part));
                 }
             }
             else {
                 this.opType = OpType.Or;
-                values.Add(new Part(set));
+                parts.Add(new Part(set));
             }
+
+            return parts;
         }
 
-        private void CreateOptionSet(string set) {
+        private List<Part> CreateOptionSet(string set) {
             bool exclude = false;
             this.opType = OpType.Or;
 
@@ -120,7 +124,7 @@ namespace FixMyCrypto {
             
             int start = 0;
 
-            if (set.Length == 0) return;
+            if (set.Length == 0) return new List<Part>();
 
             List<string> items = new List<string>();
             
@@ -154,9 +158,13 @@ namespace FixMyCrypto {
                 items = rValues;
             }
 
+            List<Part> parts = new List<Part>();
+
             foreach (string s in items) {
-                values.Add(new Part(s));
+                parts.Add(new Part(s));
             }
+
+            return parts;
         }
 
 
@@ -184,7 +192,7 @@ namespace FixMyCrypto {
         public Part(string set) {
             // Log.Debug($"Part: {set}");
 
-            values = new List<Part>();
+            List<Part> values = new List<Part>();
             stringValue = null;
 
             if ((set.StartsWith("(") && set.EndsWith(")?")) || (set.StartsWith("[") && set.EndsWith("]?"))) {
@@ -195,12 +203,12 @@ namespace FixMyCrypto {
             if (IsBooleanSet(set)) {
                 set = set.Substring(1, set.Length - 2);
 
-                CreateBooleanSet(set);
+                values.AddRange(CreateBooleanSet(set));
             }
             else if (IsOptionSet(set)) {
                 set = set.Substring(1, set.Length - 2);
 
-                CreateOptionSet(set);
+                values.AddRange(CreateOptionSet(set));
             }
             else if (((set.Contains("(") && set.Contains(")")) || (set.Contains("[") && set.Contains("]")))) {
                 string current = "";
@@ -257,10 +265,12 @@ namespace FixMyCrypto {
             else {
                 this.stringValue = set;
             }
+
+            this.parts = values.ToArray();
         }
 
-        private IEnumerable<string> Recurse(string prefix, List<Part> parts, int start = 0) {
-             if (start >= parts.Count) {
+        private IEnumerable<string> Recurse(string prefix, Part[] parts, int start = 0) {
+             if (start >= parts.Length) {
                 yield return prefix;
                 yield break;
             }
@@ -271,19 +281,16 @@ namespace FixMyCrypto {
                 }
             }
         }
-        private IEnumerable<string> Permute(List<Part> parts, int start = 0) {
-            if (start >= parts.Count) {
+        private IEnumerable<string> Permute(Part[] parts, int start = 0) {
+            if (start >= parts.Length) {
                 foreach (string r in Recurse("", parts)) {
                     // Log.Debug($"Recurse returned: {r}");
                     yield return r;
                 }
             }
 
-            for (int i = start; i < parts.Count; i++) {
-                List<Part> p = new List<Part>();
-                foreach (Part part in parts) {
-                    p.Add(part);
-                }
+            for (int i = start; i < parts.Length; i++) {
+                Part[] p = (Part[])parts.Clone();
 
                 Part tmp = p[start];
                 p[start] = p[i];
@@ -302,16 +309,16 @@ namespace FixMyCrypto {
                 yield break;
             }
             if (this.opType == OpType.Ordered) {
-                foreach (string r in Recurse("", this.values)) yield return r;
+                foreach (string r in Recurse("", this.parts)) yield return r;
             }
             else if (this.opType == OpType.And) {
-                foreach (string p in Permute(this.values)) {
+                foreach (string p in Permute(this.parts)) {
                     yield return p;
                 }
             }
             else {
                 //  OR
-                foreach (Part p in this.values) {
+                foreach (Part p in this.parts) {
                     foreach (string s in p.Enumerate()) {
                         yield return s;
                     }

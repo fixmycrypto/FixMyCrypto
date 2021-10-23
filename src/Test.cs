@@ -265,7 +265,7 @@ namespace FixMyCrypto {
             FailPassphrase("((a||b)&&c)", "ab");
 
             //  Benchmark
-            //  976683582 results in 329720ms (0.3376us/attempt)
+            //  976683582 results in 303864ms (0.3111us/attempt)
             // BenchmarkPassphrase("[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?");
 
             //  test phrase checksums
