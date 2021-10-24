@@ -55,6 +55,10 @@ namespace FixMyCrypto {
 
                 return new PhraseToAddressAlgorand(phrases, addresses, threadNum, threadMax);
 
+                case CoinType.DOT:
+
+                return new PhraseToAddressPolkadot(phrases, addresses, threadNum, threadMax);
+
                 default:
 
                 throw new NotSupportedException();
@@ -644,7 +648,7 @@ namespace FixMyCrypto {
             return "m/1852'/1815'/{account}'/2/0";
         }
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
-            var m = this.Restore(phrase);
+            var m = Restore(phrase);
             var masterKey = m.GetRootKey(passphrase);
 
             return masterKey;
@@ -687,7 +691,7 @@ namespace FixMyCrypto {
         }
 
         //  TODO: Refactor to ElevenToEight
-        public CardanoSharp.Wallet.Models.Keys.Mnemonic Restore(Phrase phrase)
+        public static CardanoSharp.Wallet.Models.Keys.Mnemonic Restore(Phrase phrase)
         {
             short[] indices = phrase.Indices;
             // Compute and check checksum
@@ -1094,4 +1098,51 @@ namespace FixMyCrypto {
             return output.ToArray();
         }
     }
+
+    class PhraseToAddressPolkadot : PhraseToAddress {
+        public PhraseToAddressPolkadot(ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
+        }
+        public override CoinType GetCoinType() { return CoinType.DOT; }
+        public override string[] GetDefaultPaths(string[] knownAddresses) {
+            string[] p = { "m" };
+            return p;
+        }
+
+        public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
+            //  https://github.com/paritytech/substrate-bip39/blob/c56994c06fe29693cfed445400ddc53bb12e472b/src/lib.rs#L45
+
+            byte[] salt = Encoding.UTF8.GetBytes("mnemonic" + passphrase);
+            CardanoSharp.Wallet.Models.Keys.Mnemonic m = PhraseToAddressCardano.Restore(phrase);
+            byte[] entropy = m.Entropy;
+            Log.Debug($"entropy: 0x{entropy.ToHexString()}");
+            var seed = KeyDerivation.Pbkdf2(Encoding.UTF8.GetString(entropy), salt, KeyDerivationPrf.HMACSHA512, 2048, 64);
+
+            Log.Debug($"seed: 0x{seed.ToHexString()}");
+
+            return new Key(seed.Slice(0, 32), null);
+        }
+        protected override Object DeriveChildKey(Object parentKey, uint index) {
+            throw new NotSupportedException();
+        }
+        protected override Address DeriveAddress(PathNode node) {
+            Key pk = (Key)node.key;
+            string address = PkToAddress(pk);
+            return new Address(address, node.GetPath());
+        }
+
+        private string PkToAddress(Key key) {
+            byte[] pub = Chaos.NaCl.Ed25519.PublicKeyFromSeed(key.data);
+            Log.Debug($"public key: 0x{pub.ToHexString()}");
+
+            string l = Base58.Encode(pub);
+
+            return l;
+        }
+        public override void ValidateAddress(string address) {
+            //  TODO
+
+            byte[] pk = Base58.Decode(address);
+        }
+    }
+
 }
