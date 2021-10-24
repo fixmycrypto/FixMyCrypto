@@ -153,7 +153,7 @@ Your passphrase contains the words "correct", "horse", "battery", and "staple", 
 This would match: 
 * "CorrectHorseBatteryStaple1!"
 * "horseStaplebatteryCorrect42?"
-* "batterystaplecorrectHorse99@", etc.
+* "batterystaplecorrectHorse99@", etc. (1,267,200 permutations)
 
 ## Known Addresses:
 

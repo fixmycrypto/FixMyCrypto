@@ -15,6 +15,7 @@ namespace FixMyCrypto {
         OpType opType;
         Part[] parts;
         string stringValue;
+        bool optional;
 
         private static bool IsStartDelimiter(char c) {
             switch (c) {
@@ -104,7 +105,7 @@ namespace FixMyCrypto {
                 }
             }
             else {
-                this.opType = OpType.Or;
+                this.opType = OpType.Ordered;
                 parts.Add(new Part(set));
             }
 
@@ -196,7 +197,7 @@ namespace FixMyCrypto {
             stringValue = null;
 
             if ((set.StartsWith("(") && set.EndsWith(")?")) || (set.StartsWith("[") && set.EndsWith("]?"))) {
-                values.Add(new Part(""));
+                optional = true;
                 set = set.Substring(0, set.Length - 1);
             }
 
@@ -304,10 +305,15 @@ namespace FixMyCrypto {
         }
 
         public IEnumerable<string> Enumerate() {
+            if (this.optional) {
+                yield return "";
+            }
+            
             if (this.stringValue != null) {
                 yield return this.stringValue;
                 yield break;
             }
+
             if (this.opType == OpType.Ordered) {
                 foreach (string r in Recurse("", this.parts)) yield return r;
             }
