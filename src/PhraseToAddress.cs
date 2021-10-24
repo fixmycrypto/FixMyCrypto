@@ -686,83 +686,20 @@ namespace FixMyCrypto {
             return data;         
         }
 
-        //  TODO: Refactor to ElevenToEight
-        public CardanoSharp.Wallet.Models.Keys.Mnemonic Restore(Phrase phrase)
-        {
-            short[] indices = phrase.Indices;
-            // Compute and check checksum
-            int MS = indices.Length;
-            int ENTCS = MS * 11;
-            int CS = ENTCS % 32;
-            int ENT = ENTCS - CS;
+        public CardanoSharp.Wallet.Models.Keys.Mnemonic Restore(Phrase phrase, bool includeChecksum = false) {
+            byte[] entropy = phrase.Indices.ElevenToEight(includeChecksum);
 
-            var entropy = new byte[ENT / 8];
-
-            int itemIndex = 0;
-            int bitIndex = 0;
-            // Number of bits in a word
-            int toTake = 8;
-            // Indexes are held in a UInt32 but they are only 11 bits
-            int maxBits = 11;
-            for (int i = 0; i < entropy.Length; i++)
-            {
-                if (bitIndex + toTake <= maxBits)
-                {
-                    // All 8 bits are in one item
-
-                    // To take 8 bits (*) out of 00000000 00000000 00000xx* *******x:
-                    // 1. Shift right to get rid of extra bits on right, then cast to byte to get rid of the rest
-                    // >> maxBits - toTake - bitIndex
-                    entropy[i] = (byte)(indices[itemIndex] >> (3 - bitIndex));
-                }
-                else
-                {
-                    // Only a part of 8 bits are in this item, the rest is in the next.
-                    // Since items are only 32 bits there is no other possibility (8<32)
-
-                    // To take 8 bits(*) out of [00000000 00000000 00000xxx xxxx****] [00000000 00000000 00000*** *xxxxxxx]:
-                    // Take first item at itemIndex [00000000 00000000 00000xxx xxxx****]: 
-                    //    * At most 7 bits and at least 1 bit should be taken
-                    // 1. Shift left [00000000 00000000 0xxxxxxx ****0000] (<< 8 - (maxBits - bitIndex)) 8-max+bi
-                    // 2. Zero the rest of the bits (& (00000000 00000000 00000000 11111111))
-
-                    // Take next item at itemIndex+1 [00000000 00000000 00000*** *xxxxxxx]
-                    // 3. Shift right [00000000 00000000 00000000 0000****]
-                    // number of bits already taken = maxBits - bitIndex
-                    // nuber of bits to take = toTake - (maxBits - bitIndex)
-                    // Number of bits on the right to get rid of= maxBits - (toTake - (maxBits - bitIndex))
-                    // 4. Add two values to each other using bitwise OR [****0000] | [0000****]
-                    entropy[i] = (byte)(((indices[itemIndex] << (bitIndex - 3)) & 0xff) |
-                                         (indices[itemIndex + 1] >> (14 - bitIndex)));
-                }
-
-                bitIndex += toTake;
-                if (bitIndex >= maxBits)
-                {
-                    bitIndex -= maxBits;
-                    itemIndex++;
-                }
-            }
-
-            // Compute and compare checksum:
-            // CS is at most 8 bits and it is the remaining bits from the loop above and it is only from last item
-            // [00000000 00000000 00000xxx xxxx****]
-            // We already know the number of bits here: CS
-            // A simple & does the work
+            int CS = (phrase.Length * 11) % 32;
             uint mask = (1U << CS) - 1;
-            byte expectedChecksum = (byte)(indices[itemIndex] & mask);
+            byte expectedChecksum = (byte)(phrase.Indices[phrase.Length - 1] & mask);
 
             // Checksum is the "first" CS bits of hash: [****xxxx]
 
-            using SHA256 hash = SHA256.Create();
-            byte[] hashOfEntropy = hash.ComputeHash(entropy);
-            byte actualChecksum = (byte)(hashOfEntropy[0] >> (8 - CS));
+            using SHA256 sha256 = SHA256.Create();
+            byte[] hash = sha256.ComputeHash(includeChecksum ? entropy.Slice(0, 32) : entropy);
+            byte actualChecksum = (byte)(hash[0] >> (8 - CS));
 
-            if (expectedChecksum != actualChecksum)
-            {
-                Array.Clear(indices, 0, indices.Length);
-                indices = null;
-
+            if (expectedChecksum != actualChecksum) {
                 throw new FormatException("Wrong checksum.");
             }
 
@@ -824,76 +761,14 @@ namespace FixMyCrypto {
 
         public override CoinType GetCoinType() { return CoinType.ADATrezor; }
 
-        //  TODO: Refactor to ElevenToEight
-        //  Returns the seed entropy including the checksum bits
-        //  See: https://github.com/trezor/trezor-firmware/issues/1387
-        public static CardanoSharp.Wallet.Models.Keys.Mnemonic RestoreWithChecksum(Phrase phrase)
-        {
-            short[] indices = phrase.Indices;
-
-            // Compute and check checksum
-            int MS = indices.Length;
-            int ENTCS = MS * 11;
-            int CS = ENTCS % 32;
-            int ENT = ENTCS;   //  changed;
-
-            var entropy = new byte[(int)Math.Ceiling(ENT / 8.0)];   //  changed
-
-            int itemIndex = 0;
-            int bitIndex = 0;
-            // Number of bits in a word
-            int toTake = 8;
-            // Indexes are held in a UInt32 but they are only 11 bits
-            int maxBits = 11;
-            for (int i = 0; i < entropy.Length; i++)
-            {
-                if (bitIndex + toTake <= maxBits)
-                {
-                    // All 8 bits are in one item
-
-                    // To take 8 bits (*) out of 00000000 00000000 00000xx* *******x:
-                    // 1. Shift right to get rid of extra bits on right, then cast to byte to get rid of the rest
-                    // >> maxBits - toTake - bitIndex
-                    entropy[i] = (byte)(indices[itemIndex] >> (3 - bitIndex));
-                }
-                else
-                {
-                    // Only a part of 8 bits are in this item, the rest is in the next.
-                    // Since items are only 32 bits there is no other possibility (8<32)
-
-                    // To take 8 bits(*) out of [00000000 00000000 00000xxx xxxx****] [00000000 00000000 00000*** *xxxxxxx]:
-                    // Take first item at itemIndex [00000000 00000000 00000xxx xxxx****]: 
-                    //    * At most 7 bits and at least 1 bit should be taken
-                    // 1. Shift left [00000000 00000000 0xxxxxxx ****0000] (<< 8 - (maxBits - bitIndex)) 8-max+bi
-                    // 2. Zero the rest of the bits (& (00000000 00000000 00000000 11111111))
-
-                    // Take next item at itemIndex+1 [00000000 00000000 00000*** *xxxxxxx]
-                    // 3. Shift right [00000000 00000000 00000000 0000****]
-                    // number of bits already taken = maxBits - bitIndex
-                    // nuber of bits to take = toTake - (maxBits - bitIndex)
-                    // Number of bits on the right to get rid of= maxBits - (toTake - (maxBits - bitIndex))
-                    // 4. Add two values to each other using bitwise OR [****0000] | [0000****]
-                    entropy[i] = (byte)(((indices[itemIndex] << (bitIndex - 3)) & 0xff) |
-                                         ((itemIndex + 1 >= indices.Length ? 0 : indices[itemIndex + 1]) >> (14 - bitIndex)));
-                }
-
-                bitIndex += toTake;
-                if (bitIndex >= maxBits)
-                {
-                    bitIndex -= maxBits;
-                    itemIndex++;
-                }
-            }
-
-            return new CardanoSharp.Wallet.Models.Keys.Mnemonic(phrase.ToPhrase(), entropy);
-        }
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
             CardanoSharp.Wallet.Models.Keys.Mnemonic l;
 
             //  For 24 words, Trezor includes the checksum in the entropy
 
             if (phrase.Length == 24) {
-                l = RestoreWithChecksum(phrase);
+                //  See: https://github.com/trezor/trezor-firmware/issues/1387
+                l = Restore(phrase, true);
             }
             else {
                 l = Restore(phrase);
@@ -1000,7 +875,7 @@ namespace FixMyCrypto {
 
             short[] indices = phrase.Indices;
 
-            byte[] entropy = indices.Slice(0, 24).ElevenToEight();
+            byte[] entropy = indices.Slice(0, 24).ElevenToEightReverse();
 
             if (entropy.Length != 33 || entropy[entropy.Length - 1] != 0) throw new Exception("invalid ALGO entropy");
 

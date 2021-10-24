@@ -87,8 +87,70 @@ namespace FixMyCrypto
             return b;
         }
 
+        //  From CardanoSharp
+        //  Big Endian bit order
+        public static byte[] ElevenToEight(this short[] indices, bool includeChecksum = false)
+        {
+            // Compute and check checksum
+            int MS = indices.Length;
+            int ENTCS = MS * 11;
+            int CS = ENTCS % 32;
+            int ENT = includeChecksum ? ENTCS : ENTCS - CS;
+
+            var entropy = new byte[ENT / 8];
+
+            int itemIndex = 0;
+            int bitIndex = 0;
+            // Number of bits in a word
+            int toTake = 8;
+            // Indexes are held in a UInt32 but they are only 11 bits
+            int maxBits = 11;
+            for (int i = 0; i < entropy.Length; i++)
+            {
+                if (bitIndex + toTake <= maxBits)
+                {
+                    // All 8 bits are in one item
+
+                    // To take 8 bits (*) out of 00000000 00000000 00000xx* *******x:
+                    // 1. Shift right to get rid of extra bits on right, then cast to byte to get rid of the rest
+                    // >> maxBits - toTake - bitIndex
+                    entropy[i] = (byte)(indices[itemIndex] >> (3 - bitIndex));
+                }
+                else
+                {
+                    // Only a part of 8 bits are in this item, the rest is in the next.
+                    // Since items are only 32 bits there is no other possibility (8<32)
+
+                    // To take 8 bits(*) out of [00000000 00000000 00000xxx xxxx****] [00000000 00000000 00000*** *xxxxxxx]:
+                    // Take first item at itemIndex [00000000 00000000 00000xxx xxxx****]: 
+                    //    * At most 7 bits and at least 1 bit should be taken
+                    // 1. Shift left [00000000 00000000 0xxxxxxx ****0000] (<< 8 - (maxBits - bitIndex)) 8-max+bi
+                    // 2. Zero the rest of the bits (& (00000000 00000000 00000000 11111111))
+
+                    // Take next item at itemIndex+1 [00000000 00000000 00000*** *xxxxxxx]
+                    // 3. Shift right [00000000 00000000 00000000 0000****]
+                    // number of bits already taken = maxBits - bitIndex
+                    // nuber of bits to take = toTake - (maxBits - bitIndex)
+                    // Number of bits on the right to get rid of= maxBits - (toTake - (maxBits - bitIndex))
+                    // 4. Add two values to each other using bitwise OR [****0000] | [0000****]
+                    entropy[i] = (byte)(((indices[itemIndex] << (bitIndex - 3)) & 0xff) |
+                                         (indices[itemIndex + 1] >> (14 - bitIndex)));
+                }
+
+                bitIndex += toTake;
+                if (bitIndex >= maxBits)
+                {
+                    bitIndex -= maxBits;
+                    itemIndex++;
+                }
+            }
+
+            return entropy;
+        }
+
+        //  For ALGO - little endian bit order
         //  https://stackoverflow.com/questions/51431932/how-can-i-convert-an-arraybuffer-to-11-bits-values-and-back-again-in-javascript/51452614#51452614
-        public static byte[] ElevenToEight(this short[] src) {
+        public static byte[] ElevenToEightReverse(this short[] src) {
             byte[] b = new byte[(src.Length * 11) / 8];
             int ix = 0;
             int acc = 0;
