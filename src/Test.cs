@@ -10,6 +10,7 @@ namespace FixMyCrypto {
     class Test {
 
         public static void TestKnownPhrase(string phrase, string passphrase, CoinType coin, string path, int expectTx, double expectCoins) {
+            if (expectTx == 0 && expectCoins == 0) return;
             Log.Info($"TestKnownPhrase {coin} phrase: {phrase}");
             try {
                 PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null, 0, 0);
@@ -458,6 +459,8 @@ namespace FixMyCrypto {
 
                 //  Validate phrase
                 Phrase.Validate(secret.phrase.Value);
+
+                if (secret.txCount == null || secret.coins == null) continue;
 
                 TestKnownPhrase(secret.phrase.Value, secret.passphrase.Value, ct, secret.path != null ? secret.path.Value : null, (int)secret.txCount.Value, (double)secret.coins.Value);
             }

@@ -36,7 +36,7 @@ namespace FixMyCrypto {
                 PauseAndExit(1);
             }
 
-            WebClient.client.Timeout = new System.TimeSpan(0, 0, 30);
+            WebClient.client.Timeout = new System.TimeSpan(0, 0, 60);
 
             if (test) {
                 int count = 100;
