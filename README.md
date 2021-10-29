@@ -143,7 +143,7 @@ Your passphrase contains the words "hello" and "dolly" (in that order, with unce
 This would match: 
 * "hellodolly!1"
 * "HelloDolly$42"
-* "Hellodolly*69", etc.
+* "Hellodolly*69", etc. (3,520 permutations)
 
 ### Example 2: 
 Your passphrase contains the words "correct", "horse", "battery", and "staple", in unknown order or capitalization, followed by a one or two digit number, and then one non-alphanumeric symbol:

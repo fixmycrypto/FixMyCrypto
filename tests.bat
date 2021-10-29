@@ -1,5 +1,15 @@
 @echo off
 setlocal EnableDelayedExpansion
+
+echo Build Release
+dotnet build -c Release
+if  !ERRORLEVEL! NEQ 0 (
+    echo Build Release failed with $?
+    exit /b 1
+)
+
+pushd tests
+
 Rem loop through directories
 for /D %%i in (*) do (
     echo Run test %%i
@@ -9,7 +19,7 @@ for /D %%i in (*) do (
     del /q results.json log.txt
 
     Rem run program
-    ..\..\bin\Debug\net5.0\FixMyCrypto -ni >> log.txt
+    ..\..\bin\Release\net6.0\FixMyCrypto -ni >> log.txt
     if !ERRORLEVEL! NEQ 0 (
         echo Test %%i failed FixMyCrypto with !ERRORLEVEL!
         exit /b !ERRORLEVEL!
@@ -28,3 +38,5 @@ for /D %%i in (*) do (
 
     popd
 )
+
+popd
