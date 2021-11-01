@@ -99,8 +99,8 @@ namespace FixMyCrypto {
         public List<Address> GetAddresses(Phrase phrase, string passphrase, string[] paths, int[] accounts, int[] indices) {
             //  Create default path list if needed
             if (paths == null || paths.Length == 0 || (paths.Length == 1 && String.IsNullOrEmpty(paths[0]))) {
-                lock (mutex) {
-                    if (defaultPaths == null) {
+                if (defaultPaths == null) {
+                    lock (mutex) {
                         defaultPaths = GetDefaultPaths(Settings.knownAddresses);
                     }
                 }
@@ -109,8 +109,8 @@ namespace FixMyCrypto {
             }
 
             //  Create path tree if needed
-            lock (mutex) {
-                if (tree == null) {
+            if (tree == null) {
+                lock (mutex) {
                     tree = new PathTree();
 
                     foreach (string path in paths) {
