@@ -74,6 +74,8 @@ namespace FixMyCrypto {
 
             if (String.IsNullOrEmpty(p) || !p.Contains("/")) return p;
 
+            if (p == "m/44'/501'") return p;    //  SOL special case
+
             if (p.EndsWith("'") && !path.StartsWith("m/44'/501'/")) p = p.Substring(0, p.Length - 1);
 
             if (!path.Contains("{account}")) {

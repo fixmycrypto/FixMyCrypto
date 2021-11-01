@@ -18,6 +18,7 @@ namespace FixMyCrypto {
         public override CoinType GetCoinType() { return CoinType.SOL; }
         public override string[] GetDefaultPaths(string[] knownAddresses) {
             string[] p = { 
+                "m/44'/501'",
                 "m/44'/501'/{account}'",
                 "m/44'/501'/{account}'/{index}'",
                 // not sure how to implement non-hardened derivation
