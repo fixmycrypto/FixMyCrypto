@@ -73,7 +73,7 @@ namespace FixMyCrypto {
 
             //  Validate phrase
             try {
-                Phrase.Validate(Settings.phrase);
+                Phrase.Validate(Settings.Phrase);
             }
             catch (Exception e) {
                 Log.Error($"Invalid phrase: {e}");
@@ -85,17 +85,17 @@ namespace FixMyCrypto {
             Stopwatch stopWatch = new Stopwatch();
 
             int phraseProducerCount = 1,
-                phraseToAddressCount = Settings.threads / 2,
-                addressLookupCount = Settings.threads / 2;
+                phraseToAddressCount = Settings.Threads / 2,
+                addressLookupCount = Settings.Threads / 2;
 
-            Log.Info($"thread count {Settings.threads} PP={phraseProducerCount} P2A={phraseToAddressCount} LA={addressLookupCount}");
-            Log.All($"Coin type: {Settings.coinType}");
-            Log.All($"Phrase to test: \"{Settings.phrase}\"");
+            Log.Info($"thread count {Settings.Threads} PP={phraseProducerCount} P2A={phraseToAddressCount} LA={addressLookupCount}");
+            Log.All($"Coin type: {Settings.CoinType}");
+            Log.All($"Phrase to test: \"{Settings.Phrase}\"");
 
-            if (!String.IsNullOrEmpty(Settings.passphrase)) {
-                Log.All($"passphrase: \"{Settings.passphrase}\"");
+            if (!String.IsNullOrEmpty(Settings.Passphrase)) {
+                Log.All($"passphrase: \"{Settings.Passphrase}\"");
 
-                Passphrase p = new Passphrase(Settings.passphrase);
+                Passphrase p = new Passphrase(Settings.Passphrase);
                 int count = 0;
                 foreach (string passphrase in p.Enumerate()) {
                     count++;
@@ -103,27 +103,31 @@ namespace FixMyCrypto {
                 Log.All($"passphrase permutations: {count}");
             }
             
-            if (Settings.paths != null) {
-                foreach (string path in Settings.paths) {
+            if (Settings.Paths != null) {
+                foreach (string path in Settings.Paths) {
                     Log.All($"path: {path}");
                 }
             }
-            Log.All($"Accounts: {Settings.GetRangeString(Settings.accounts)}");
-            Log.All($"Indices: {Settings.GetRangeString(Settings.indices)}");
-            if (Settings.knownAddresses != null) {
-                foreach (string knownAddress in Settings.knownAddresses) {
+            Log.All($"Accounts: {Settings.GetRangeString(Settings.Accounts)}");
+            Log.All($"Indices: {Settings.GetRangeString(Settings.Indices)}");
+            if (Settings.KnownAddresses != null) {
+                foreach (string knownAddress in Settings.KnownAddresses) {
                     //  TODO: validate addresses
                     Log.All($"knownAddress: {knownAddress}");
                 }
             }
-            Log.All($"difficulty: {Settings.difficulty}, wordDistance: {Settings.wordDistance}");
-            string api = Settings.GetApiPath(Settings.coinType);
+            Log.All($"difficulty: {Settings.Difficulty}, wordDistance: {Settings.WordDistance}");
+            string api = Settings.GetApiPath(Settings.CoinType);
             if (!String.IsNullOrEmpty(api)) {
                 Log.All($"API Server: {api}");
             }
             else {
                 addressLookupCount = 0;
             }
+
+            //  Initialize word lists
+            string[] phraseArray = Settings.Phrase.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+            Wordlists.Initialize(phraseArray);
 
             System.Timers.Timer timer = new System.Timers.Timer(30 * 1000);
             timer.Elapsed += (StringReader, args) => { 
@@ -136,7 +140,7 @@ namespace FixMyCrypto {
             LookupAddress[] la = new LookupAddress[addressLookupCount];
             List<Thread> laThreads = new List<Thread>();
             for (int i = 0; i < addressLookupCount; i++) {
-                la[i] = LookupAddress.Create(Settings.coinType, addressQueue, i, addressLookupCount);
+                la[i] = LookupAddress.Create(Settings.CoinType, addressQueue, i, addressLookupCount);
 
                 Thread thread = new Thread (la[i].Consume);
                 thread.Name = "LA" + i;
@@ -147,11 +151,11 @@ namespace FixMyCrypto {
             PhraseToAddress[] p2a = new PhraseToAddress[phraseToAddressCount];
             List<Thread> p2aThreads = new List<Thread>();
             for (int i = 0; i < phraseToAddressCount; i++) {
-                p2a[i] = PhraseToAddress.Create(Settings.coinType, phraseQueue, addressQueue, i, phraseToAddressCount);
+                p2a[i] = PhraseToAddress.Create(Settings.CoinType, phraseQueue, addressQueue, i, phraseToAddressCount);
 
-                if (i == 0 && Settings.knownAddresses != null) {
+                if (i == 0 && Settings.KnownAddresses != null) {
                     //  Validate addresses
-                    foreach (string address in Settings.knownAddresses) {
+                    foreach (string address in Settings.KnownAddresses) {
                         try {
                             p2a[i].ValidateAddress(address);
                         }
@@ -171,7 +175,7 @@ namespace FixMyCrypto {
             PhraseProducer[] phrasers = new PhraseProducer[phraseProducerCount];
             List<Thread> phraseThreads = new List<Thread>();
             for (int i = 0; i < phraseProducerCount; i++) {
-                phrasers[i] = new PhraseProducer(phraseQueue, i, phraseProducerCount, Settings.phrase.Split(" ", StringSplitOptions.RemoveEmptyEntries));
+                phrasers[i] = new PhraseProducer(phraseQueue, i, phraseProducerCount, phraseArray);
 
                 Thread thread = new Thread (phrasers[i].ProduceWork);
                 thread.Name = "PP" + i;
@@ -196,7 +200,7 @@ namespace FixMyCrypto {
 
             Log.Info("Program Finished in " + stopWatch.ElapsedMilliseconds/1000 + "s");
 
-            if (!Global.found) {
+            if (!Global.Found) {
                 Log.All("\n\nRecovery Failed. :( Contact help@fixmycrypto.com for further assistance.");
             }
 

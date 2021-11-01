@@ -16,7 +16,7 @@ namespace FixMyCrypto {
         public override async Task<List<string>> GetTransactions(string address) {
             List<string> txs = new List<string>();
 
-            if (Settings.adaApiType != AdaApiType.graphql) throw new Exception("not implemented");
+            if (Settings.AdaApiType != AdaApiType.graphql) throw new Exception("not implemented");
 
             string query = null, response = null;
 
@@ -24,7 +24,7 @@ namespace FixMyCrypto {
                 query = @"{""query"":""query getAddressTransactions($address: String!) {\n  transactions(\n    limit: 10\n    where: {\n      _or: [\n        { inputs: { address: { _eq: $address } } }\n        { outputs: { address: { _eq: $address } } }\n      ]\n    }\n  ) {\n    hash\n  }\n}\n"",""variables"":{""address"":""" + address + @"""}}";
                 // Log.Debug(query);
                 var data = new StringContent(query, Encoding.UTF8, "application/json");
-                var reply = await WebClient.client.PostAsync(Settings.adaApi, data);
+                var reply = await WebClient.client.PostAsync(Settings.AdaApi, data);
                 response = reply.Content.ReadAsStringAsync().Result;
                 // Log.Debug(response);
 
@@ -54,8 +54,8 @@ namespace FixMyCrypto {
             string query = "";
 
             try {
-                if (Settings.adaApiType == AdaApiType.rest) {
-                    query = Settings.adaApi + $"/api/addresses/summary/{address}";
+                if (Settings.AdaApiType == AdaApiType.rest) {
+                    query = Settings.AdaApi + $"/api/addresses/summary/{address}";
                     response = await WebClient.client.GetStringAsync(query);
                     dynamic stuff = JsonConvert.DeserializeObject(response);
                     //Log.Debug($"reponse: {response}\nstuff: {stuff}");
@@ -63,11 +63,11 @@ namespace FixMyCrypto {
                     txCount = (int)stuff.Right.caTxNum;
                     coins = Int64.Parse(stuff.Right.caBalance.getCoin.Value)/1000000.0;
                 } 
-                else if (Settings.adaApiType == AdaApiType.graphql) {
+                else if (Settings.AdaApiType == AdaApiType.graphql) {
                     query = $"{{ \"query\": \"{{ paymentAddresses (addresses: \\\"{address}\\\") {{ summary {{ assetBalances {{ quantity }}, utxosCount }} }} }}\" }}";
                     //Log.Debug($"query: {query}");
                     var data = new StringContent(query, Encoding.UTF8, "application/json");
-                    var reply = await WebClient.client.PostAsync(Settings.adaApi, data);
+                    var reply = await WebClient.client.PostAsync(Settings.AdaApi, data);
                     response = reply.Content.ReadAsStringAsync().Result;
                     //Log.Debug($"response: {response}");
 

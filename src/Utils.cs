@@ -10,9 +10,9 @@ using Newtonsoft.Json;
 namespace FixMyCrypto
 {
     static class Global {
-        public static bool done = false;
+        public static bool Done = false;
 
-        public static bool found = false;
+        public static bool Found = false;
     }
     public enum CoinType {
         BTC,
@@ -195,7 +195,7 @@ namespace FixMyCrypto
     class FoundResult {
 
         public static void DoFoundResult(CoinType coin, Address addr) {
-            Global.found = true;
+            Global.Found = true;
 
             Log.All("\n\n\n\n");
 
@@ -204,7 +204,7 @@ namespace FixMyCrypto
                 coin = $"{coin}",
                 address = addr.address,
                 path = addr.path,
-                wrongPhrase = Settings.phrase,
+                wrongPhrase = Settings.Phrase,
                 correctedPhrase = addr.phrase.ToPhrase(),
                 passphrase = addr.passphrase
             };

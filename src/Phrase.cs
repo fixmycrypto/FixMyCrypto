@@ -11,7 +11,7 @@ namespace FixMyCrypto {
         public Phrase(short[] indices, int hash) { ix = indices; this.hash = hash; }
         public Phrase(string[] phrase) {
             ix = new short[phrase.Length];
-            for (int i = 0; i < phrase.Length; i++) ix[i] = PhraseProducer.GetWordIndex(phrase[i]);
+            for (int i = 0; i < phrase.Length; i++) ix[i] = Wordlists.GetWordIndex(phrase[i]);
             (bool b, int hash) = VerifyChecksum(ix);
             this.hash = hash;
         }
@@ -39,7 +39,7 @@ namespace FixMyCrypto {
 
         public string[] ToWords() {
             string[] words = new string[ix.Length];
-            for (int i = 0; i < ix.Length; i++) words[i] = PhraseProducer.GetWord(ix[i]);
+            for (int i = 0; i < ix.Length; i++) words[i] = Wordlists.GetWord(ix[i]);
             return words;
         }
 
@@ -49,7 +49,7 @@ namespace FixMyCrypto {
 
         public static string ToPhrase(short[] ix) {
             string[] words = new string[ix.Length];
-            for (int i = 0; i < ix.Length; i++) words[i] = PhraseProducer.GetWord(ix[i]);
+            for (int i = 0; i < ix.Length; i++) words[i] = Wordlists.GetWord(ix[i]);
             return String.Join(' ', words);
         }
 
@@ -89,7 +89,7 @@ namespace FixMyCrypto {
             int invalid = 0;
 
             foreach (string word in split) {
-                if (!PhraseProducer.originalWordlist.Contains(word)) invalid++;
+                if (!Wordlists.OriginalWordlist.Contains(word)) invalid++;
             }
 
             if (invalid > 4) throw new Exception("Phrase has too many missing or non-BIP39 words");

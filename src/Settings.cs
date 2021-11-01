@@ -7,38 +7,38 @@ using Newtonsoft.Json;
 namespace FixMyCrypto {
     class Settings {
 
-        public static int[] indices, accounts;
-        public static string phrase { get { return result.phrase; } }
+        public static int[] Indices, Accounts;
+        public static string Phrase { get { return result.phrase; } }
 
-        public static string passphrase { get { if (result.passphrase != null) return (string)result.passphrase.Value; else return null; } }
+        public static string Passphrase { get { if (result.passphrase != null) return (string)result.passphrase.Value; else return null; } }
 
-        public static string[] knownAddresses { get { return result.knownAddresses.ToObject<string[]>(); } }
+        public static string[] KnownAddresses { get { return result.knownAddresses.ToObject<string[]>(); } }
 
-        public static CoinType coinType { get { return GetCoinType(result.coin.Value); } }
+        public static CoinType CoinType { get { return GetCoinType(result.coin.Value); } }
 
-        public static string adaApi {get { return result.adaApi; } }
+        public static string AdaApi {get { return result.adaApi; } }
         
-        public static AdaApiType adaApiType { get { return (AdaApiType)Enum.Parse(typeof(AdaApiType), result.adaApiType.Value, true); } }
+        public static AdaApiType AdaApiType { get { return (AdaApiType)Enum.Parse(typeof(AdaApiType), result.adaApiType.Value, true); } }
 
-        public static string ethApi {get { return result.ethApi; } }
+        public static string EthApi {get { return result.ethApi; } }
 
-        public static EthApiType ethApiType { get { return (EthApiType)Enum.Parse(typeof(EthApiType), result.ethApiType.Value, true); } }
+        public static EthApiType EthApiType { get { return (EthApiType)Enum.Parse(typeof(EthApiType), result.ethApiType.Value, true); } }
 
-        public static string btcApi {get { return result.btcApi; } }
+        public static string BtcApi {get { return result.btcApi; } }
 
-        public static BtcApiType btcApiType { get { return (BtcApiType)Enum.Parse(typeof(BtcApiType), result.btcApiType.Value, true); } }
+        public static BtcApiType BtcApiType { get { return (BtcApiType)Enum.Parse(typeof(BtcApiType), result.btcApiType.Value, true); } }
 
-        public static string[] paths {get { if (result.paths == null) return null; return result.paths.ToObject<string[]>(); } }
+        public static string[] Paths {get { if (result.paths == null) return null; return result.paths.ToObject<string[]>(); } }
 
-        public static string altcoinApi {get { return result.altcoinApi; } }
+        public static string AltcoinApi {get { return result.altcoinApi; } }
 
-        public static AltcoinApiType altcoinApiType { get { return (AltcoinApiType)Enum.Parse(typeof(AltcoinApiType), result.altcoinApiType.Value, true); } }
+        public static AltcoinApiType AltcoinApiType { get { return (AltcoinApiType)Enum.Parse(typeof(AltcoinApiType), result.altcoinApiType.Value, true); } }
 
-        public static int threads {get { if (result.threads != null) return (int)result.threads.Value; else return Environment.ProcessorCount; } }
+        public static int Threads {get { if (result.threads != null) return (int)result.threads.Value; else return Environment.ProcessorCount; } }
 
-        public static double wordDistance {get { if (result.wordDistance != null) return (double)result.wordDistance.Value; else return 2.0; } }
+        public static double WordDistance {get { if (result.wordDistance != null) return (double)result.wordDistance.Value; else return 2.0; } }
 
-        public static int difficulty {get { if (result.difficulty != null) return (int)result.difficulty.Value; else return 0; } }
+        public static int Difficulty {get { if (result.difficulty != null) return (int)result.difficulty.Value; else return 0; } }
 
         public static LogLevel logLevel {get { if (result.logLevel != null) return (LogLevel)Enum.Parse(typeof(LogLevel), result.logLevel.Value.ToString(), true); else return LogLevel.Info; } }
 
@@ -47,19 +47,19 @@ namespace FixMyCrypto {
                 case CoinType.ADA:
                 case CoinType.ADALedger:
                 case CoinType.ADATrezor:
-                return Settings.adaApi;
+                return Settings.AdaApi;
 
                 case CoinType.BTC:
-                return Settings.btcApi;
+                return Settings.BtcApi;
 
                 case CoinType.ETH:
-                return Settings.ethApi;
+                return Settings.EthApi;
 
                 case CoinType.DOGE:
                 case CoinType.LTC:
                 case CoinType.BCH:
                 case CoinType.XRP:
-                return Settings.altcoinApi;
+                return Settings.AltcoinApi;
 
                 case CoinType.SOL:
                 case CoinType.ALGO:
@@ -80,8 +80,8 @@ namespace FixMyCrypto {
                 result.knownAddresses = null;
             }
 
-            indices = ParseRanges((string)result.indices);
-            accounts = ParseRanges((string)result.accounts);
+            Indices = ParseRanges((string)result.indices);
+            Accounts = ParseRanges((string)result.accounts);
         }
 
         public static CoinType GetCoinType(string str) {

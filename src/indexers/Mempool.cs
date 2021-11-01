@@ -13,9 +13,9 @@ namespace FixMyCrypto {
         public override async Task<List<string>> GetTransactions(string address) {
             List<string> tx = new List<string>();
 
-            if (Settings.btcApiType != BtcApiType.mempool) throw new Exception("not implemented");
+            if (Settings.BtcApiType != BtcApiType.mempool) throw new Exception("not implemented");
 
-            string query = Settings.btcApi + $"/api/address/{address}/txs"; 
+            string query = Settings.BtcApi + $"/api/address/{address}/txs"; 
             // Log.Debug($"query: {query}");
 
             string response = "";
@@ -42,11 +42,11 @@ namespace FixMyCrypto {
         }
         public override async Task<LookupResult> GetContentsAsync(string address) {
             string query;
-            if (Settings.btcApiType == BtcApiType.blockcypher) {
-                query = Settings.btcApi + $"/v1/btc/main/addrs/{address}/balance";
+            if (Settings.BtcApiType == BtcApiType.blockcypher) {
+                query = Settings.BtcApi + $"/v1/btc/main/addrs/{address}/balance";
             }
-            else if (Settings.btcApiType == BtcApiType.mempool) {
-                query = Settings.btcApi + $"/api/address/{address}";
+            else if (Settings.BtcApiType == BtcApiType.mempool) {
+                query = Settings.BtcApi + $"/api/address/{address}";
             }
             else {
                 throw new Exception("unsupported Bitcoin API type");
@@ -63,11 +63,11 @@ namespace FixMyCrypto {
                 dynamic stuff = JsonConvert.DeserializeObject(response);
                 //Log.Debug($"reponse: {response}\nstuff: {stuff}");
 
-                if (Settings.btcApiType == BtcApiType.blockcypher) {
+                if (Settings.BtcApiType == BtcApiType.blockcypher) {
                     txCount = (int)stuff.n_tx.Value;
                     coins = (long)stuff.balance.Value / 100000000.0;
                 }
-                else if (Settings.btcApiType == BtcApiType.mempool) {
+                else if (Settings.BtcApiType == BtcApiType.mempool) {
                     txCount = (int)stuff.chain_stats.tx_count.Value;
                     coins = (long)stuff.chain_stats.funded_txo_sum.Value / 100000000.0;
                 }

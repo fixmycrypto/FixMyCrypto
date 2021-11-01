@@ -59,7 +59,7 @@ namespace FixMyCrypto {
             this.threadMax = threadMax;
             this.mutex = new object();
 
-            this.passphrases = new Passphrase(Settings.passphrase);
+            this.passphrases = new Passphrase(Settings.Passphrase);
         }
         public abstract Object DeriveMasterKey(Phrase phrase, string passphrase);
         protected abstract Object DeriveChildKey(Object parentKey, uint index);
@@ -75,19 +75,19 @@ namespace FixMyCrypto {
 
         protected virtual string GetStakePath() { return null; }
         private void DeriveChildKeys(PathNode node) {
-            node.key = DeriveChildKey(node.parent.key, node.value);
+            node.Key = DeriveChildKey(node.Parent.Key, node.Value);
 
-            foreach (PathNode child in node.children) {
+            foreach (PathNode child in node.Children) {
                 DeriveChildKeys(child);
             }
         }
 
         private void DeriveAddresses(PathNode node, List<Address> addresses) {
-            if (node.end) {
+            if (node.End) {
                 addresses.Add(DeriveAddress(node));
             }
 
-            foreach (PathNode child in node.children) {
+            foreach (PathNode child in node.Children) {
                 DeriveAddresses(child, addresses);
             }
         }
@@ -99,9 +99,9 @@ namespace FixMyCrypto {
         public List<Address> GetAddresses(Phrase phrase, string passphrase, string[] paths, int[] accounts, int[] indices) {
             //  Create default path list if needed
             if (paths == null || paths.Length == 0 || (paths.Length == 1 && String.IsNullOrEmpty(paths[0]))) {
-                lock (mutex) {
-                    if (defaultPaths == null) {
-                        defaultPaths = GetDefaultPaths(Settings.knownAddresses);
+                if (defaultPaths == null) {
+                    lock (mutex) {
+                        defaultPaths = GetDefaultPaths(Settings.KnownAddresses);
                     }
                 }
 
@@ -109,8 +109,8 @@ namespace FixMyCrypto {
             }
 
             //  Create path tree if needed
-            lock (mutex) {
-                if (tree == null) {
+            if (tree == null) {
+                lock (mutex) {
                     tree = new PathTree();
 
                     foreach (string path in paths) {
@@ -149,15 +149,15 @@ namespace FixMyCrypto {
 
             //  Derive descendent keys
 
-            tree.root.key = DeriveMasterKey(phrase, passphrase);
+            tree.Root.Key = DeriveMasterKey(phrase, passphrase);
 
-            foreach (PathNode child in tree.root.children) {
+            foreach (PathNode child in tree.Root.Children) {
                 DeriveChildKeys(child);
             }
 
             List<Address> addresses = new List<Address>();
 
-            DeriveAddresses(tree.root, addresses);
+            DeriveAddresses(tree.Root, addresses);
 
             foreach (Address address in addresses) {
                 address.phrase = phrase;
@@ -174,7 +174,7 @@ namespace FixMyCrypto {
         }
         public abstract CoinType GetCoinType();
         public void Finish() {
-            Global.done = true;
+            Global.Done = true;
             lock(phraseQueue) { Monitor.PulseAll(phraseQueue); }
             lock(addressQueue) { Monitor.PulseAll(addressQueue); }
         }
@@ -183,7 +183,7 @@ namespace FixMyCrypto {
             Stopwatch stopWatch = new Stopwatch();
             Log.Debug("P2A" + threadNum + " start");
 
-            while (!Global.done) {
+            while (!Global.Done) {
 
                 Work w = null;
 
@@ -192,7 +192,7 @@ namespace FixMyCrypto {
                 lock(phraseQueue) {
                     queueWaitTime.Start();
                     while (phraseQueue.Count == 0) {
-                        if (Global.done) break;
+                        if (Global.Done) break;
                         //Log.Debug("P2A thread " + threadNum + " waiting for work");
                         Monitor.Wait(phraseQueue);
                     }
@@ -212,14 +212,14 @@ namespace FixMyCrypto {
                         List<Address> addresses = null;
                         try {
                             stopWatch.Start();
-                            if (Settings.knownAddresses != null && Settings.knownAddresses.Length > 0) {
+                            if (Settings.KnownAddresses != null && Settings.KnownAddresses.Length > 0) {
                                 //  Try to generate the known address
-                                addresses = GetAddresses(w.phrase, passphrase, Settings.paths, Settings.accounts, Settings.indices);
+                                addresses = GetAddresses(w.phrase, passphrase, Settings.Paths, Settings.Accounts, Settings.Indices);
                                 count++;
                             } 
                             else {
                                 //  Generate address for account 0 index 0
-                                addresses = GetAddresses(w.phrase, passphrase, 0, 0, Settings.paths);
+                                addresses = GetAddresses(w.phrase, passphrase, 0, 0, Settings.Paths);
                                 count++;
                             }
                         }
@@ -232,10 +232,10 @@ namespace FixMyCrypto {
 
                         if (addresses == null) continue;
 
-                        if (Settings.knownAddresses != null && Settings.knownAddresses.Length > 0) {
+                        if (Settings.KnownAddresses != null && Settings.KnownAddresses.Length > 0) {
                             //  See if we generated the known address
                             foreach (Address address in addresses) {
-                                foreach (string knownAddress in Settings.knownAddresses) {
+                                foreach (string knownAddress in Settings.KnownAddresses) {
                                     if (address.address.Equals(knownAddress, StringComparison.OrdinalIgnoreCase)) {
                                         //  Found known address
                                         Finish();
@@ -254,8 +254,8 @@ namespace FixMyCrypto {
 
                             lock (addressQueue) {
                                 queueWaitTime.Start();
-                                while (addressQueue.Count > Settings.threads) {
-                                    if (Global.done) break;
+                                while (addressQueue.Count > Settings.Threads) {
+                                    if (Global.Done) break;
                                     //Log.Debug("P2A thread " + threadNum + " waiting on full address queue");
                                     Monitor.Wait(addressQueue);
                                 }

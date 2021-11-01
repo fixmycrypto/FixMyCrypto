@@ -167,7 +167,7 @@ namespace FixMyCrypto {
             return key.Derive(index);
         }
         protected override Address DeriveAddress(PathNode node) {
-            ExtKey pk = (ExtKey)node.key;
+            ExtKey pk = (ExtKey)node.Key;
             string path = node.GetPath();
             string address = pk.GetPublicKey().GetAddress(GetKeyType(path), this.network).ToString();
             return new Address(address, path);

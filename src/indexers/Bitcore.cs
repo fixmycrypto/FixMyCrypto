@@ -14,9 +14,9 @@ namespace FixMyCrypto {
         public override async Task<List<string>> GetTransactions(string address) {
             List<string> tx = new List<string>();
 
-            if (Settings.altcoinApiType != AltcoinApiType.bitcore) throw new Exception("not implemented");
+            if (Settings.AltcoinApiType != AltcoinApiType.bitcore) throw new Exception("not implemented");
 
-            string query = Settings.altcoinApi + $"/api/{this.coinType}/mainnet/address/{address}/txs"; 
+            string query = Settings.AltcoinApi + $"/api/{this.coinType}/mainnet/address/{address}/txs"; 
             // Log.Debug($"query: {query}");
 
             string response = "";
@@ -44,13 +44,13 @@ namespace FixMyCrypto {
         }
         public override async Task<LookupResult> GetContentsAsync(string address) {
             string query, query2 = null;
-            if (Settings.altcoinApiType == AltcoinApiType.dogechain) {
-                query = Settings.altcoinApi + $"/chain/Dogecoin/q/addressbalance/{address}";
+            if (Settings.AltcoinApiType == AltcoinApiType.dogechain) {
+                query = Settings.AltcoinApi + $"/chain/Dogecoin/q/addressbalance/{address}";
             }
-            else if (Settings.altcoinApiType == AltcoinApiType.bitcore) {
-                query = Settings.altcoinApi + $"/api/{this.coinType}/mainnet/address/{address}/balance";
+            else if (Settings.AltcoinApiType == AltcoinApiType.bitcore) {
+                query = Settings.AltcoinApi + $"/api/{this.coinType}/mainnet/address/{address}/balance";
 
-                query2 = Settings.altcoinApi + $"/api/{this.coinType}/mainnet/address/{address}/txs";
+                query2 = Settings.AltcoinApi + $"/api/{this.coinType}/mainnet/address/{address}/txs";
             }
             else {
                 throw new Exception("unsupported Altcoin API type");
@@ -67,10 +67,10 @@ namespace FixMyCrypto {
                 if (!String.IsNullOrEmpty(query2)) response2 = await WebClient.client.GetStringAsync(query2);
                 // Log.Debug($"response: {response2}");
 
-                if (Settings.altcoinApiType == AltcoinApiType.dogechain) {
+                if (Settings.AltcoinApiType == AltcoinApiType.dogechain) {
                     coins = Double.Parse(response);
                 }
-                else if (Settings.altcoinApiType == AltcoinApiType.bitcore) {
+                else if (Settings.AltcoinApiType == AltcoinApiType.bitcore) {
                     dynamic stuff = JsonConvert.DeserializeObject(response);
                     //Log.Debug($"response: {response}\nstuff: {stuff}");
 

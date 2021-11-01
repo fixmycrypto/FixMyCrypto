@@ -37,13 +37,13 @@ namespace FixMyCrypto {
             return key.GetPublicKey(false);
         }
         protected override Address DeriveAddress(PathNode node) {
-            var pub = GetPublicKey(node.key);
+            var pub = GetPublicKey(node.Key);
 
             //  Stake key is path with last 2 sections replaced by /2/0
 
-            PathNode stakeNode = node.parent.parent.GetChild(2U).GetChild(0U);
+            PathNode stakeNode = node.Parent.Parent.GetChild(2U).GetChild(0U);
 
-            var stakePub = GetPublicKey(stakeNode.key);
+            var stakePub = GetPublicKey(stakeNode.Key);
 
             var baseAddr = this.addressService.GetAddress(
                 pub, 

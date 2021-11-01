@@ -71,7 +71,7 @@ namespace FixMyCrypto {
         }
         public abstract Task<List<string>> GetTransactions(string address);
         public void Finish() {
-            Global.done = true;
+            Global.Done = true;
             lock(queue) { Monitor.PulseAll(queue); }
         }
         public void Consume() {
@@ -79,14 +79,14 @@ namespace FixMyCrypto {
             int count = 0;
             Stopwatch stopWatch = new Stopwatch();
 
-            while (!Global.done) {
+            while (!Global.Done) {
 
                 Work w = null;
 
                 lock(queue) {
                     queueWaitTime.Start();
                     while (queue.Count == 0) {
-                        if (Global.done) break;
+                        if (Global.Done) break;
                         //Log.Debug("LA thread " + threadNum + " waiting for work");
                         Monitor.Wait(queue);
                     }

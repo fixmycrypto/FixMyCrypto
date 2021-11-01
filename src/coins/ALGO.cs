@@ -50,7 +50,7 @@ namespace FixMyCrypto {
             return parentKey;
         }
         protected override Address DeriveAddress(PathNode node) {
-            Key key = (Key)node.key;
+            Key key = (Key)node.Key;
 
             byte[] pub = Chaos.NaCl.Ed25519.PublicKeyFromSeed(key.data);
 
