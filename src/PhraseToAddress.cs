@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Text;
+using System.Security.Cryptography;
 
 namespace FixMyCrypto {
     abstract class PhraseToAddress {
@@ -275,6 +276,25 @@ namespace FixMyCrypto {
         }
 
         protected static byte[] ed25519_seed = Encoding.ASCII.GetBytes("ed25519 seed");
+
+        protected static byte[] TweakBits(byte[] data) {
+            // * clear the lowest 3 bits
+            // * clear the highest bit
+            // * set the highest 2nd bit
+            data[0]  &= 0b1111_1000;
+            data[31] &= 0b0111_1111;
+            data[31] |= 0b0100_0000;
+
+            return data;         
+        }
+        protected byte[] HashRepeatedly(byte[] message) {
+            using HMACSHA512 HMAC512 = new HMACSHA512(ed25519_seed);
+            var iLiR = HMAC512.ComputeHash(message);
+            if ((iLiR[31] & 0b0010_0000) != 0) {
+                return HashRepeatedly(iLiR);
+            }
+            return iLiR;
+        }
 
         public class Key {
             public byte[] data;

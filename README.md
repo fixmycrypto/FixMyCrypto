@@ -16,9 +16,9 @@
     * ETH (+ forks e.g. ETC)
     * LTC
     * DOGE
-    * ADA (Cardano) - including special mode for recovering hardware Ledger/Trezor wallets
+    * ADA (Cardano) - including special mode for recovering Ledger/Trezor hardware wallets
     * SOL
-    * ALGO
+    * ALGO - including Ledger hardware wallets
 * Smart typo detection drastically reduces the search time
     * Words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
 * Simultaneous search of multiple derivation paths (including non-standard paths)
@@ -58,7 +58,7 @@ See BUILD.md
 
 ### Required
 
-Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`, `LTC`, `SOL`, `ALGO`, etc.). (For ADA used with a Ledger or Trezor hardware wallet, see "Cardano special use cases" below.)
+Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`, `LTC`, `SOL`, `ALGO`, etc.). (For ADA used with a Ledger or Trezor hardware wallet, see the relevant "special use cases" section below.)
 
     "coin": "BTC",
 
@@ -240,11 +240,23 @@ Use "ETH" for the coin type, and use one or more of the following paths:
 
 See https://medium.com/myetherwallet/hd-wallets-and-derivation-paths-explained-865a643c7bf2 for other possible paths used by ETC and other ETH-derived coins. You can search multiple paths at the same time if you aren't sure which one to use.
 
-## Cardano special use cases:
+## Cardano (ADA) special use cases:
 
 Ledger & Trezor hardware wallets use unique methods to convert your recovery phrase into a master private key, which is not compatible with the official Cardano key spec used by software wallets like Daedalus, Yoroi, and Adalite. This means the same recovery phrase will create a different wallet (different addresses) depending on whether you use the phrase on a Ledger, Trezor, or software wallet. If you used a Ledger or Trezor wallet for Cardano and need to recover it, use the coin type `ADATrezor` or `ADALedger` to recover your address, otherwise the addresses won't match and recovery won't be possible.
 
     "coin": "ADALedger",
+
+## Algorand (ALGO) special use cases:
+
+`My Algo` software wallet for Algorand uses a 25 word phrase (not including a passphrase) and the derivation path `"m"`.
+
+Ledger hardware wallets use a 12-24 word phrase (plus optional passphrase), and the derivation path for ALGO must be specified as `"m/44'/283'/{account}'/0/{index}"`:
+
+    "paths": [
+        "m/44'/283'/{account}'/0/{index}"
+    ],
+
+Other wallet software may use different phrases or paths.
 
 ## Other settings:
 

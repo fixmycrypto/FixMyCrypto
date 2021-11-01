@@ -53,17 +53,6 @@ namespace FixMyCrypto {
 
             return new Address(baseAddr.ToString(), node.GetPath());
         }
-        protected static byte[] TweakBits(byte[] data) {
-            // * clear the lowest 3 bits
-            // * clear the highest bit
-            // * set the highest 2nd bit
-            data[0]  &= 0b1111_1000;
-            data[31] &= 0b0111_1111;
-            data[31] |= 0b0100_0000;
-
-            return data;         
-        }
-
         public CardanoSharp.Wallet.Models.Keys.Mnemonic Restore(Phrase phrase, bool includeChecksum = false) {
             byte[] entropy = phrase.Indices.ElevenToEight(includeChecksum);
 
@@ -102,15 +91,6 @@ namespace FixMyCrypto {
             HMAC256 = new HMACSHA256(ed25519_seed);
         }
         public override CoinType GetCoinType() { return CoinType.ADALedger; }
-        protected byte[] HashRepeatedly(byte[] message) {
-            HMAC512.Initialize();
-            var iLiR = HMAC512.ComputeHash(message);
-            if ((iLiR[31] & 0b0010_0000) != 0) {
-                return HashRepeatedly(iLiR);
-            }
-            return iLiR;
-        }
-
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
             //  https://github.com/LedgerHQ/speculos/blob/c0311aef48412e40741a55f113939469da78e8e5/src/bolos/os_bip32.c#L123
 
