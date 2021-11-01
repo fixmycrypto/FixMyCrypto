@@ -125,6 +125,10 @@ namespace FixMyCrypto {
                 addressLookupCount = 0;
             }
 
+            //  Initialize word lists
+            string[] phraseArray = Settings.phrase.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+            Wordlists.Initialize(phraseArray);
+
             System.Timers.Timer timer = new System.Timers.Timer(30 * 1000);
             timer.Elapsed += (StringReader, args) => { 
                 if (phraseQueue.Count > 0 || addressQueue.Count > 0) Log.Debug($"Queue status: phrases {phraseQueue.Count} addresses {addressQueue.Count}");
@@ -171,7 +175,7 @@ namespace FixMyCrypto {
             PhraseProducer[] phrasers = new PhraseProducer[phraseProducerCount];
             List<Thread> phraseThreads = new List<Thread>();
             for (int i = 0; i < phraseProducerCount; i++) {
-                phrasers[i] = new PhraseProducer(phraseQueue, i, phraseProducerCount, Settings.phrase.Split(" ", StringSplitOptions.RemoveEmptyEntries));
+                phrasers[i] = new PhraseProducer(phraseQueue, i, phraseProducerCount, phraseArray);
 
                 Thread thread = new Thread (phrasers[i].ProduceWork);
                 thread.Name = "PP" + i;

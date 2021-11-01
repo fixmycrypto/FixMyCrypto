@@ -13,26 +13,7 @@ namespace FixMyCrypto {
         int threadNum, threadMax, internalThreads;
         int valid = 0, invalid = 0, dupes = 0;
         string[] phrase;
-        public static IList<string> originalWordlist = Wordlist.English.GetWords();
 
-        //  Array of word strings, indexed by word index
-        public static string[] wordArray = null;
-
-        //  Dictionary of word strings (including invalid words) and their indices
-        public static Dictionary<string, short> wordlist = null;
-
-        //  Lists of word indices by their starting letter a-z
-        static IList<short>[] wordListByLetter = null;
-
-        //  2d Array of word indices and their distances to other words
-        static double[][] wordDistances = null;
-
-        //  Array (indcies) of List of word indices that are within the specified max edit distance
-        static List<short>[] wordsByMaxDistance = null;
-
-        //  Arrays (by indices) of all word indices, sorted by thier distances
-        static short[][] sortedWords = null;
-        static Object mutex = new Object();
         enum SwapMode {
             SameLetter,
             Similar,
@@ -41,210 +22,14 @@ namespace FixMyCrypto {
         private ParallelOptions parallelOptions;
         Stopwatch queueWaitTime = new Stopwatch();
 
-        private static List<short> GetWordsSortedByMaxDistance(short word, double maxDistance) {
-            List<(short,double)> words = new List<(short,double)>();
-
-            for (short i = 0; i < wordDistances[word].Length; i++) {
-                if (word == i) continue;
-                if (wordDistances[word][i] <= maxDistance) {
-                    words.Add((i, wordDistances[word][i]));
-                }
-            }
-
-            words.Sort((a, b) => a.Item2.CompareTo(b.Item2));
-
-            return words.Select(a => a.Item1).ToList();
-        }
-        public static short GetWordIndex(string word) {
-            return wordlist[word];
-        }
-
-        public static string GetWord(short index) {
-           return wordArray[index];
-        }
         public PhraseProducer(ConcurrentQueue<Work> queue, int threadNum, int threadMax, string[] phrase) {
             this.queue = queue;
             this.threadNum = threadNum;
             this.threadMax = threadMax;
             this.phrase = phrase;
             this.internalThreads = Settings.threads / 4;
-
-            lock(mutex) {
-
-                if (wordlist == null) {
-                    wordlist = new Dictionary<string, short>();
-                    for (short i = 0; i < originalWordlist.Count; i++) {
-                        wordlist[originalWordlist[i]] = i;
-                    }
-                }
-
-                if (wordArray == null) {
-                    wordArray = originalWordlist.ToArray();
-                }
-
-                if (this.phrase == null) return;
-
-                Log.Debug($"PP{threadNum} Generating word tables...");
-
-                int originalWordCount = originalWordlist.Count;
-                int allWordCount = originalWordCount;
-                List<string> invalidWords = new List<string>();
-                foreach (string word in this.phrase) {
-                    if (!originalWordlist.Contains(word) && !invalidWords.Contains(word)) {
-                        invalidWords.Add(word);
-                    }
-                }
-                allWordCount += invalidWords.Count;
-
-                //  Create word lists per letter
-                if (wordListByLetter == null) {
-                    wordListByLetter = new List<short>[26];
-                    for (char l = 'a'; l <= 'z'; l++) {
-                        wordListByLetter[l - 'a'] = new List<short>();
-                    }
-                    foreach (string word in wordArray) {
-                        wordListByLetter[word[0] - 'a'].Add(GetWordIndex(word));
-                    }
-
-                    //  Debug
-                    /*
-                    for (char letter = 'a'; letter <= 'z'; letter++) {
-                        IList<short> words = wordListByLetter[letter - 'a'];
-                        string w = "";
-                        foreach (short word in words) {
-                            w += $" {wordArray[word]}";
-                        }
-                        Log.Debug($"Letter {letter}:{w}");
-                    }
-                    */
-                }
-
-                //  Array of distances from each word index to each word index
-                if (wordDistances == null) {
-                    wordDistances = new double[allWordCount][];
-
-                    Parallel.ForEach(wordlist.Values, word => {
-                        wordDistances[word] = new double[originalWordCount];
-
-                        foreach (short w2 in wordlist.Values) {
-                            if (word == w2) {
-                                wordDistances[word][w2] = 0;
-                                continue;
-                            }
-
-                            wordDistances[word][w2] = KeyboardDistance.GetKeyboardWeightedDamerauLevenshteinDistance(wordArray[word], wordArray[w2]);
-                        }
-                    });
-
-                    // Also need distances from invalid words to valid words
-                    foreach (string word in this.phrase) {
-                        if (!wordlist.ContainsKey(word)) {
-                            short wordIndex = (short)wordlist.Count;
-                            wordlist[word] = wordIndex;
-                            Array.Resize(ref wordArray, wordArray.Length + 1);
-                            wordArray[wordIndex] = word;
-
-                            wordDistances[wordIndex] = new double[originalWordCount];
-
-                            foreach (string w2 in originalWordlist) {
-                                if (word == w2) {
-                                    wordDistances[wordIndex][wordlist[w2]] = 0;
-                                    continue;
-                                }
-                                wordDistances[wordIndex][wordlist[w2]] = KeyboardDistance.GetKeyboardWeightedDamerauLevenshteinDistance(word, w2);
-                            }
-                        }
-                    }
-                }
-
-                Rhymes rhymes = new Rhymes();
-
-                //  Create list of closest words by max distance
-                if (wordsByMaxDistance == null) {
-                    wordsByMaxDistance = new List<short>[allWordCount];
-
-                    Parallel.ForEach(wordlist.Values, word => {
-                    // foreach (var word in wordlist.Values) {
-                        wordsByMaxDistance[word] = GetWordsSortedByMaxDistance(word, Settings.wordDistance);
-
-                        //  Add rhymes / sounds like from table
-
-                        List<string> soundsLike = rhymes.GetWords(wordArray[word]);
-
-                        foreach (string w in soundsLike) {
-                            short ix = wordlist[w];
-                            if (!wordsByMaxDistance[word].Contains(ix)) wordsByMaxDistance[word].Add(ix);
-                        }
-                    });
-                    // }
-
-                    //  debug
-                    
-                    int total = 0;
-                    for (int i = 0; i < wordsByMaxDistance.Length; i++) {
-                        
-                        List<short> l = wordsByMaxDistance[i];
-                        if (l.Count == 0) continue;
-                        string words = "";
-                        foreach (short w2 in l) {
-                            words += " " + wordArray[w2] + $"({wordDistances[i][w2]:F2})";
-                            total++;
-                        }
-                        if (this.phrase.Contains(wordArray[i])) Log.Debug($"{wordArray[i]}:{words}");
-                    }
-                    Log.Debug($"Average # of similar words: {(double)total/wordsByMaxDistance.Length:F1}");
-                    
-                }
-
-                //  Create arrays of word indices sorted by their distances 
-                if (sortedWords == null) {
-                    sortedWords = new short[wordDistances.Length][];
-
-                    Parallel.For(0, wordDistances.Length, wordIndex => {
-                        sortedWords[wordIndex] = SortAndIndex<double>(wordDistances[wordIndex]);
-
-                        //  Don't include the original word itself in the list
-                        if (sortedWords[wordIndex][0] == wordIndex) sortedWords[wordIndex] = sortedWords[wordIndex].Slice(1);
-
-                        try {
-                            if (originalWordlist.Contains(wordArray[wordIndex])) {
-                                //  for words in wordlist, sorted list should contain count - 1
-                                if (sortedWords[wordIndex].Length != originalWordlist.Count - 1) throw new Exception($"{sortedWords[wordIndex].Length} != {originalWordlist.Count - 1}");
-                            }
-                            else {
-                                //  for words not in wordlist, sorted list should contain count
-                                if (sortedWords[wordIndex].Length != originalWordlist.Count) throw new Exception($"{sortedWords[wordIndex].Length} != {originalWordlist.Count}");
-                            }
-                        }
-                        catch (Exception) {
-                            //  debug
-                            string words = "";
-                            for (short j = 0; j < sortedWords[wordIndex].Length; j++) words += $" {wordArray[sortedWords[wordIndex][j]]}";
-                            Log.Debug($"{wordArray[wordIndex]}:{words}");
-
-                            throw;
-                        }
-                    });
-                }
-            }
         }
         
-        //  https://stackoverflow.com/a/46068115
-        /// sort array 'rg', returning the original index positions
-        static short[] SortAndIndex<T>(T[] rg)
-        {
-            short i; 
-            int c = rg.Length;
-            var keys = new short[c];
-            if (c > 1)
-            {
-                for (i = 0; i < c; i++)
-                    keys[i] = i;
-
-                System.Array.Sort(rg, keys /*, ... */);
-            }
-            return keys;
-        }
         public void Finish() {
             Global.done = true;
             lock(queue) { Monitor.PulseAll(queue); }
@@ -402,25 +187,25 @@ namespace FixMyCrypto {
             return new Range(start, end);           
         }
         private IList<short> GetReplacementWords(short word, SwapMode swapMode) {
-            if (wordArray[word] == "*" || wordArray[word] == "?") {
-                return sortedWords[word];
+            if (Wordlists.WordArray[word] == "*" || Wordlists.WordArray[word] == "?") {
+                return Wordlists.SortedWords[word];
             }
 
             IList<short> words;
 
             switch (swapMode) {
                 case SwapMode.Similar:
-                words = wordsByMaxDistance[word];
+                words = Wordlists.WordsByMaxDistance[word];
                 break;
 
                 case SwapMode.AnyLetter:
-                words = sortedWords[word];
+                words = Wordlists.SortedWords[word];
                 break;
 
                 case SwapMode.SameLetter:
                 default:
-                char letter = wordArray[word][0];
-                words = wordListByLetter[letter-'a'];
+                char letter = Wordlists.WordArray[word][0];
+                words = Wordlists.WordListByLetter[letter-'a'];
                 break;
             }
 
@@ -634,7 +419,7 @@ namespace FixMyCrypto {
             ParallelOptions po = new ParallelOptions();
             po.MaxDegreeOfParallelism = threads;
 
-            Parallel.For(0, originalWordlist.Count, po, word => {
+            Parallel.For(0, Wordlists.OriginalWordlist.Count, po, word => {
                 if (Global.done) return;
                 for (int i = 0; i <= phrase.Length; i++) {
                     if (Global.done) return;
@@ -667,7 +452,7 @@ namespace FixMyCrypto {
             for (int i = 0; i < phrase.Length; i++) {
                 if (Global.done) return;
 
-                if (phrase[i] < originalWordlist.Count) continue;
+                if (phrase[i] < Wordlists.OriginalWordlist.Count) continue;
 
                 IList<short> words = GetReplacementWords(phrase[i], mode);
 
@@ -851,7 +636,7 @@ namespace FixMyCrypto {
                 if (word == "?") {
                     missingWords++;
                 }
-                else if (!originalWordlist.Contains(word)) {
+                else if (!Wordlists.OriginalWordlist.Contains(word)) {
                     wrongWords++;
                     Log.Debug($"invalid word {wrongWords}: {word}");
                 }

@@ -230,7 +230,7 @@ namespace FixMyCrypto {
         }
         public static void Run(int count, string opts) {
             //  Needed to init word lists
-            PhraseProducer pp = new PhraseProducer(null, 0, 0, null);
+            Wordlists.Initialize(null);
 
             //  Test passphrase expansion
             TestPassphrase("Passphrase!", "Passphrase!", 1);
