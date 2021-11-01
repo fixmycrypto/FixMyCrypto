@@ -161,7 +161,7 @@ namespace FixMyCrypto {
 
                 Parallel.ForEach(Wordlist.Values, word => {
                 // foreach (var word in wordlist.Values) {
-                    WordsByMaxDistance[word] = GetWordsSortedByMaxDistance(word, Settings.wordDistance);
+                    WordsByMaxDistance[word] = GetWordsSortedByMaxDistance(word, Settings.WordDistance);
 
                     //  Add rhymes / sounds like from table
 

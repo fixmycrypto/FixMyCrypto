@@ -117,19 +117,19 @@ namespace FixMyCrypto {
         }
     }
     public class PathTree {
-        public PathNode root;
+        public PathNode Root { get; }
         public PathTree() {
-            root = new PathNode(null, PathNode.RootIndex);
+            Root = new PathNode(null, PathNode.RootIndex);
         }
         public void AddPath(string path, bool valid = true) {
             if (path.StartsWith("m/")) {
-                root.AddPath(path.Substring(2), valid);
+                Root.AddPath(path.Substring(2), valid);
             }
             else if (path.StartsWith("m'/")) {
-                root.AddPath(path.Substring(3), valid);
+                Root.AddPath(path.Substring(3), valid);
             }
             else if (path.Equals("m")) {
-                root.end = valid;
+                Root.End = valid;
             }
             else {
                 throw new NotSupportedException();
@@ -137,24 +137,24 @@ namespace FixMyCrypto {
         }
 
         public override string ToString() {
-            return ToString(root, "", true);
+            return ToString(Root, "", true);
         }
 
         private string ToString(PathNode node, String indent, bool last) {
             string s;
-            if (node == root) {
+            if (node == Root) {
                 s = "m\n";
             }
             else {
-                s = indent + "\\ " + PathNode.GetPath(node.value);
-                if (node.end) s += " *";
+                s = indent + "\\ " + PathNode.GetPath(node.Value);
+                if (node.End) s += " *";
                 s += "\n";
             }
 
             indent += last ? "  " : "| ";
 
-            for (int i = 0; i < node.children.Count; i++) {
-                s += ToString(node.children[i], indent, i == node.children.Count - 1);
+            for (int i = 0; i < node.Children.Count; i++) {
+                s += ToString(node.Children[i], indent, i == node.Children.Count - 1);
             }
 
             return s;
@@ -163,17 +163,17 @@ namespace FixMyCrypto {
     public class PathNode {
         public static uint Hardened = 0x80000000U;
         public static uint RootIndex = 0x7fffffffU;
-        public PathNode parent;
-        public uint value;
-        public List<PathNode> children;
-        public bool end;
-        public Object key;
+        public PathNode Parent { get; }
+        public uint Value { get; }
+        public List<PathNode> Children { get; }
+        public bool End { get; set; }
+        public Object Key { get; set; }
 
         public PathNode(PathNode parent, uint prefix) {
-            this.parent = parent;
-            this.children = new List<PathNode>();
-            this.value = prefix;
-            this.end = false;
+            this.Parent = parent;
+            this.Children = new List<PathNode>();
+            this.Value = prefix;
+            this.End = false;
         }
         public static bool IsHardened(uint val) {
             return ((val & Hardened) == Hardened);
@@ -194,8 +194,8 @@ namespace FixMyCrypto {
         }
 
         public string GetPath() {
-            if (this.parent != null) {
-                return this.parent.GetPath() + "/" + GetPath(this.value);
+            if (this.Parent != null) {
+                return this.Parent.GetPath() + "/" + GetPath(this.Value);
             }
             else {
                 return "m";
@@ -213,17 +213,17 @@ namespace FixMyCrypto {
             if (!path.Contains("/")) {
                 bool found = false;
                 uint val = Parse(path);
-                foreach (PathNode child in this.children) {
-                    if (child.value == val) {
-                        child.end = valid;
+                foreach (PathNode child in this.Children) {
+                    if (child.Value == val) {
+                        child.End = valid;
                         found = true;
                         break;
                     }
                 }
                 if (!found) {
                     PathNode node = new PathNode(this, val);
-                    node.end = valid;
-                    this.children.Add(node);
+                    node.End = valid;
+                    this.Children.Add(node);
                     return;
                 }
             }
@@ -235,8 +235,8 @@ namespace FixMyCrypto {
 
                 bool found = false;
 
-                foreach (PathNode child in this.children) {
-                    if (child.value == val) {
+                foreach (PathNode child in this.Children) {
+                    if (child.Value == val) {
                         if (!String.IsNullOrEmpty(post)) child.AddPath(post, valid);
                         found = true;
                         break;
@@ -245,14 +245,14 @@ namespace FixMyCrypto {
 
                 if (!found) {
                     PathNode node = new PathNode(this, val);
-                    this.children.Add(node);
+                    this.Children.Add(node);
                     if (!String.IsNullOrEmpty(post)) node.AddPath(post, valid);
                 }
             }
         }
         public PathNode GetChild(uint val) {
-            foreach (PathNode child in this.children) {
-                if (child.value == val) return child;
+            foreach (PathNode child in this.Children) {
+                if (child.Value == val) return child;
             }
 
             return null;

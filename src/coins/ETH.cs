@@ -75,7 +75,7 @@ namespace FixMyCrypto {
             return key.Derive(index);
         }
         protected override Address DeriveAddress(PathNode node) {
-            ExtKey pk = (ExtKey)node.key;
+            ExtKey pk = (ExtKey)node.Key;
             string address = PkToAddress(pk);
             return new Address(address, node.GetPath());
         }

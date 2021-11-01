@@ -28,8 +28,8 @@ namespace FixMyCrypto {
             string response = "";
 
             try {
-                if (Settings.ethApiType == EthApiType.blockcypher) {
-                    query = Settings.ethApi + $"/v1/eth/main/addrs/{address}/balance";
+                if (Settings.EthApiType == EthApiType.blockcypher) {
+                    query = Settings.EthApi + $"/v1/eth/main/addrs/{address}/balance";
                     response = await WebClient.client.GetStringAsync(query);
                     //Log.Debug($"response: {response}");
 
@@ -39,10 +39,10 @@ namespace FixMyCrypto {
                     txCount = (int)stuff.n_tx.Value;
                     coins = (long)stuff.balance.Value / 1e18;
                 }
-                else if (Settings.ethApiType == EthApiType.gethrpc) {
+                else if (Settings.EthApiType == EthApiType.gethrpc) {
                     query = $"[{{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBalance\",\"params\":[\"{address}\", \"latest\"],\"id\":1}}, {{\"jsonrpc\":\"2.0\",\"method\":\"eth_getTransactionCount\",\"params\":[\"{address}\", \"latest\"],\"id\":2}}]";
                     var data = new StringContent(query, Encoding.UTF8, "application/json");
-                    var reply = await WebClient.client.PostAsync(Settings.ethApi, data);
+                    var reply = await WebClient.client.PostAsync(Settings.EthApi, data);
                     response = reply.Content.ReadAsStringAsync().Result;
                     //Log.Debug($"response: {response}");
 
