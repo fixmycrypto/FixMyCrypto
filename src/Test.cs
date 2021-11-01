@@ -150,14 +150,12 @@ namespace FixMyCrypto {
             sw.Stop();
             Log.Debug($"Generated {count} results in {sw.ElapsedMilliseconds}ms ({1000.0 * (double)sw.ElapsedMilliseconds/count:F4}us/attempt)");
         }
-
         public static void TestRandomPassphrase() {
-            Random rand = new Random();
-            int length = rand.Next(0, 12);
+            int length = Random.Shared.Next(0, 12);
             string expect = "";
             string pattern = "";
             for (int i = 0; i < length; i++) {
-                char c = (char)rand.Next(0x20, 0x7f);
+                char c = (char)Random.Shared.Next(0x20, 0x7f);
                 expect += c;
 
                 switch (c) {
@@ -263,7 +261,7 @@ namespace FixMyCrypto {
             TestPassphrase("(a&&b)?c", new string[] { "abc", "bac", "c" }, 3);
 
             //  fuzzing
-            for (int i = 0; i < 100000; i++) TestRandomPassphrase();
+            Parallel.For(0, 1000000, i => TestRandomPassphrase());
 
             //  should fail
             FailPassphrase("(stuff", "stuff");
