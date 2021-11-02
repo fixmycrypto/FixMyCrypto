@@ -52,6 +52,9 @@ namespace FixMyCrypto {
                 PauseAndExit(0);
             }
             
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+
             //  Ensure we have write permissions
             try {
                 if (File.Exists("results.json")) {
@@ -80,11 +83,19 @@ namespace FixMyCrypto {
 
             BlockingCollection<Work> phraseQueue = new BlockingCollection<Work>(Settings.Threads * 2);
             BlockingCollection<Work> addressQueue = new BlockingCollection<Work>(Settings.Threads * 2);
-            Stopwatch stopWatch = new Stopwatch();
 
             int phraseProducerCount = 1,
-                phraseToAddressCount = Settings.Threads / 2,
-                addressLookupCount = Settings.Threads / 2;
+                phraseToAddressCount = Math.Max(Settings.Threads / 2, 1),
+                addressLookupCount = Math.Max(Settings.Threads / 2 - 1, 1);
+
+            string api = Settings.GetApiPath(Settings.CoinType);
+            if (!String.IsNullOrEmpty(api)) {
+                Log.All($"API Server: {api}");
+            }
+            else {
+                phraseToAddressCount = Math.Max(Settings.Threads - 1, 1);
+                addressLookupCount = 0;
+            }
 
             Log.Info($"thread count {Settings.Threads} PP={phraseProducerCount} P2A={phraseToAddressCount} LA={addressLookupCount}");
             Log.All($"Coin type: {Settings.CoinType}");
@@ -115,13 +126,6 @@ namespace FixMyCrypto {
                 }
             }
             Log.All($"difficulty: {Settings.Difficulty}, wordDistance: {Settings.WordDistance}");
-            string api = Settings.GetApiPath(Settings.CoinType);
-            if (!String.IsNullOrEmpty(api)) {
-                Log.All($"API Server: {api}");
-            }
-            else {
-                addressLookupCount = 0;
-            }
 
             //  Initialize word lists
             string[] phraseArray = Settings.Phrase.Split(" ", StringSplitOptions.RemoveEmptyEntries);
@@ -132,8 +136,6 @@ namespace FixMyCrypto {
                 if (phraseQueue.Count > 0 || addressQueue.Count > 0) Log.Debug($"Queue status: phrases {phraseQueue.Count} addresses {addressQueue.Count}");
             };
             timer.Start();
-
-            stopWatch.Start();
 
             LookupAddress[] la = new LookupAddress[addressLookupCount];
             List<Thread> laThreads = new List<Thread>();
