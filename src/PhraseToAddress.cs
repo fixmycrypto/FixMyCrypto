@@ -209,6 +209,8 @@ namespace FixMyCrypto {
                 if (w != null) {
  
                     foreach (string passphrase in this.passphrases.Enumerate()) {
+                        if (Global.Done) break;
+                        
                         //  Convert phrase to address
 
                         List<Address> addresses = null;
