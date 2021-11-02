@@ -19,6 +19,7 @@
     * ADA (Cardano) - including special mode for recovering Ledger/Trezor hardware wallets
     * SOL
     * ALGO - including Ledger hardware wallets
+    * DOT (Polkadot) - currently Ledger hardware wallets only (no Polkadot.js etc.)
 * Smart typo detection drastically reduces the search time
     * Words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
 * Simultaneous search of multiple derivation paths (including non-standard paths)
@@ -58,7 +59,7 @@ See BUILD.md
 
 ### Required
 
-Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`, `LTC`, `SOL`, `ALGO`, etc.). (For ADA used with a Ledger or Trezor hardware wallet, see the relevant "special use cases" section below.)
+Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`, `LTC`, `SOL`, `ALGO`, `DOT`, etc.). (For ADA or DOT used with a Ledger or Trezor hardware wallet, see the relevant "special use cases" section below.)
 
     "coin": "BTC",
 
@@ -260,6 +261,14 @@ If you happen to know which one you need, specifying the path will speed things 
 
 Other wallet software may use different phrases or paths.
 
+## Polkadot (DOT) special use cases:
+
+Currently only Ledger hardware wallets are supported using the coin type `DOTLedger`.
+
+    "coin": "DOTLedger",
+
+Support for Polkadot.js and other Polkadot wallets is planned for a future release.
+
 ## Other settings:
 
 * `difficulty` (default 0, range 0-4) controls which algorithms (different types of word substitutions, swaps, etc.) will be tested. Leave this at default unless the program fails to find your correct phrase. If you're sure that your known addresses and paths are correct, you can try increasing the difficulty setting to 1-4. Higher settings will take MUCH longer to run.
@@ -303,6 +312,7 @@ To use blockchain search mode, leave the knownAddresses field blank. You must sp
 
 * Only English BIP39 wordlist and QWERTY keyboard layouts are currently implemented
 * BCH only supports legacy (1...) style addresses
+* DOT only supports Ledger hardware wallets (using coin DOTLedger)
 * SOL deprecated derivation path `m/501'/{account}'/0/{index}` not supported
-* SOL/ALGO blockchain search not implemented
+* SOL/ALGO/DOT blockchain search not implemented
 

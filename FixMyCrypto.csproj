@@ -7,7 +7,7 @@
     <TargetName>FixMyCrypto</TargetName>
     <AssemblyName>FixMyCrypto</AssemblyName>
     <NoWarn>NU1701</NoWarn>
-    <AssemblyVersion>1.7.4.0</AssemblyVersion>
+    <AssemblyVersion>1.8.0.0</AssemblyVersion>
   </PropertyGroup>
 
 <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
