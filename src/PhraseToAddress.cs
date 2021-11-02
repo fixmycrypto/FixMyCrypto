@@ -87,7 +87,8 @@ namespace FixMyCrypto {
 
         private void DeriveAddresses(PathNode node, List<Address> addresses) {
             if (node.End) {
-                addresses.Add(DeriveAddress(node));
+                var address = DeriveAddress(node);
+                if (address != null) addresses.Add(address);
             }
 
             foreach (PathNode child in node.Children) {

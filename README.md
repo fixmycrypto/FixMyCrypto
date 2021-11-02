@@ -66,7 +66,7 @@ Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`
 
 ### Required
 
-Enter your recovery phrase between the quotation marks. The total number of words must be the same number as the length of your original recovery phrase (12, 15, 18, or 24 for most cryptos; 25 for Algorand). 
+Enter your recovery phrase between the quotation marks. The total number of words must be the same number as the length of your original recovery phrase (12, 15, 18, or 24 words for most cryptos; 25 words for `My Algo` wallets). 
 
     "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon kiwi strawberry",
 
@@ -248,9 +248,11 @@ Ledger & Trezor hardware wallets use unique methods to convert your recovery phr
 
 ## Algorand (ALGO) special use cases:
 
-`My Algo` software wallet for Algorand uses a 25 word phrase (not including a passphrase) and the derivation path `"m"`.
+`My Algo` software wallet for Algorand uses a 25 word phrase (not including a passphrase) and the derivation path `m`.
 
-Ledger hardware wallets use a 12-24 word phrase (plus optional passphrase), and the derivation path for ALGO must be specified as `"m/44'/283'/{account}'/0/{index}"`:
+Ledger hardware wallets use a 12-24 word phrase (plus optional passphrase), and the derivation path `m/44'/283'/{account}'/0/{index}`.
+
+If you happen to know which one you need, specifying the path will speed things up a bit:
 
     "paths": [
         "m/44'/283'/{account}'/0/{index}"

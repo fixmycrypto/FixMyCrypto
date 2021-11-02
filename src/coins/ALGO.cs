@@ -18,8 +18,8 @@ namespace FixMyCrypto {
 
         public override string[] GetDefaultPaths(string[] knownAddresses) {
             string[] p =    { 
-                                "m"
-                                //  "m/44'/283'/{account}'/0/{index}"   //  Ledger
+                                "m",                                //  My Algo
+                                "m/44'/283'/{account}'/0/{index}"   //  Ledger
                             };
             return p;
         }
@@ -84,7 +84,7 @@ namespace FixMyCrypto {
         }
         protected override Object DeriveChildKey(Object parentKey, uint index) {
             var k = (Key)parentKey;
-            if (k.data.Length != 64) return parentKey;  //  for non-Ledger
+            if (k == null || k.data.Length != 64) return null;  //  for non-Ledger
 
             //  Borrowing CardanoSharp's BIP32 Derive
 
@@ -95,6 +95,7 @@ namespace FixMyCrypto {
         }
         protected override Address DeriveAddress(PathNode node) {
             Key key = (Key)node.Key;
+            if (key == null) return null;
 
             byte[] pub = Chaos.NaCl.Ed25519.PublicKeyFromSeed(key.data.Slice(0, 32));
 
