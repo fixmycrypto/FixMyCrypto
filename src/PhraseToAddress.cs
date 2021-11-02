@@ -13,6 +13,8 @@ namespace FixMyCrypto {
         string[] defaultPaths;
         PathTree tree;
         Passphrase passphrases;
+
+        private HMACSHA512 HMAC512;
         public static PhraseToAddress Create(CoinType coin, ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax) {
             switch (coin) {
                 case CoinType.ADA:
@@ -61,6 +63,7 @@ namespace FixMyCrypto {
             this.mutex = new object();
 
             this.passphrases = new Passphrase(Settings.Passphrase);
+            this.HMAC512 = new HMACSHA512(ed25519_seed);
         }
         public abstract Object DeriveMasterKey(Phrase phrase, string passphrase);
         protected abstract Object DeriveChildKey(Object parentKey, uint index);
@@ -288,7 +291,7 @@ namespace FixMyCrypto {
             return data;         
         }
         protected byte[] HashRepeatedly(byte[] message) {
-            using HMACSHA512 HMAC512 = new HMACSHA512(ed25519_seed);
+            HMAC512.Initialize();
             var iLiR = HMAC512.ComputeHash(message);
             if ((iLiR[31] & 0b0010_0000) != 0) {
                 return HashRepeatedly(iLiR);
