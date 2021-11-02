@@ -10,7 +10,7 @@ using System.Security.Cryptography;
 namespace FixMyCrypto {
     class PhraseToAddressCardano : PhraseToAddress {
         protected AddressService addressService;
-        public PhraseToAddressCardano(ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
+        public PhraseToAddressCardano(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
             this.addressService = new AddressService();
         }
         public override CoinType GetCoinType() { return CoinType.ADA; }
@@ -85,7 +85,7 @@ namespace FixMyCrypto {
 
     class PhraseToAddressCardanoLedger : PhraseToAddressCardano {
         private HMACSHA256 HMAC256;
-        public PhraseToAddressCardanoLedger(ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
+        public PhraseToAddressCardanoLedger(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
             HMAC256 = new HMACSHA256(ed25519_seed);
         }
         public override CoinType GetCoinType() { return CoinType.ADALedger; }
@@ -112,7 +112,7 @@ namespace FixMyCrypto {
         }
     }
     class PhraseToAddressCardanoTrezor : PhraseToAddressCardano {
-        public PhraseToAddressCardanoTrezor(ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
+        public PhraseToAddressCardanoTrezor(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
         }
 
         public override CoinType GetCoinType() { return CoinType.ADATrezor; }

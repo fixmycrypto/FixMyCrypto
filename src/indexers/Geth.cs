@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 
 namespace FixMyCrypto {
     class LookupAddressEth : LookupAddress {
-        public LookupAddressEth(ConcurrentQueue<Work> queue, int threadNum, int threadMax) : base(queue, threadNum, threadMax) {
+        public LookupAddressEth(BlockingCollection<Work> queue, int threadNum, int threadMax) : base(queue, threadNum, threadMax) {
 
         }
         public override CoinType GetCoinType() { return CoinType.ETH; }

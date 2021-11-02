@@ -12,7 +12,7 @@ namespace FixMyCrypto {
             Public,
             Private
         }
-        public PhraseToAddressSolana(ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
+        public PhraseToAddressSolana(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
             this.HMAC512 = new HMACSHA512(ed25519_seed);
         }
         public override CoinType GetCoinType() { return CoinType.SOL; }

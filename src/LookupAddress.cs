@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace FixMyCrypto {
     abstract class LookupAddress {
-        protected ConcurrentQueue<Work> queue;
+        protected BlockingCollection<Work> queue;
         protected int threadNum, threadMax;
         Stopwatch queueWaitTime = new Stopwatch();
-        public static LookupAddress Create(CoinType coin, ConcurrentQueue<Work> queue, int threadNum, int threadMax) {
+        public static LookupAddress Create(CoinType coin, BlockingCollection<Work> queue, int threadNum, int threadMax) {
             switch (coin) {
                 case CoinType.ADA:
                 case CoinType.ADALedger:
@@ -38,7 +38,7 @@ namespace FixMyCrypto {
                 throw new NotSupportedException();
             }
         }
-        protected LookupAddress(ConcurrentQueue<Work> queue, int threadNum, int threadMax) {
+        protected LookupAddress(BlockingCollection<Work> queue, int threadNum, int threadMax) {
             this.queue = queue;
             this.threadNum = threadNum;
             this.threadMax = threadMax;
@@ -72,7 +72,7 @@ namespace FixMyCrypto {
         public abstract Task<List<string>> GetTransactions(string address);
         public void Finish() {
             Global.Done = true;
-            lock(queue) { Monitor.PulseAll(queue); }
+            queue.CompleteAdding();
         }
         public void Consume() {
             Log.Debug("LA" + threadNum + " start");
@@ -83,20 +83,9 @@ namespace FixMyCrypto {
 
                 Work w = null;
 
-                lock(queue) {
-                    queueWaitTime.Start();
-                    while (queue.Count == 0) {
-                        if (Global.Done) break;
-                        //Log.Debug("LA thread " + threadNum + " waiting for work");
-                        Monitor.Wait(queue);
-                    }
-                    queueWaitTime.Stop();
-
-                    if (queue.TryDequeue(out w)) {
-                        //Log.Debug("LA thread " + threadNum + " got address: \"" + w + "\", queue size: " + queue.Count);
-                        Monitor.Pulse(queue);
-                    }
-                }
+                queueWaitTime.Start();
+                queue.TryTake(out w, System.Threading.Timeout.Infinite);
+                queueWaitTime.Stop();
 
                 if (w != null) {
                     stopWatch.Start();

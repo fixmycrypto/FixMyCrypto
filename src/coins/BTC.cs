@@ -8,7 +8,7 @@ namespace FixMyCrypto {
     class PhraseToAddressBitAltcoin : PhraseToAddress {
         private Network network;
         private CoinType coinType;
-        public PhraseToAddressBitAltcoin(ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax, CoinType coin) : base(phrases, addresses, threadNum, threadMax) {
+        public PhraseToAddressBitAltcoin(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax, CoinType coin) : base(phrases, addresses, threadNum, threadMax) {
             this.coinType = coin;
 
             switch (this.coinType) {

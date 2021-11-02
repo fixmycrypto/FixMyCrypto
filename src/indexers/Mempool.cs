@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace FixMyCrypto {
     class LookupAddressBitcoin : LookupAddress {
-        public LookupAddressBitcoin(ConcurrentQueue<Work> queue, int threadNum, int threadMax) : base(queue, threadNum, threadMax){
+        public LookupAddressBitcoin(BlockingCollection<Work> queue, int threadNum, int threadMax) : base(queue, threadNum, threadMax){
 
         }
         public override CoinType GetCoinType() { return CoinType.BTC; }

@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 namespace FixMyCrypto {
     class LookupAddressCardano : LookupAddress {
         CoinType coinType;
-        public LookupAddressCardano(ConcurrentQueue<Work> queue, int threadNum, int threadMax, CoinType coin) : base(queue, threadNum, threadMax) {
+        public LookupAddressCardano(BlockingCollection<Work> queue, int threadNum, int threadMax, CoinType coin) : base(queue, threadNum, threadMax) {
             this.coinType = coin;
         }
         public override CoinType GetCoinType() { return this.coinType; }

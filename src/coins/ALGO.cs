@@ -10,7 +10,7 @@ namespace FixMyCrypto {
     class PhraseToAddressAlgorand : PhraseToAddress {
 
         private HMACSHA256 HMAC256;
-        public PhraseToAddressAlgorand(ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
+        public PhraseToAddressAlgorand(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
             HMAC256 = new HMACSHA256(ed25519_seed);
         }
 

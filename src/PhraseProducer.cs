@@ -3,13 +3,11 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using NBitcoin;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace FixMyCrypto {
     class PhraseProducer {
-        public ConcurrentQueue<Work> queue;
+        public BlockingCollection<Work> queue;
         int threadNum, threadMax, internalThreads;
         int valid = 0, invalid = 0, dupes = 0;
         string[] phrase;
@@ -22,7 +20,7 @@ namespace FixMyCrypto {
         private ParallelOptions parallelOptions;
         Stopwatch queueWaitTime = new Stopwatch();
 
-        public PhraseProducer(ConcurrentQueue<Work> queue, int threadNum, int threadMax, string[] phrase) {
+        public PhraseProducer(BlockingCollection<Work> queue, int threadNum, int threadMax, string[] phrase) {
             this.queue = queue;
             this.threadNum = threadNum;
             this.threadMax = threadMax;
@@ -32,7 +30,7 @@ namespace FixMyCrypto {
         
         public void Finish() {
             Global.Done = true;
-            lock(queue) { Monitor.PulseAll(queue); }
+            queue.CompleteAdding();
         }
         private static HashSet<Phrase> testedPhrases = new HashSet<Phrase>();
         private void TestPhrase(short[] phraseArray) {
@@ -62,18 +60,17 @@ namespace FixMyCrypto {
                 valid++;
                 Work w = new Work(p, null);
 
-                lock (queue) {
-                    queueWaitTime.Start();
-                    while (queue.Count > Settings.Threads) {
-                        if (Global.Done) break;
-                        //Log.Debug("PP thread " + threadNum + " waiting on full queue");
-                        Monitor.Wait(queue);
-                    }
+                //  Enqueue
+                queueWaitTime.Start();
+                try {
+                    queue.Add(w);
+                }
+                catch (InvalidOperationException)
+                {
+                    return;
+                }
+                finally {
                     queueWaitTime.Stop();
-
-                    queue.Enqueue(w);
-                    //Log.Debug("PP thread " + threadNum + " enqueued work: \"" + w + "\", queue size: " + queue.Count);
-                    Monitor.Pulse(queue);
                 }
             }
             else {

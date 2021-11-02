@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 namespace FixMyCrypto {
     class LookupAddressAltcoin : LookupAddress {
         private CoinType coinType;
-        public LookupAddressAltcoin(ConcurrentQueue<Work> queue, int threadNum, int threadMax, CoinType coin) : base(queue, threadNum, threadMax) {
+        public LookupAddressAltcoin(BlockingCollection<Work> queue, int threadNum, int threadMax, CoinType coin) : base(queue, threadNum, threadMax) {
             this.coinType = coin;
         }
         public override CoinType GetCoinType() { return this.coinType; }

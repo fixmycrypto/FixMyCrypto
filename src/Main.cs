@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
-using Newtonsoft.Json;
-using System.Text;
 
 namespace FixMyCrypto {
     class FixMyCrypto {
@@ -80,8 +78,8 @@ namespace FixMyCrypto {
                 PauseAndExit(1);
             }
 
-            ConcurrentQueue<Work> phraseQueue = new ConcurrentQueue<Work>();
-            ConcurrentQueue<Work> addressQueue = new ConcurrentQueue<Work>();
+            BlockingCollection<Work> phraseQueue = new BlockingCollection<Work>(Settings.Threads * 2);
+            BlockingCollection<Work> addressQueue = new BlockingCollection<Work>(Settings.Threads * 2);
             Stopwatch stopWatch = new Stopwatch();
 
             int phraseProducerCount = 1,

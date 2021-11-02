@@ -2,20 +2,19 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading;
 using System.Text;
 using System.Security.Cryptography;
 
 namespace FixMyCrypto {
     abstract class PhraseToAddress {
-        protected ConcurrentQueue<Work> phraseQueue, addressQueue;
+        protected BlockingCollection<Work> phraseQueue, addressQueue;
         protected int threadNum, threadMax;
         string[] defaultPaths;
         PathTree tree;
         Passphrase passphrases;
 
         private HMACSHA512 HMAC512;
-        public static PhraseToAddress Create(CoinType coin, ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax) {
+        public static PhraseToAddress Create(CoinType coin, BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) {
             switch (coin) {
                 case CoinType.ADA:
 
@@ -55,7 +54,7 @@ namespace FixMyCrypto {
             }
         }
         Stopwatch queueWaitTime = new Stopwatch();
-        protected PhraseToAddress(ConcurrentQueue<Work> phrases, ConcurrentQueue<Work> addresses, int threadNum, int threadMax) {
+        protected PhraseToAddress(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) {
             this.phraseQueue = phrases;
             this.addressQueue = addresses;
             this.threadNum = threadNum;
@@ -179,8 +178,8 @@ namespace FixMyCrypto {
         public abstract CoinType GetCoinType();
         public void Finish() {
             Global.Done = true;
-            lock(phraseQueue) { Monitor.PulseAll(phraseQueue); }
-            lock(addressQueue) { Monitor.PulseAll(addressQueue); }
+            phraseQueue.CompleteAdding();
+            addressQueue.CompleteAdding();
         }
         public void Consume() {
             int count = 0;
@@ -189,24 +188,12 @@ namespace FixMyCrypto {
 
             while (!Global.Done) {
 
+                //  Dequeue phrase
                 Work w = null;
 
-                //  Dequeue phrase
-
-                lock(phraseQueue) {
-                    queueWaitTime.Start();
-                    while (phraseQueue.Count == 0) {
-                        if (Global.Done) break;
-                        //Log.Debug("P2A thread " + threadNum + " waiting for work");
-                        Monitor.Wait(phraseQueue);
-                    }
-                    queueWaitTime.Stop();
-
-                    if (phraseQueue.TryDequeue(out w)) {
-                        //Log.Debug("P2A thread " + threadNum + " got phrase: \"" + w + "\", queue size: " + phraseQueue.Count);
-                        Monitor.Pulse(phraseQueue);
-                    }
-                }
+                queueWaitTime.Start();
+                phraseQueue.TryTake(out w, System.Threading.Timeout.Infinite);
+                queueWaitTime.Stop();
 
                 if (w != null) {
  
@@ -256,18 +243,15 @@ namespace FixMyCrypto {
 
                             //  Enqueue address
 
-                            lock (addressQueue) {
-                                queueWaitTime.Start();
-                                while (addressQueue.Count > Settings.Threads) {
-                                    if (Global.Done) break;
-                                    //Log.Debug("P2A thread " + threadNum + " waiting on full address queue");
-                                    Monitor.Wait(addressQueue);
-                                }
+                            queueWaitTime.Start();
+                            try {
+                                addressQueue.Add(w2);
+                            }
+                            catch (InvalidOperationException) {
+                                break;
+                            }
+                            finally {
                                 queueWaitTime.Stop();
-
-                                addressQueue.Enqueue(w2);
-                                //Log.Debug("P2A thread " + threadNum + " enqueued address: \"" + w2 + "\", queue size: " + addressQueue.Count);
-                                Monitor.Pulse(addressQueue);
                             }
                         }
                     }
