@@ -319,6 +319,7 @@ namespace FixMyCrypto {
             PhraseToAddress.ValidateAddress(CoinType.SOL, "uqYc2vewvfag8m6Ys6WWYekXf2BzKwWyLxBh1mftMPF");
             PhraseToAddress.ValidateAddress(CoinType.ALGO, "VCMJKWOY5P5P7SKMZFFOCEROPJCZOTIJMNIYNUCKH7LRO45JMJP6UYBIJA");
             PhraseToAddress.ValidateAddress(CoinType.ALGO, "CA73GRGZZPMVE57DVFDPEBTHUHN3RT76RZGH4MGBZFJGAAL3ODN2WVDN7Q");
+            PhraseToAddress.ValidateAddress(CoinType.DOT, "12G1bZ4Ki2H37o4iZHTADd46aZSAyG93SpBZSubzrM2sYHNX");
 
             //  Should fail
             FailValidateAddress(CoinType.BTC, "14NPVhtZo8c5vxuZwTOGYxJPd8HbtqEJpu");
@@ -329,6 +330,7 @@ namespace FixMyCrypto {
             FailValidateAddress(CoinType.SOL, "uqYc2vewvfag8m6Ys6WWYekXf2BzKwWyLxBh1mftMPFu");
             FailValidateAddress(CoinType.ALGO, "CA73GRGZZPMVE57DVFDPEBTHUHN3RT76RZGH4MGBZFJGAAL3ODN2WVDN7");
             FailValidateAddress(CoinType.ALGO, "CA73GRGZZPMVE57DVFDPEBTHUHM3RT76RZGH4MGBZFJGAAL3ODN2WVDN7Q");
+            FailValidateAddress(CoinType.DOT, "12G1bZ4Ki2H37o4iZHTADd46aZSAyG93SpBZSubzrM2sYHND");
 
             //  Test vectors
             //  TODO: Test addresses
@@ -424,9 +426,9 @@ namespace FixMyCrypto {
                         }
 
                         if (!found) {
-                            Log.Error($"{ct} failed to derive: {address} ({path}). Found:");
+                            Log.Error($"{ct} failed to derive:\n\t{address} ({path}).\nFound:\n");
                             foreach (Address a in addresses) {
-                                Log.Error($"{a.address} {a.path}");
+                                Log.Error($"\t{a.address} {a.path}");
                             }
                             Environment.Exit(1);
                         }

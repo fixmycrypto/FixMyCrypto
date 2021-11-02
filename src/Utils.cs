@@ -22,7 +22,9 @@ namespace FixMyCrypto
         BCH,
         XRP,
         SOL,
-        ALGO
+        ALGO,
+        DOT,
+        DOTLedger
     }
     public enum BtcApiType {
         blockcypher,

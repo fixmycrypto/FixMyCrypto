@@ -48,6 +48,14 @@ namespace FixMyCrypto {
 
                 return new PhraseToAddressAlgorand(phrases, addresses, threadNum, threadMax);
 
+                case CoinType.DOT:
+
+                return new PhraseToAddressPolkadot(phrases, addresses, threadNum, threadMax);
+
+                case CoinType.DOTLedger:
+
+                return new PhraseToAddressPolkadotLedger(phrases, addresses, threadNum, threadMax);
+
                 default:
 
                 throw new NotSupportedException();
