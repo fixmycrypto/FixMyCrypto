@@ -79,6 +79,8 @@ namespace FixMyCrypto {
             return p;
         }
  
+        public override CoinType GetCoinType() { return CoinType.DOTLedger; }
+
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
 
             //  Ledger: https://github.com/algorand/ledger-app-algorand/blob/master/src/algo_keys.c
