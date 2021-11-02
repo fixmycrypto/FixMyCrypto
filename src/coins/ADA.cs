@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using System.Collections.Concurrent;
 using CardanoSharp.Wallet;
 using CardanoSharp.Wallet.Extensions.Models;
@@ -90,25 +89,9 @@ namespace FixMyCrypto {
         }
         public override CoinType GetCoinType() { return CoinType.ADALedger; }
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
-            //  https://github.com/LedgerHQ/speculos/blob/c0311aef48412e40741a55f113939469da78e8e5/src/bolos/os_bip32.c#L123
+            Key key = Ledger_expand_seed_ed25519_bip32(phrase, passphrase);
 
-            byte[] salt = Encoding.UTF8.GetBytes("mnemonic" + passphrase);
-            string password = phrase.ToPhrase();
-            var seed = KeyDerivation.Pbkdf2(password, salt, KeyDerivationPrf.HMACSHA512, 2048, 64);
-
-            byte[] message = new byte[seed.Length + 1];
-            message[0] = 1;
-            System.Buffer.BlockCopy(seed, 0, message, 1, seed.Length);
-
-            //  Chain code
-
-            HMAC256.Initialize();
-            var cc = HMAC256.ComputeHash(message);
-
-            var iLiR = HashRepeatedly(seed);
-            iLiR = TweakBits(iLiR);
-
-            return new CardanoSharp.Wallet.Models.Keys.PrivateKey(iLiR, cc);
+            return new CardanoSharp.Wallet.Models.Keys.PrivateKey(key.data, key.cc);
         }
     }
     class PhraseToAddressCardanoTrezor : PhraseToAddressCardano {

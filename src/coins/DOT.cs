@@ -1,8 +1,5 @@
 using System;
-using System.Text;
 using System.Collections.Concurrent;
-using System.Security.Cryptography;
-using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using CardanoSharp.Wallet.Extensions.Models;
 using Cryptography.ECDSA;
 
@@ -74,9 +71,7 @@ namespace FixMyCrypto {
         }
     }
     class PhraseToAddressPolkadotLedger : PhraseToAddressPolkadot {
-        private HMACSHA256 HMAC256;
         public PhraseToAddressPolkadotLedger(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
-            HMAC256 = new HMACSHA256(ed25519_seed);
         }
 
         public override string[] GetDefaultPaths(string[] knownAddresses) {
@@ -87,30 +82,7 @@ namespace FixMyCrypto {
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
 
             //  Ledger: https://github.com/algorand/ledger-app-algorand/blob/master/src/algo_keys.c
-            //  os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32Path, sizeof(bip32Path) / sizeof(bip32Path[0]), private_key_data, NULL);
-            //  return sys_os_perso_derive_node_with_seed_key(HDW_NORMAL, curve, path, length, private_key, chain, NULL, 0);
-            //  expand_seed_ed25519_bip32(sk, sk_length, seed, seed_size, &key);
-            //  ret = hdw_bip32_ed25519(&key, path, pathLength, privateKey, chain);
-
-            //  expand_seed_ed25519_bip32
-            
-            byte[] salt = Encoding.UTF8.GetBytes("mnemonic" + passphrase);
-            string password = phrase.ToPhrase();
-            var seed = KeyDerivation.Pbkdf2(password, salt, KeyDerivationPrf.HMACSHA512, 2048, 64);
-
-            byte[] message = new byte[seed.Length + 1];
-            message[0] = 1;
-            System.Buffer.BlockCopy(seed, 0, message, 1, seed.Length);
-
-            //  Chain code
-
-            HMAC256.Initialize();
-            var cc = HMAC256.ComputeHash(message);
-
-            var iLiR = HashRepeatedly(seed);
-            iLiR = TweakBits(iLiR);
-
-            return new Key(iLiR, cc);
+            return Ledger_expand_seed_ed25519_bip32(phrase, passphrase);
         }
     }
 }
