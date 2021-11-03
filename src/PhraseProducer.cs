@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace FixMyCrypto {
     class PhraseProducer {
         public BlockingCollection<Work> queue;
-        int threadNum, threadMax, internalThreads;
+        int internalThreads;
         int valid = 0, invalid = 0, dupes = 0;
         string[] phrase;
 
@@ -20,12 +20,10 @@ namespace FixMyCrypto {
         private ParallelOptions parallelOptions;
         Stopwatch queueWaitTime = new Stopwatch();
 
-        public PhraseProducer(BlockingCollection<Work> queue, int threadNum, int threadMax, string[] phrase) {
+        public PhraseProducer(BlockingCollection<Work> queue, string[] phrase) {
             this.queue = queue;
-            this.threadNum = threadNum;
-            this.threadMax = threadMax;
             this.phrase = phrase;
-            this.internalThreads = Settings.Threads / 4;
+            this.internalThreads = Math.Max(Settings.Threads / 4, 1);
         }
         
         public void Finish() {
@@ -176,13 +174,6 @@ namespace FixMyCrypto {
                 }
             });
         }
-        private Range GetRange(int first) {
-            double numPerThread = (phrase.Length - first)/(double)threadMax;
-            int start = first + (int)Math.Ceiling(numPerThread * threadNum);
-            int end = first + (int)Math.Ceiling(numPerThread * (threadNum+1));
-
-            return new Range(start, end);           
-        }
         private IList<short> GetReplacementWords(short word, SwapMode swapMode) {
             if (Wordlists.WordArray[word] == "*" || Wordlists.WordArray[word] == "?") {
                 return Wordlists.SortedWords[word];
@@ -213,7 +204,7 @@ namespace FixMyCrypto {
             Parallel.For(0, phrase.Length - 1, this.parallelOptions, i => {
                 if (Global.Done) return;
 
-                if (i > 0) Log.Info($"PP{threadNum} S2C1W ({swapMode}) progress: {(100*i/phrase.Length)}%");
+                if (i > 0) Log.Info($"PP S2C1W ({swapMode}) progress: {(100*i/phrase.Length)}%");
                 
                 // Range range = GetRange(i + 1);
 
@@ -255,18 +246,12 @@ namespace FixMyCrypto {
             int start = 0;
             int end = phrase.Length;
 
-            if (skip == null) {
-                //  outermost loop
-                start = (int)Math.Ceiling((phrase.Length / (double)threadMax) * threadNum);
-                end = (int)Math.Ceiling((phrase.Length / (double)threadMax) * (threadNum + 1));
-            }
-
             Parallel.For(start, end, this.parallelOptions, i => {
                 if (Global.Done) return;
             // for (int i = start; i < end; i++) {
                 if (skip != null && skip.Contains(i)) return;
 
-                if (i > start && skip == null) Log.Info($"PP{threadNum} C{depth}W ({swapMode}) progress: {(100*(i-start)/(end-start))}%");
+                if (i > start && skip == null) Log.Info($"PP C{depth}W ({swapMode}) progress: {(100*(i-start)/(end-start))}%");
 
                 IList<short> words = GetReplacementWords(phrase[i], swapMode);
 
@@ -299,18 +284,12 @@ namespace FixMyCrypto {
             int start = 0;
             int end = phrase.Length;
 
-            if (skip == null) {
-                //  outermost loop
-                start = (int)Math.Ceiling((phrase.Length / (double)threadMax) * threadNum);
-                end = (int)Math.Ceiling((phrase.Length / (double)threadMax) * (threadNum + 1));
-            }
-
             Parallel.For(start, end, this.parallelOptions, i => {
             // for (int i = start; i < end; i++) {
                 if (Global.Done) return;
                 if (skip != null && skip.Contains(i)) return;
 
-                if (i > start && skip == null) Log.Info($"PP{threadNum} C{depth}W+S ({swapMode}) progress: {(100*(i-start)/(end-start))}%");
+                if (i > start && skip == null) Log.Info($"PP C{depth}W+S ({swapMode}) progress: {(100*(i-start)/(end-start))}%");
 
                 IList<short> words = GetReplacementWords(phrase[i], swapMode);
 
@@ -487,146 +466,146 @@ namespace FixMyCrypto {
             Stopwatch sw2 = new Stopwatch();
 
             //  instant
-            Log.Info($"PP{threadNum}: Swap columns");
+            Log.Info($"PP: Swap columns");
             sw2.Start();
             SwapColumns(phrase);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Swap columns finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Swap columns finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
             //  <1s
-            Log.Info($"PP{threadNum}: Swap any 2");
+            Log.Info($"PP: Swap any 2");
             sw2.Start();
             SwapTwo(phrase);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Swap any 2 finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Swap any 2 finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
             //  3s
-            Log.Info($"PP{threadNum}: Change 1 word (same letter)");
+            Log.Info($"PP: Change 1 word (same letter)");
             sw2.Restart();
             ChangeWords(phrase, 1, SwapMode.SameLetter);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Change 1 word (same letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Change 1 word (same letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
             //  7s
-            Log.Info($"PP{threadNum}: Swap any 3");
+            Log.Info($"PP: Swap any 3");
             sw2.Start();
             SwapThree(phrase);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Swap any 3 finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Swap any 3 finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
             //  40s
-            Log.Info($"PP{threadNum}: Swap any 4");
+            Log.Info($"PP: Swap any 4");
             sw2.Start();
             SwapFour(phrase);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Swap any 4 finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Swap any 4 finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
             //  1 min
-            Log.Info($"PP{threadNum}: Change 1 word (any letter)");
+            Log.Info($"PP: Change 1 word (any letter)");
             sw2.Restart();
             ChangeWords(phrase, 1, SwapMode.AnyLetter);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Change 1 word (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Change 1 word (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
             //  2 mins for 12
-            Log.Info($"PP{threadNum}: Swap 2, Change 1 (distance = {Settings.WordDistance})");
+            Log.Info($"PP: Swap 2, Change 1 (distance = {Settings.WordDistance})");
             sw2.Restart();
             SwapTwoCOW(phrase, SwapMode.Similar);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Swap 2, Change 1 (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Swap 2, Change 1 (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
             //  2-3mins for 12
-            Log.Info($"PP{threadNum}: Change 2 words (distance = {Settings.WordDistance})");
+            Log.Info($"PP: Change 2 words (distance = {Settings.WordDistance})");
             sw2.Restart();
             ChangeWords(phrase, 2, SwapMode.Similar);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Change 2 words (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Change 2 words (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
             if (difficulty < 1) return;
 
             //  Advanced modes
             //  ?
-            Log.Info($"PP{threadNum}: Swap 2, Change 2 (distance = {Settings.WordDistance})");
+            Log.Info($"PP: Swap 2, Change 2 (distance = {Settings.WordDistance})");
             sw2.Restart();
             ChangeWordsSwap(phrase, 2, SwapMode.Similar);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Swap 2, Change 2 (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Swap 2, Change 2 (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
             //  10 mins
-            Log.Info($"PP{threadNum}: Swap 2, Change 1 (same letter)");
+            Log.Info($"PP: Swap 2, Change 1 (same letter)");
             sw2.Restart();
             SwapTwoCOW(phrase, SwapMode.SameLetter);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Swap 2, Change 1 (same letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Swap 2, Change 1 (same letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
             //  2hrs
-            Log.Info($"PP{threadNum}: Change 2 words (same letter)");
+            Log.Info($"PP: Change 2 words (same letter)");
             sw2.Restart();
             ChangeWords(phrase, 2, SwapMode.SameLetter);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Change 2 words (same letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Change 2 words (same letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
             //  3hrs
-            Log.Info($"PP{threadNum}: Swap 2, Change 1 (any letter)");
+            Log.Info($"PP: Swap 2, Change 1 (any letter)");
             sw2.Restart();
             SwapTwoCOW(phrase, SwapMode.AnyLetter);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Swap 2, Change 1 (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Swap 2, Change 1 (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
             //  3-4hrs for 10
-            Log.Info($"PP{threadNum}: Change 3 words (distance = {Settings.WordDistance})");
+            Log.Info($"PP: Change 3 words (distance = {Settings.WordDistance})");
             sw2.Restart();
             ChangeWords(phrase, 3, SwapMode.Similar);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Change 3 words (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Change 3 words (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
             
             if (difficulty < 2) return;
 
             //  SUPER ADVANCED MODE
             //  Long time?
-            Log.Info($"PP{threadNum}: Change 4 words (distance = {Settings.WordDistance})");
+            Log.Info($"PP: Change 4 words (distance = {Settings.WordDistance})");
             sw2.Restart();
             ChangeWords(phrase, 4, SwapMode.Similar);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Change 4 words (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Change 4 words (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
             if (difficulty < 3) return;
 
             //  60 days?
-            Log.Info($"PP{threadNum}: Change 2 words (any letter)");
+            Log.Info($"PP: Change 2 words (any letter)");
             sw2.Restart();
             ChangeWords(phrase, 2, SwapMode.AnyLetter);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Change 2 words (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Change 2 words (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
             if (difficulty < 4) return;
 
             //  crazy time
-            Log.Info($"PP{threadNum}: Change 3 words (any letter)");
+            Log.Info($"PP: Change 3 words (any letter)");
             sw2.Restart();
             ChangeWords(phrase, 3, SwapMode.AnyLetter);
             sw2.Stop();
-            Log.Info($"PP{threadNum}: Change 3 words (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            Log.Info($"PP: Change 3 words (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
         }
     
         public void ProduceWork() {
-            Log.Debug("PP" + threadNum + " start");
+            Log.Debug("PP start");
 
             int wrongWords = 0, missingWords = 0;
             foreach (string word in this.phrase) {
@@ -648,11 +627,11 @@ namespace FixMyCrypto {
             sw1.Start();
 
             if (missingWords > 0) {
-                Log.Info($"PP{threadNum} replace {missingWords} missing words (no swaps/changes)");
+                Log.Info($"PP replace {missingWords} missing words (no swaps/changes)");
                 FixMissing(phrase.Slice(0, phrase.Length - missingWords), missingWords, wrongWords, false, Settings.Difficulty, this.internalThreads);
 
                 if (!Global.Done) {
-                    Log.Info($"PP{threadNum} replace {missingWords} missing words (+ swaps/changes)");
+                    Log.Info($"PP replace {missingWords} missing words (+ swaps/changes)");
                     FixMissing(phrase.Slice(0, phrase.Length - missingWords), missingWords, wrongWords, true, Settings.Difficulty, this.internalThreads);
                 }
             }
@@ -665,30 +644,30 @@ namespace FixMyCrypto {
             }
             else {
                 //  Try fixing invalid words only without any swaps/changes, starting with similar words
-                Log.Info($"PP{threadNum} replace {wrongWords} invalid words with similar words (no swaps/changes)");
+                Log.Info($"PP replace {wrongWords} invalid words with similar words (no swaps/changes)");
                 FixInvalid(phrase, wrongWords, wrongWords, false, SwapMode.Similar, Settings.Difficulty, this.internalThreads);
 
                 //  Try fixing invalid words plus swaps/changes
                 if (!Global.Done) {
-                    Log.Info($"PP{threadNum} replace {wrongWords} invalid words with similar words + swaps/changes");
+                    Log.Info($"PP replace {wrongWords} invalid words with similar words + swaps/changes");
                     FixInvalid(phrase, wrongWords, wrongWords, true, SwapMode.Similar, Settings.Difficulty, this.internalThreads);
                 }
 
                 //  Try any substitute for invalid words (no swaps/changes) if practical
                 if (!Global.Done && wrongWords < 3) {
-                    Log.Info($"PP{threadNum} replace {wrongWords} invalid words with any words");
+                    Log.Info($"PP replace {wrongWords} invalid words with any words");
                     FixInvalid(phrase, wrongWords, wrongWords, false, SwapMode.AnyLetter, Settings.Difficulty, this.internalThreads);
                 }
 
                 //  Last ditch effort
                 if (!Global.Done) {
-                    Log.Info($"PP{threadNum} replace {wrongWords} invalid words with any words + swaps/changes");
+                    Log.Info($"PP replace {wrongWords} invalid words with any words + swaps/changes");
                     FixInvalid(phrase, wrongWords, wrongWords, true, SwapMode.AnyLetter, Settings.Difficulty + 1, this.internalThreads);
                 }
             }
 
             sw1.Stop();
-            Log.Info("PP" + threadNum + " done, valid: " + valid + " invalid: " + invalid + $", dupes: {dupes}, total time: {sw1.ElapsedMilliseconds/1000.0:F2}s, time/req: {((valid + invalid != 0) ? ((double)sw1.ElapsedMilliseconds/(valid+invalid)) : 0):F3}ms/req, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
+            Log.Info("PP done, valid: " + valid + " invalid: " + invalid + $", dupes: {dupes}, total time: {sw1.ElapsedMilliseconds/1000.0:F2}s, time/req: {((valid + invalid != 0) ? ((double)sw1.ElapsedMilliseconds/(valid+invalid)) : 0):F3}ms/req, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
             Finish();
         }
 

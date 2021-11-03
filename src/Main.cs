@@ -175,7 +175,7 @@ namespace FixMyCrypto {
             PhraseProducer[] phrasers = new PhraseProducer[phraseProducerCount];
             List<Thread> phraseThreads = new List<Thread>();
             for (int i = 0; i < phraseProducerCount; i++) {
-                phrasers[i] = new PhraseProducer(phraseQueue, i, phraseProducerCount, phraseArray);
+                phrasers[i] = new PhraseProducer(phraseQueue, phraseArray);
 
                 Thread thread = new Thread (phrasers[i].ProduceWork);
                 thread.Name = "PP" + i;
