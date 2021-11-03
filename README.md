@@ -20,6 +20,7 @@
     * SOL
     * ALGO - including Ledger hardware wallets
     * DOT (Polkadot) - currently Ledger hardware wallets only (no Polkadot.js etc.)
+    * Need another coin? Let us know!
 * Smart typo detection drastically reduces the search time
     * Words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
 * Simultaneous search of multiple derivation paths (including non-standard paths)
@@ -41,6 +42,7 @@ If you found this software useful, please consider donating to fund future devel
 * ADA: addr1qxhjru35kv8fq66afxxdnjzf720anfcppktchh6mjuwxma3e876gh3czzkq0guls5qrkghexsuh543h7k2xqlje5lskqfp2elv
 * SOL: 7ky2LTXNwPASogjMURv88LoPRHAAL4v49HeD7MYARuM4
 * ALGO: EPQZU6GMEMKKEQH4CP7U2U2NTQE2ZVMOYAS7F5WMCUYIAYUKNJVUHW5W5A
+* DOT: 14jUHiE429X8HwPRmj2Sy4Xvo5Z9ewJJJ273ctvmQgxgTJ4b
 
 # Build
 
