@@ -44,8 +44,8 @@ namespace FixMyCrypto {
 
             return new string(ret);
         }
-        private string PkToAddress(ExtKey pk) {
-            byte[] pkeyBytes = pk.PrivateKey.PubKey.ToBytes();
+        private string SkToAddress(ExtKey sk) {
+            byte[] pkeyBytes = sk.PrivateKey.PubKey.ToBytes();
             byte[] converted = Secp256K1Manager.PublicKeyDecompress(pkeyBytes);
 
             var digest = new KeccakDigest(256);
@@ -75,8 +75,8 @@ namespace FixMyCrypto {
             return key.Derive(index);
         }
         protected override Address DeriveAddress(PathNode node) {
-            ExtKey pk = (ExtKey)node.Key;
-            string address = PkToAddress(pk);
+            ExtKey sk = (ExtKey)node.Key;
+            string address = SkToAddress(sk);
             return new Address(address, node.GetPath());
         }
 

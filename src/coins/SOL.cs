@@ -7,13 +7,7 @@ using Cryptography.ECDSA;
 
 namespace FixMyCrypto {
     class PhraseToAddressSolana : PhraseToAddress {
-        private HMACSHA512 HMAC512;
-        public enum KeyType {
-            Public,
-            Private
-        }
         public PhraseToAddressSolana(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
-            this.HMAC512 = new HMACSHA512(ed25519_seed);
         }
         public override CoinType GetCoinType() { return CoinType.SOL; }
         public override string[] GetDefaultPaths(string[] knownAddresses) {
@@ -62,7 +56,7 @@ namespace FixMyCrypto {
             tmp[35] = (byte)((index >> 8) & 0xff);
             tmp[36] = (byte)(index & 0xff);
 
-            HMACSHA512 hmac = new HMACSHA512(x.cc);
+            using HMACSHA512 hmac = new HMACSHA512(x.cc);
             byte[] I = hmac.ComputeHash(tmp);
 
             return new Key(I.Slice(0, 32), I.Slice(32));

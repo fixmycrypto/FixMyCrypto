@@ -83,9 +83,7 @@ namespace FixMyCrypto {
     }
 
     class PhraseToAddressCardanoLedger : PhraseToAddressCardano {
-        private HMACSHA256 HMAC256;
         public PhraseToAddressCardanoLedger(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
-            HMAC256 = new HMACSHA256(ed25519_seed);
         }
         public override CoinType GetCoinType() { return CoinType.ADALedger; }
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {

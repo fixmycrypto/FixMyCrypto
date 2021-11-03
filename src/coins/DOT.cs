@@ -17,6 +17,7 @@ namespace FixMyCrypto {
         }
  
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
+            //  TODO
             throw new NotSupportedException();
         }
         protected override Object DeriveChildKey(Object parentKey, uint index) {

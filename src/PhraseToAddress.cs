@@ -13,8 +13,8 @@ namespace FixMyCrypto {
         PathTree tree;
         Passphrase passphrases;
 
-        private HMACSHA512 HMAC512;
-        private HMACSHA256 HMAC256;
+        protected HMACSHA512 HMAC512;
+        protected HMACSHA256 HMAC256;
         public static PhraseToAddress Create(CoinType coin, BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) {
             switch (coin) {
                 case CoinType.ADA:
