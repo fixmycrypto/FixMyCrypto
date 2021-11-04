@@ -1,0 +1,6 @@
+[submodule "lib/sr25519-dotnet"]
+	path = lib/sr25519-dotnet
+	url = https://github.com/fixmycrypto/sr25519-dotnet.git
+[submodule "lib/sr25519-crust"]
+	path = lib/sr25519-crust
+	url = https://github.com/fixmycrypto/sr25519-crust.git
