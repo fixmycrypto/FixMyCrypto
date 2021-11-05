@@ -6,6 +6,10 @@ namespace FixMyCrypto {
         public static string Resolve(string path, int account, int index) {
             string p = path;
 
+            if (p == "m") {
+                return p;
+            }
+
             if (p.Contains("{account}")) {
                 p = p.Replace("{account}", "" + account);
             }
@@ -47,6 +51,10 @@ namespace FixMyCrypto {
 
             if (String.IsNullOrEmpty(path)) return;
 
+            if (path == "m") {
+                return;
+            }
+
             String indexPath = path;
 
             if (indexPath.EndsWith("'")) indexPath = indexPath.Substring(0, indexPath.Length - 1);
@@ -72,7 +80,7 @@ namespace FixMyCrypto {
         {
             string p = path;
 
-            if (String.IsNullOrEmpty(p) || !p.Contains("/")) return p;
+            if (String.IsNullOrEmpty(p) || !p.Contains("/") || !p.Contains("'")) return p;
 
             if (p == "m/44'/501'") return p;    //  SOL special case
 

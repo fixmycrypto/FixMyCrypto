@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+
 namespace FixMyCrypto {
     abstract class PhraseToAddress {
         protected BlockingCollection<Work> phraseQueue, addressQueue;

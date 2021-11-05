@@ -1,0 +1,21 @@
+{
+    "phrase": "dutch stuff alien rail dizzy mango uphold safe toddler infant fire off home anger popular police harsh zoo shop enroll garbage carry regular ?",
+
+    "passphrase": "",
+
+    "paths": [
+
+    ],
+
+    "knownAddresses":  [
+        "5E7mm5xinFFmCg2j7T8cgMhvLLQDUeLQU61aqanpXvjuhaGD"
+    ],
+
+    "accounts": "0",
+
+    "indices": "0",
+
+    "coin": "DOT",  //  "BTC", "ADA", "ETH", "DOGE", "LTC"
+
+    "logLevel": 5      //  Debug = 5, Info = 4, Warning = 3, Error = 2, None = 0,
+}

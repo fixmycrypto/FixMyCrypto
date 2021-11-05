@@ -8,12 +8,13 @@
     <AssemblyName>FixMyCrypto</AssemblyName>
     <NoWarn>NU1701</NoWarn>
     <AssemblyVersion>1.8.0.0</AssemblyVersion>
+    <DefaultItemExcludes>$(DefaultItemExcludes);lib\**</DefaultItemExcludes>
   </PropertyGroup>
 
-<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-  <DebugType>none</DebugType>
-  <Optimize>true</Optimize>
-</PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="BouncyCastle" Version="1.8.9" />
@@ -25,6 +26,17 @@
     <None Update="settings.example.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <ProjectReference Include="lib\sr25519-dotnet\sr25519-dotnet.lib\sr25519-dotnet.lib.csproj" />
   </ItemGroup>
+
+  <Target Name="CopyDlls" AfterTargets="AfterBuild" Condition=" '$(OS)' == 'Windows_NT' ">
+    <Copy Sourcefiles="lib\sr25519-dotnet\native\libs\x86_64-pc-windows-msvc\sr25519crust.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="CopyDlls" AfterTargets="AfterBuild" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' ">
+    <Copy Sourcefiles="lib\sr25519-dotnet\native\libs\x86_64-unknown-linux-gnu\libsr25519crust.so" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="CopyDlls" AfterTargets="AfterBuild" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' ">
+    <Copy Sourcefiles="lib\sr25519-dotnet\native\libs\universal-apple-darwin\libsr25519crust.dylib" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

@@ -16,10 +16,10 @@
     * ETH (+ forks e.g. ETC)
     * LTC
     * DOGE
-    * ADA (Cardano) - including special mode for recovering Ledger/Trezor hardware wallets
+    * ADA (Cardano)
     * SOL
-    * ALGO - including Ledger hardware wallets
-    * DOT (Polkadot) - currently Ledger hardware wallets only (no Polkadot.js etc.)
+    * ALGO
+    * DOT (Polkadot)
     * Need another coin? Let us know!
 * Smart typo detection drastically reduces the search time
     * Words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
@@ -50,10 +50,13 @@ See BUILD.md
 
 # Usage
 
+* Install the [.NET 6.0 (dotnet) SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
 * **Disconnect from the network (unplug Ethernet cable, shut off WiFi).**
 * Copy or rename "settings.example.json" to "settings.json"
 * Edit the `settings.json` file, filling in the details as described below.
 * In a terminal, type `dotnet run`, or load the project is VS Code and use the Run configuration
+
+---
 
 # Configuration (settings.json file):
 
@@ -90,6 +93,8 @@ If you are missing some words and don't know where they go or which position(s) 
     "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon kiwi ?",
 
 A single missing word (one `?`) can be solved quickly, two missing words will take a few hours, but 3 or more missing words can take a VERY long time to solve, since the program must try every possible word in every possible position.
+
+---
 
 ## Passphrase:
 
@@ -158,6 +163,8 @@ This would match:
 * "horseStaplebatteryCorrect42?"
 * "batterystaplecorrectHorse99@", etc. (1,267,200 permutations)
 
+---
+
 ## Known Addresses:
 
 ### Strongly Recommended
@@ -181,6 +188,8 @@ Example for multiple known addresses:
 
             "3A7Wg827LsxcEiaMmpeaKoKMGPfUfCGH4X",
         ],
+
+---
 
 ## Indices:
 
@@ -215,6 +224,8 @@ If you used old versions of Ledger or Coinomi to generate legacy BTC addresses w
     ],
 
 Note that the search will fail if none of the paths you specify match the one used to generate your wallet addresses.
+
+---
 
 ## Ethereum special use cases:
 
@@ -265,11 +276,17 @@ Other wallet software may use different phrases or paths.
 
 ## Polkadot (DOT) special use cases:
 
-Currently only Ledger hardware wallets are supported using the coin type `DOTLedger`.
+For the coin `DOT`, Polkadot{.js} Extension style addresses (addresses that start with `1` or `5` and using sr25519 signatures) are supported.
+
+Recovering a Ledger wallet for DOT requires specifying the coin: `DOTLedger`:
 
     "coin": "DOTLedger",
 
-Support for Polkadot.js and other Polkadot wallets is planned for a future release.
+DOTLedger addresses should start with a `1`.
+
+Other address formats (e.g. Kusama address, secp256k signatures) or custom derivation paths are not currently supported. For more info, see: <https://wiki.polkadot.network/docs/learn-accounts#portability>
+
+---
 
 ## Other settings:
 
@@ -314,7 +331,6 @@ To use blockchain search mode, leave the knownAddresses field blank. You must sp
 
 * Only English BIP39 wordlist and QWERTY keyboard layouts are currently implemented
 * BCH only supports legacy (1...) style addresses
-* DOT only supports Ledger hardware wallets (using coin DOTLedger)
 * SOL deprecated derivation path `m/501'/{account}'/0/{index}` not supported
 * SOL/ALGO/DOT blockchain search not implemented
 

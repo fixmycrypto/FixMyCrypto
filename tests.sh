@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 echo Build Release
 if ! dotnet build -c Release; then
