@@ -276,7 +276,7 @@ Other wallet software may use different phrases or paths.
 
 ## Polkadot (DOT) special use cases:
 
-For the coin `DOT`, Polkadot{.js} Extension style addresses (addresses that start with `1` or `5` and using sr25519 signatures) are supported.
+For the coin `DOT`, Polkadot{.js} Extension style addresses (using sr25519 signatures) are supported. This includes Polkadot, Kusama, and Generic Substrate addresses.
 
 Recovering a Ledger wallet for DOT requires specifying the coin: `DOTLedger`:
 
@@ -284,7 +284,7 @@ Recovering a Ledger wallet for DOT requires specifying the coin: `DOTLedger`:
 
 DOTLedger addresses should start with a `1`.
 
-Other address formats (e.g. Kusama address, secp256k signatures) or custom derivation paths are not currently supported. For more info, see: <https://wiki.polkadot.network/docs/learn-accounts#portability>
+Other address formats (e.g. secp256k signatures) or custom derivation paths are not currently supported. For more info, see: <https://wiki.polkadot.network/docs/learn-accounts#portability>
 
 ---
 

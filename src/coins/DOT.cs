@@ -16,14 +16,16 @@ namespace FixMyCrypto {
 
         public override string[] GetDefaultPaths(string[] knownAddresses) {
             if (knownAddresses == null || knownAddresses.Length == 0)
-                return new string[] { "m/0", "m/42" };
+                return new string[] { "m/0", "m/2", "m/42" };
 
             List<string> paths = new List<string>();
 
             foreach (string address in knownAddresses) {
-                if (address.StartsWith("1")) paths.Add("m/0");
+                if (address.StartsWith("1")) paths.Add("m/0");          //  Polkadot
 
-                else if (address.StartsWith("5")) paths.Add("m/42");
+                else if (address.StartsWith("5")) paths.Add("m/42");    //  Generic substrate
+
+                else paths.Add("m/2");                                  //  Kusama
             }
 
             return paths.ToArray();
