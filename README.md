@@ -50,11 +50,13 @@ See BUILD.md
 
 # Usage
 
-* Install the [.NET 6.0 (dotnet) SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
-* **Disconnect from the network (unplug Ethernet cable, shut off WiFi).**
-* Copy or rename "settings.example.json" to "settings.json"
-* Edit the `settings.json` file, filling in the details as described below.
-* In a terminal, type `dotnet run`, or load the project is VS Code and use the Run configuration
+1. Install the [.NET (dotnet) 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
+2. Clone (or download) the repository: `git clone https://github.com/fixmycrypto/FixMyCrypto.git`
+3. Download package dependencies: `dotnet restore`
+4. **Disconnect from the network (unplug Ethernet cable, shut off WiFi).**
+5. Copy or rename "settings.example.json" to "settings.json"
+6. Edit the `settings.json` file, filling in the details as described below.
+7. Run program: `dotnet run`, or load the project is VS Code and use the Run configuration
 
 ---
 
