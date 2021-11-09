@@ -30,7 +30,7 @@ namespace FixMyCrypto {
             Global.Done = true;
             queue.CompleteAdding();
         }
-        private static HashSet<Phrase> testedPhrases = new HashSet<Phrase>();
+        private static ConcurrentDictionary<Phrase, byte> testedPhrases = new();
         private void TestPhrase(short[] phraseArray) {
             //  Check if phrase has valid BIP39 checksum
 
@@ -40,19 +40,17 @@ namespace FixMyCrypto {
                 //  don't retest valid phrases
                 Phrase p = new Phrase(phraseArray, hash);
 
-                if (testedPhrases.Contains(p)) {
+                if (testedPhrases.ContainsKey(p)) {
                     dupes++;
                     return;
                 }
 
-                lock (testedPhrases) {
-                    try {
-                        testedPhrases.Add(p);
-                    }
-                    catch (Exception) {
-                        testedPhrases.Clear();
-                        testedPhrases.Add(p);
-                    }
+                try {
+                    testedPhrases[p] = 0;
+                }
+                catch (Exception) {
+                    testedPhrases.Clear();
+                    testedPhrases[p] = 0;
                 }
 
                 valid++;
