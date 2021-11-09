@@ -105,11 +105,7 @@ namespace FixMyCrypto {
                 Log.All($"passphrase: \"{Settings.Passphrase}\"");
 
                 Passphrase p = new Passphrase(Settings.Passphrase);
-                int count = 0;
-                foreach (string passphrase in p.Enumerate()) {
-                    count++;
-                }
-                Log.All($"passphrase permutations: {count}");
+                Log.All($"passphrase permutations: {p.GetCount()}");
             }
             
             if (Settings.Paths != null) {

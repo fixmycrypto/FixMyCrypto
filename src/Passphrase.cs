@@ -330,6 +330,36 @@ namespace FixMyCrypto {
                 }
             }
         }
+
+        public int GetCount() {
+            if (this.stringValue != null) return 1;
+
+            int count;
+
+            if (this.opType == OpType.Or) {
+                count = 0;
+                foreach (Part p in this.parts) {
+                    count += p.GetCount();
+                }
+            }
+            else if (this.opType == OpType.And) {
+                count = Utils.Factorial(this.parts.Length);
+                foreach (Part p in this.parts) {
+                    count *= p.GetCount();
+                }
+            }
+            else {
+                count = 1;
+                foreach (Part p in this.parts) {
+                    count *= p.GetCount();
+                }
+            }
+
+
+            if (this.optional) count += 1;
+
+            return count;
+        }
     }
 
     class Passphrase {
@@ -345,6 +375,10 @@ namespace FixMyCrypto {
 
         public override string ToString() {
             throw new NotSupportedException();
+        }
+
+        public int GetCount() {
+            return root.GetCount();
         }
     }
 

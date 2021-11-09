@@ -13,7 +13,7 @@
 * BIP39 passphrase cracking, including wildcards / partial brute forcing
 * Coin support: 
     * BTC (+ forks e.g. BCH, etc.)
-    * ETH (+ forks e.g. ETC)
+    * ETH (+ forks e.g. ETC, BSC, Layer 2)
     * LTC
     * DOGE
     * ADA (Cardano)

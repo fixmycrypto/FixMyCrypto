@@ -112,6 +112,8 @@ namespace FixMyCrypto {
             // Log.Debug($"Test Passphrase: {pattern}");
 
             Passphrase ph = new Passphrase(pattern);
+            int measuredCount = ph.GetCount();
+            if (expectCount > -1 && measuredCount != expectCount) throw new Exception($"Passphrase pattern: \"{pattern}\" GetCount() returned {measuredCount} permutations; expected {expectCount}");
             bool[] found = new bool[expect.Length];
             int count = 0;
             foreach (string pass in ph.Enumerate()) {
@@ -120,6 +122,8 @@ namespace FixMyCrypto {
                 if (i > -1) found[i] = true;
                 count++;
             }
+
+            if (count != measuredCount) throw new Exception($"Passphrase pattern: \"{pattern}\" GetCount() returned {measuredCount} permutations; counted {count}");
 
             if (expectCount > -1 && count != expectCount) throw new Exception($"Passphrase pattern: \"{pattern}\" generated {count} permutations; expected {expectCount}");
 
@@ -221,11 +225,6 @@ namespace FixMyCrypto {
             throw new Exception($"checksum should've failed: {phrase}");
         }
 
-        public static int Factorial(int i) {
-            if (i == 0) return 1;
-
-            return i * Factorial(i - 1);
-        }
         public static void Run(int count, string opts) {
             //  Needed to init word lists
             Wordlists.Initialize(null);
@@ -246,7 +245,7 @@ namespace FixMyCrypto {
             TestPassphrase("[1-9]?[0-9]", new string[] { "0", "9", "42" }, 100);
             TestPassphrase("(Correct||Horse||Battery)?Staple", new string[] { "Staple", "CorrectStaple", "HorseStaple", "BatteryStaple" }, 4);
             TestPassphrase("(Correct&&Horse)", new string[] { "CorrectHorse", "HorseCorrect" }, 2);
-            TestPassphrase("(1&&2&&3)", new string[] { "123", "132", "213", "231", "312", "321" }, Factorial(3));
+            TestPassphrase("(1&&2&&3)", new string[] { "123", "132", "213", "231", "312", "321" }, Utils.Factorial(3));
             TestPassphrase("((Correct||correct)&&(Horse||horse))", new string[] { "CorrectHorse", "Correcthorse", "horseCorrect" }, 8);
             TestPassphrase("((C||c)orrect&&(H||h)orse)", new string[] { "correcthorse", "HorseCorrect", "horsecorrect" }, 8);
             TestPassphrase("(H||h)ello(D||d)olly[!@#$%^&*][0-9][0-9]?", new string[] { "hellodolly!1", "hellodolly$42", "Hellodolly*69" }, 320 * 11);
@@ -257,7 +256,7 @@ namespace FixMyCrypto {
             TestPassphrase("((a&&b)||c)", new string[] { "ab", "ba", "c" }, 3);
             TestPassphrase("((a||b)&&c)", new string[] { "ac", "ca", "bc", "cb" }, 4);
             TestPassphrase("(The||the)(P||p)assphrase[0-9]?[!@#$%^&*()]?", "ThePassphrase!", 484);
-            TestPassphrase("((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]", new string[] { "CorrectHorseBatteryStaple1!", "horseStaplebatteryCorrect42?", "batterystaplecorrectHorse99@" }, 16 * Factorial(4) * 10 * 10 * 33);
+            TestPassphrase("((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]", new string[] { "CorrectHorseBatteryStaple1!", "horseStaplebatteryCorrect42?", "batterystaplecorrectHorse99@" }, 16 * Utils.Factorial(4) * 10 * 10 * 33);
             TestPassphrase("(a&&b)?c", new string[] { "abc", "bac", "c" }, 3);
 
             //  fuzzing
