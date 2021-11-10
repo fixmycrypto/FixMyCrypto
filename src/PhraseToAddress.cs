@@ -71,7 +71,7 @@ namespace FixMyCrypto {
             this.threadMax = threadMax;
             this.mutex = new object();
 
-            this.passphrases = new Passphrase(Settings.Passphrase);
+            this.passphrases = new Passphrase(Settings.Passphrase, Settings.FuzzDepth);
             this.HMAC512 = new HMACSHA512(ed25519_seed);
             this.HMAC256 = new HMACSHA256(ed25519_seed);
         }

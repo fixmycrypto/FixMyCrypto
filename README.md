@@ -7,13 +7,13 @@
 * Runs totally offline so your recovery phrase is never exposed to the internet
 * Automatically fixes most common mistakes which result in an "invalid recovery phrase" error:
     * Invalid words (e.g. fax -> fix)
-    * Valid but incorrect words (e.g. fix -> fox/fit/fog etc.)
+    * Incorrect words (e.g. fix -> fox/fit/fog etc.)
     * Swapped word order
     * Missing or unknown words
-* BIP39 passphrase cracking, including wildcards / partial brute forcing
+* BIP39 passphrase cracking, including: typo repair, wildcards, and partial brute forcing
 * Coin support: 
     * BTC (+ forks e.g. BCH, etc.)
-    * ETH (+ forks e.g. ETC, BSC, Layer 2)
+    * ETH (+ forks e.g. ETC, BSC, etc.)
     * LTC
     * DOGE
     * ADA (Cardano)
@@ -22,7 +22,8 @@
     * DOT (Polkadot)
     * Need another coin? Let us know!
 * Smart typo detection drastically reduces the search time
-    * Words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
+    * Phrase words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
+* Support for special Ledger/Trezor hardware key derivation modes used for Cardano, Algorand, and Polkadot
 * Simultaneous search of multiple derivation paths (including non-standard paths)
 * Search a specified range of accounts and indices
 * Highly multi-threaded, efficient key reuse when searching multiple paths/accounts/indices
@@ -80,7 +81,7 @@ Enter your recovery phrase between the quotation marks. The total number of word
 
 ### Unknown / Invalid Words:
 
-If you know the position of a word but you have absolutely no idea what that word is supposed to be, replace it with an asterisk (`*`). For example, if you're certain that you're missing the 2nd to last word, you would put:
+If you know the position of a word but you have absolutely no idea what that word is supposed to be, replace it with an asterisk (`*`). For example, if you're certain that you're missing the 2nd to last word:
 
     "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon * kiwi",
 
@@ -90,7 +91,7 @@ Repairing up to 3 invalid / incorrect words is typically feasible, sometimes 4 i
 
 ### Missing Words:
 
-If you are missing some words and don't know where they go or which position(s) are missing, add a question mark (`?`) to the end of the phrase for each missing word. For example, if you only have 11 out of 12 words, you would put:
+If you are missing some words and don't know where they go or which position(s) are missing, add a question mark (`?`) to the end of the phrase for each missing word. For example, if you only have 11 out of 12 words:
 
     "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon kiwi ?",
 
@@ -108,13 +109,33 @@ If you didn't use a "BIP39 passphrase" when you created the wallet or you're not
 
     "passphrase": "",
 
-If you did use a BIP39 passphrase, try to provide the exact passphrase that you used:
+If you did use a BIP39 passphrase and you are 100% certain of the exact passphrase you used, specify it here:
 
     "passphrase": "ThePassphrase!",
 
-## Passphrase Guessing:
+## Passphrase Fuzzing:
 
-If you have a pretty good but not exact idea of what the passphrase is, you can use the following wildcards. Keep in mind that each wildcard used will increase the search time exponentially. **Brute forcing the entirety of a long passphrase is not feasible.**
+Fuzzing is used when you may have made typos in your passphrase when you created the wallet or wrote down the passphrase. Fuzzing will test all possible typo mistakes, including: insertions, deletions, substitutions, and transpositions.
+
+To use passphrase fuzzing, place two curly braces `{{` at the start of the passphrase, and 2 at the end `}}`:
+
+    "passphrase": "{{ThePassphrase!}}",
+
+This will test e.g. "ThePass**hp**rase!" and all other single typos of "ThePassphrase!" (2,846 permutations).
+
+If you think you have more than 1 typo in your passphrase, you can set the `fuzzDepth` setting to 2 (this increases the search time exponentially):
+
+    "passphrase": "{{ThePassphrase!}}",
+
+    "fuzzDepth": 2,
+
+This will test e.g. "ThePass**hp**rase**1**" and all other single **or double** typos of "ThePassphrase!" (8,387,574 permutations).
+
+**Brute forcing more than 2 typos in a passphrase is unlikely to succeed due to the huge number of permutations**.  If you have at least some idea as to where the typo(s) were made, then try using wildcards.
+
+## Passphrase Wildcards:
+
+If you have a good idea of the components that make up the passphrase, but not the exact order or exact characters, you can use the following wildcards. Each wildcard used will increase the search time exponentially. **Brute forcing the entirety of a long passphrase is not feasible.**
 
 * `( )` parenthesis expressions contain Boolean expressions using `&&` (and) and `||` (or) operators
     * `(T||t)he` will match "The" OR "the"
@@ -133,6 +154,7 @@ If you have a pretty good but not exact idea of what the passphrase is, you can 
     * `[!@#$%^&*()]` will match one of the listed special symbols
     * `([)`, `(])` use parenthesis to escape a square bracket in the passphrase
     * `[(]`, `[)]` use square brackets to escape a parenthesis in the passphrase
+    * `[{]` use square brackets around a curly brace to escape it, if your passphrase happens to start AND end with 2 curly braces
     * `[?]` will escape a question mark (only needed if it comes immediately after a right square bracket or right parenthesis)
     * `^` at the start of a bracket expression means to exclude all the listed items, i.e. match any ASCII printable character except for those that are listed.
         * `[^a-zA-Z]` will match any non-letter character (matches one digit or symbol)
@@ -142,7 +164,7 @@ If you have a pretty good but not exact idea of what the passphrase is, you can 
 * `?` after a parenthesis or bracket expression indicates that the enclosed item is optional (i.e. it occurs zero or one times)
     * `(T|t)?he` will match "The", "the", or "he"
     * `Hello Dolly[!$]?` will match "Hello Dolly", "Hello Dolly!", or "Hello Dolly$"
-    * `[0-9][0-9]?` will match any one or two digits 0-9 and 00-99 (including 00, 01, etc.)
+    * `[0-9][0-9]?` will match any one or two digits 0 - 9 and 00 - 99 (including 00, 01, etc.)
     * `[1-9]?[0-9]` will match any one or two digit number 0 - 99 (but NOT 00, 01, etc.)
 
 ### Example 1: 
@@ -164,6 +186,17 @@ This would match:
 * "CorrectHorseBatteryStaple1!"
 * "horseStaplebatteryCorrect42?"
 * "batterystaplecorrectHorse99@", etc. (1,267,200 permutations)
+
+### Example 3:
+
+You're certain that your passphrase is supposed to be "CorrectHorseBatteryStaple42!", but it doesn't generate matching addresses in your wallet. Try passphrase fuzzing:
+
+    "passphrase": "{{CorrectHorseBatteryStaple42!}}",
+
+This would match all possible single typos:
+* "CorrectHorseBatterySta**b**le42!"
+* "Co**r**ectHorseBatteryStaple42!"
+* "CorrectHo**o**rseBatteryStaple42!", etc. (5,793 permutations)
 
 ---
 

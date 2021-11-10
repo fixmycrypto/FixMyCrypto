@@ -12,6 +12,8 @@ namespace FixMyCrypto {
 
         public static string Passphrase { get { if (result.passphrase != null) return (string)result.passphrase.Value; else return null; } }
 
+        public static int FuzzDepth { get { if (result.fuzzDepth != null) return (int)result.fuzzDepth.Value; else return 1; }}
+
         public static string[] KnownAddresses { get { return result.knownAddresses.ToObject<string[]>(); } }
 
         public static CoinType CoinType { get { return GetCoinType(result.coin.Value); } }

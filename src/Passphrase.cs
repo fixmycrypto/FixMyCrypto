@@ -364,13 +364,26 @@ namespace FixMyCrypto {
 
     class Passphrase {
         Part root;
+        string toFuzz;
+        int depth = 1;
 
-        public Passphrase(string passphrase) {
-            root = new Part(passphrase);
+        public Passphrase(string passphrase, int fuzzDepth = 1) {
+            if (passphrase.StartsWith("{{") && passphrase.EndsWith("}}")) {
+                toFuzz = passphrase.Substring(2, passphrase.Length - 4);
+                depth = fuzzDepth;
+            }
+            else {
+                root = new Part(passphrase);
+            }
         }
 
         public IEnumerable<string> Enumerate() {
-            foreach (string r in root.Enumerate()) yield return r;
+            if (root != null) {
+                foreach (string r in root.Enumerate()) yield return r;
+            }
+            else {
+                foreach (string r in Fuzz(toFuzz, depth)) yield return r;
+            }
         }
 
         public override string ToString() {
@@ -378,7 +391,67 @@ namespace FixMyCrypto {
         }
 
         public int GetCount() {
-            return root.GetCount();
+            if (root != null) return root.GetCount();
+
+            if (depth == 1) return
+                    toFuzz.Length                                   //  Deletions
+                    + (toFuzz.Length * (0x7f - 0x20 - 1))           //  Substitutions
+                    + ((toFuzz.Length + 1) * (0x7f - 0x20))         //  Insertions
+                    + (toFuzz.Length * (toFuzz.Length - 1) / 2);    //  Transpositions
+
+            //  TODO: Better way to count permutations when depth > 1
+            int count = 0;
+            foreach (string r in Fuzz(toFuzz, depth)) count++;
+            return count;
+        }   
+
+        private IEnumerable<string> Fuzz(string src, int depth) {
+            if (depth == 0) {
+                yield return src;
+                yield break;
+            }
+
+            //  Deletions
+            for (int i = 0; i < src.Length; i++) {
+                string test = src.Substring(0, i) + src.Substring(i + 1);
+                // Log.Debug($"delete {i}: {test}");
+                foreach (string r in Fuzz(test, depth - 1)) yield return r;
+            }
+
+            //  Substitutions
+            for (int i = 0; i < src.Length; i++) {
+                for (byte c = 0x20; c < 0x7f; c++) {
+                    if (src[i] == (char)c) continue;
+
+                    string test = src.Substring(0, i) + (char)c + src.Substring(i + 1);
+                    // Log.Debug($"sub {i} with {(char)c}: {test}");
+                    foreach (string r in Fuzz(test, depth - 1)) yield return r;
+                }
+            }
+
+            //  Insertions
+            for (int i = 0; i <= src.Length; i++) {
+                for (byte c = 0x20; c < 0x7f; c++) {
+                    string test = src.Substring(0, i) + (char)c + src.Substring(i);
+                    // Log.Debug($"insert {i} with {(char)c}: {test}");
+                    foreach (string r in Fuzz(test, depth - 1)) yield return r;
+                }
+            }
+
+            //  Transpositions
+            for (int i = 0; i < src.Length - 1; i++) {
+                for (int j = i + 1; j < src.Length; j++) {
+                    char[] c = src.ToCharArray();
+
+                    char tmp = c[i];
+                    c[i] = c[j];
+                    c[j] = tmp;
+
+                    string test = new string(c);
+                    // Log.Debug($"transpose {i} {j}: {test}");
+                    foreach (string r in Fuzz(test, depth - 1)) yield return r;
+                }
+            }
         }
     }
 
