@@ -393,28 +393,60 @@ namespace FixMyCrypto {
         }
 
         private string EscapeString(string s) {
-            return s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("<", "&lt;").Replace("|", "\\|");
         }
 
         public string GetTopology(bool root = false, string parentLabel = "") {
             string label = this.ToString();
             int id = (parentLabel + label).GetHashCode();
+            string nodes;
 
-            string nodes = $"\t\"{id:X8}\" [label=\"{EscapeString(label)}\"{(root ? " root=\"true\"" : "")}{(opType == OpType.Ordered ? " ordering=\"out\"" : "")}]\n";
+            if (opType == OpType.Ordered && parts.Length > 1) {
+                string recordLabel = "";
+                int record = 0;
+                foreach (Part p in parts) {
+                    if (recordLabel.Length > 0) recordLabel += "|";
+                    recordLabel += $"<f{record}> {EscapeString(p.ToString())}";
+                    record++;
+                }
+                //  add record node
+                nodes = $"\t\"{id:X8}\" [label=\"{recordLabel}\"{(root ? " root=\"true\"" : "")} ordering=\"out\" shape=record]\n";
 
-            foreach (Part p in this.parts) {
-                nodes += p.GetTopology(root, label);
-                string child = p.ToString();
-                int childId =  (label + child).GetHashCode();
-                nodes += $"\t\"{id:X8}\"\t->\t\"{childId:X8}\"\n";
+                for (int i = 0; i < parts.Length; i++) {
+                    Part p = parts[i];
+                    //  skip single string parts, since they are contained in the record label
+                    if (p.stringValue != null) continue;
+
+                    nodes += p.GetTopology(parentLabel: label);
+                    string child = p.ToString();
+                    int childId =  (label + child).GetHashCode();
+                    string target = p.opType == OpType.Ordered && p.parts.Length > 1 ? ":f0" : "";
+
+                    //  add parent link to child
+                    nodes += $"\t\"{id:X8}\":f{i} -> \"{childId:X8}{target}\"\n";
+                }
             }
+            else {
+                string shape = "oval";
+                if (opType == OpType.Or && parts.Length > 1) shape = "invhouse";
+                if (opType == OpType.And) shape = "box style=rounded";
+                nodes = $"\t\"{id:X8}\" [label=\"{EscapeString(label)}\"{(root ? " root=\"true\"" : "")}{(opType == OpType.Ordered && parts.Length > 1 ? " ordering=\"out\"" : "")} shape={shape}]\n";
 
-            if (this.optional) {
-                Part p = new Part("");
-                string child = p.ToString();
-                int childId =  (label + child).GetHashCode();
-                nodes += p.GetTopology(root, label);
-                nodes += $"\t\"{id:X8}\"\t->\t\"{childId:X8}\"\n";
+                foreach (Part p in this.parts) {
+                    nodes += p.GetTopology(parentLabel: label);
+                    string child = p.ToString();
+                    int childId =  (label + child).GetHashCode();
+                    string target = p.opType == OpType.Ordered && p.parts.Length > 1 ? ":f0" : "";
+                    nodes += $"\t\"{id:X8}\"\t->\t\"{childId:X8}\"{target}\n";
+                }
+
+                if (this.optional) {
+                    Part p = new Part("");
+                    string child = p.ToString();
+                    int childId =  (label + child).GetHashCode();
+                    nodes += p.GetTopology(parentLabel: label);
+                    nodes += $"\t\"{id:X8}\"\t->\t\"{childId:X8}\"\n";
+                }
             }
 
             return nodes;
@@ -524,11 +556,7 @@ namespace FixMyCrypto {
 
             //  https://graphviz.org/doc/info/lang.html
 
-            string topology = 
-                @"digraph G {
-                    overlap = false
-                    concentrate = false
-                ";
+            string topology = "digraph G {\n\toverlap = false\n\tconcentrate = false\n";
 
             if (root != null) {
                 topology += root.GetTopology(true);
