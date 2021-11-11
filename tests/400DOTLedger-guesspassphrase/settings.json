@@ -17,5 +17,7 @@
 
     "coin": "DOTLedger",  //  "BTC", "ADA", "ETH", "DOGE", "LTC"
 
-    "logLevel": 5      //  Debug = 5, Info = 4, Warning = 3, Error = 2, None = 0,
+    "logLevel": 5,      //  Debug = 5, Info = 4, Warning = 3, Error = 2, None = 0,
+
+    "topologyFile": "graph.dot"
 }

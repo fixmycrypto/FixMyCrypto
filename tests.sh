@@ -13,7 +13,7 @@ for d in */ ; do
 
     pushd $d > /dev/null 2>&1 
 
-    rm -f results.json log.txt
+    rm -f results.json log.txt graph.dot
 
     if ! ../../bin/Release/net6.0/FixMyCrypto -ni >> log.txt; then
         echo Test $d failed FixMyCrypto with $?

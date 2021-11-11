@@ -44,6 +44,8 @@ namespace FixMyCrypto {
 
         public static LogLevel logLevel {get { if (result.logLevel != null) return (LogLevel)Enum.Parse(typeof(LogLevel), result.logLevel.Value.ToString(), true); else return LogLevel.Info; } }
 
+        public static string TopologyFile { get { return result.topologyFile; } }
+
         public static string GetApiPath(CoinType coin) {
             switch (coin) {
                 case CoinType.ADA:

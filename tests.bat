@@ -16,7 +16,7 @@ for /D %%i in (*) do (
     pushd %%i
 
     Rem delete old test results
-    del /q results.json log.txt
+    del /q results.json log.txt graph.dot
 
     Rem run program
     ..\..\bin\Release\net6.0\FixMyCrypto -ni >> log.txt

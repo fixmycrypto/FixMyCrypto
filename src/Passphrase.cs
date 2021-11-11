@@ -16,6 +16,9 @@ namespace FixMyCrypto {
         string stringValue;
         bool optional;
 
+        //  for graphviz only
+        string range;
+
         private static bool IsStartDelimiter(char c) {
             switch (c) {
                 case '[':
@@ -114,6 +117,7 @@ namespace FixMyCrypto {
         private List<Part> CreateOptionSet(string set) {
             bool exclude = false;
             this.opType = OpType.Or;
+            this.range = set;
 
             if (set.StartsWith("^")) {
                 set = set.Substring(1);
@@ -360,6 +364,61 @@ namespace FixMyCrypto {
 
             return count;
         }
+
+        public override string ToString() {
+            string label = this.stringValue;
+
+            if (label == null) {
+                if (this.opType == OpType.Ordered) {
+                    label = "";
+                    foreach (Part p in this.parts) {
+                        label += p.ToString();
+                    }
+                }
+                else if (this.range != null) {
+                    label = $"[{this.range}]";
+                    if (optional) label += "?";
+                }
+                else if (this.opType == OpType.Or) {
+                    label = "(" + String.Join("||", (object[])this.parts) + ")";
+                    if (optional) label += "?";
+                }
+                else if (this.opType == OpType.And) {
+                    label = "(" + String.Join("&&", (object[])this.parts) + ")";
+                    if (optional) label += "?";
+                }
+            }
+
+            return label;
+        }
+
+        private string EscapeString(string s) {
+            return s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+        }
+
+        public string GetTopology(bool root = false, string parentLabel = "") {
+            string label = this.ToString();
+            int id = (parentLabel + label).GetHashCode();
+
+            string nodes = $"\t\"{id:X8}\" [label=\"{EscapeString(label)}\"{(root ? " root=\"true\"" : "")}{(opType == OpType.Ordered ? " ordering=\"out\"" : "")}]\n";
+
+            foreach (Part p in this.parts) {
+                nodes += p.GetTopology(root, label);
+                string child = p.ToString();
+                int childId =  (label + child).GetHashCode();
+                nodes += $"\t\"{id:X8}\"\t->\t\"{childId:X8}\"\n";
+            }
+
+            if (this.optional) {
+                Part p = new Part("");
+                string child = p.ToString();
+                int childId =  (label + child).GetHashCode();
+                nodes += p.GetTopology(root, label);
+                nodes += $"\t\"{id:X8}\"\t->\t\"{childId:X8}\"\n";
+            }
+
+            return nodes;
+        }
     }
 
     class Passphrase {
@@ -400,6 +459,7 @@ namespace FixMyCrypto {
                     + (toFuzz.Length * (toFuzz.Length - 1) / 2);    //  Transpositions
 
             //  TODO: Better way to count permutations when depth > 1
+            //  It isn't GetCount(depth: 1) ^ 2 due to insertions/deletions changing the length
             int count = 0;
             foreach (string r in Fuzz(toFuzz, depth)) count++;
             return count;
@@ -452,6 +512,38 @@ namespace FixMyCrypto {
                     foreach (string r in Fuzz(test, depth - 1)) yield return r;
                 }
             }
+        }
+
+        public void WriteTopologyFile(string path) {
+            string topology = GetTopology();
+
+            System.IO.File.WriteAllText(path, topology);
+        }
+
+        private string GetTopology() {
+
+            //  https://graphviz.org/doc/info/lang.html
+
+            string topology = 
+                @"digraph G {
+                    overlap = false
+                    concentrate = false
+                ";
+
+            if (root != null) {
+                topology += root.GetTopology(true);
+            }
+            else {
+                //  dummy topology for passphrase fuzz mode
+
+                Part p = new Part("{{" + toFuzz + "}}");
+
+                topology += p.GetTopology(true);
+            }
+
+            topology += "}\n";
+
+            return topology;
         }
     }
 

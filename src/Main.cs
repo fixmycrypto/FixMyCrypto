@@ -106,6 +106,11 @@ namespace FixMyCrypto {
 
                 Passphrase p = new Passphrase(Settings.Passphrase, Settings.FuzzDepth);
                 Log.All($"passphrase permutations: {p.GetCount()}");
+
+                if (!String.IsNullOrEmpty(Settings.TopologyFile)) {
+                    p.WriteTopologyFile(Settings.TopologyFile);
+                    Log.All($"Passphrase topology written to: {Settings.TopologyFile}");
+                }
             }
             
             if (Settings.Paths != null) {

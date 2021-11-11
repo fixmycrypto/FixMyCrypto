@@ -8,3 +8,4 @@ secrets.json
 key.txt
 *.bak
 tests/**/log.txt
+graph.dot
