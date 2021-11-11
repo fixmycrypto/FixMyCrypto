@@ -137,13 +137,12 @@ This will test e.g. "ThePass**hp**rase**1**" and all other single **or double** 
 
 If you have a good idea of the components that make up the passphrase, but not the exact order or exact characters, you can use the following wildcards. Each wildcard used will increase the search time exponentially. **Brute forcing the entirety of a long passphrase is not feasible.**
 
-* `( )` parenthesis expressions contain Boolean expressions using `&&` (and) and `||` (or) operators
-    * `(T||t)he` will match "The" OR "the"
+* `( )` parenthesis contain Boolean expressions using `&&` (and) and `||` (or) operators
     * `(Correct||Horse||Battery)` will match "Correct", "Horse", OR "Battery"
     * `(Correct&&Horse&&Battery)` will match "CorrectHorseBattery", "CorrectBatteryHorse", "HorseCorrectBattery", etc. (all permutations of Correct AND Horse AND Battery)
     * You can nest Boolean expressions:
         * `((a||b)&&c)` will match "ac", "bc", "ca", or "cb" (but NOT "ab" or "abc")
-        * `((C||c)orrect&&(H||h)orse)` will match "CorrectHorse", "Correcthorse", "HorseCorrect", "horsecorrect", etc. (all permutations)
+        * `((C||c)orrect&&(H||h)orse)` will match "CorrectHorse", "Correcthorse", "HorseCorrect", "horsecorrect", etc.
     * However, you cannot mix and/or operators in a single Boolean expression:
         * `(a&&b||c)` is not valid
 * `[ ]` square bracket expressions match one of any of the characters or ranges contained within:
