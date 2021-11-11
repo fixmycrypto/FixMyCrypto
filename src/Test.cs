@@ -234,10 +234,13 @@ namespace FixMyCrypto {
             //  Needed to init word lists
             Wordlists.Initialize(null);
 
+            /*
             //  Passphrase topology
-            // Passphrase ph = new Passphrase("(The||the)(P||p)assphrase[0-9]?[!@#$%^&*()]?");
-            Passphrase ph = new Passphrase("((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]");
+            Passphrase ph = new Passphrase("(The||the)(P||p)assphrase[0-9]?[!@#$%^&*()]?");
+            // Passphrase ph = new Passphrase("((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]");
             ph.WriteTopologyFile("graph.dot");
+            return;
+            */
 
             //  Test passphrase expansion
             TestPassphrase("Passphrase!", "Passphrase!", 1);

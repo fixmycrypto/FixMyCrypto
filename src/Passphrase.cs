@@ -423,21 +423,29 @@ namespace FixMyCrypto {
                     string target = p.opType == OpType.Ordered && p.parts.Length > 1 ? ":f0" : "";
 
                     //  add parent link to child
-                    nodes += $"\t\"{id:X8}\":f{i} -> \"{childId:X8}{target}\"\n";
+                    nodes += $"\t\"{id:X8}\":f{i} -> \"{childId:X8}{target}\":n\n";
                 }
             }
             else {
+                string readableLabel = label;
+                if (parts.Length > 1 && range == null) {
+                    readableLabel = "";
+                    foreach (Part p in parts) {
+                        if (readableLabel.Length > 0) readableLabel += opType == OpType.And ? " AND " : " OR ";
+                        readableLabel += "\"" + p.ToString() + "\"";
+                    }
+                }
                 string shape = "oval";
                 if (opType == OpType.Or && parts.Length > 1) shape = "invhouse";
                 if (opType == OpType.And) shape = "box style=rounded";
-                nodes = $"\t\"{id:X8}\" [label=\"{EscapeString(label)}\"{(root ? " root=\"true\"" : "")}{(opType == OpType.Ordered && parts.Length > 1 ? " ordering=\"out\"" : "")} shape={shape}]\n";
+                nodes = $"\t\"{id:X8}\" [label=\"{EscapeString(readableLabel)}\"{(root ? " root=\"true\"" : "")}{(opType == OpType.Ordered && parts.Length > 1 ? " ordering=\"out\"" : "")} shape={shape}]\n";
 
                 foreach (Part p in this.parts) {
                     nodes += p.GetTopology(parentLabel: label);
                     string child = p.ToString();
                     int childId =  (label + child).GetHashCode();
                     string target = p.opType == OpType.Ordered && p.parts.Length > 1 ? ":f0" : "";
-                    nodes += $"\t\"{id:X8}\"\t->\t\"{childId:X8}\"{target}\n";
+                    nodes += $"\t\"{id:X8}\"\t->\t\"{childId:X8}\"{target}:n\n";
                 }
 
                 if (this.optional) {
@@ -445,7 +453,7 @@ namespace FixMyCrypto {
                     string child = p.ToString();
                     int childId =  (label + child).GetHashCode();
                     nodes += p.GetTopology(parentLabel: label);
-                    nodes += $"\t\"{id:X8}\"\t->\t\"{childId:X8}\"\n";
+                    nodes += $"\t\"{id:X8}\"\t->\t\"{childId:X8}\":n\n";
                 }
             }
 
