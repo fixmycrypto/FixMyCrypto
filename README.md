@@ -77,7 +77,7 @@ If you have many coins tied to the same phrase, pick any coin for which you are 
 
 ### Required
 
-Enter your recovery phrase between the quotation marks. The total number of words must be the same number as the length of your original recovery phrase (12, 15, 18, or 24 words for most cryptos; 25 words for `My Algo` wallets). 
+Enter your recovery phrase ("seed phrase" or "mnemonic phrase") between the quotation marks. The total number of words must be the same number as the length of your original recovery phrase (12, 15, 18, or 24 words for most cryptos; 25 words for `My Algo` wallets). 
 
     "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon kiwi strawberry",
 
@@ -87,7 +87,7 @@ If you know the position of a word but you have no idea what that word is suppos
 
     "phrase": "apple * pear watermelon kiwi strawberry apple banana pear watermelon kiwi pear",
 
-**Hint:** You might be tempted to replace any invalid words (words you wrote down that aren't on the BIP39 list) with a valid word from the list or a `*`, but it's actually better to leave any mistakes as-is. By leaving the invalid words in place, the software will immediately know which word(s) need to be changed first, instead of needing to check every word in the phrase. Also, the program may do a better job than you of guessing which typos were made and which replacement words should be tested.
+**Hint:** You might be tempted to replace any invalid words (words you wrote down that aren't on the BIP39 list) with a valid word from the list or a `*`, but it's actually better to leave any mistakes as-is. By leaving the invalid words in place, the software will immediately know which word(s) need to be changed first, instead of needing to check every word in the phrase. Also, the program will likely do a better job than you of guessing which typos were made and which replacement words should be tested.
 
 Repairing up to 3 invalid / incorrect words is typically feasible, sometimes 4 if the typos aren't too bad, but each additional incorrect word will increase the search time exponentially.
 
