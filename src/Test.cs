@@ -275,7 +275,7 @@ namespace FixMyCrypto {
             TestPassphrase("{{Foo92!}}", new string[] { "Foo93!", "Foo92", "Foo9!", "Food92!", "Foo92!a" });
             TestPassphrase("{{Food92?}}", new string[] { "Foo92?" });
             TestPassphrase("{{ThePassphrase!}}", new string[] { "ThePasshprase!", "thePassphrase!" });
-            TestPassphrase("{{CorrectHorseBatteryStable42!}}", new string[] { "CorrectHorseBatteryStaple42!" });
+            TestPassphrase("{{CorrectHorseBatteryStaple42!}}", new string[] { "CorrectHorseBatteryStable42!", "CorectHorseBatteryStaple42!", "CorrectHoorseBatteryStaple42!" });
             //  fuzz depth 2
             TestPassphrase("{{Foo92!}}", new string[] { "Foo93!", "Foo92", "Foo9!", "Food92!", "Foo92!a", "Foo83!", "Fo92", "food92!", "Foo92!ab" }, depth: 2);
             TestPassphrase("{{ThePassphrase!}}", new string[] { "ThePasshprase!", "thePassphrase!", "ThePasshprase1" }, depth: 2);
