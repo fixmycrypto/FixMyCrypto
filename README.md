@@ -45,33 +45,35 @@ If you found this software useful, please consider donating to fund future devel
 * ALGO: EPQZU6GMEMKKEQH4CP7U2U2NTQE2ZVMOYAS7F5WMCUYIAYUKNJVUHW5W5A
 * DOT: 14jUHiE429X8HwPRmj2Sy4Xvo5Z9ewJJJ273ctvmQgxgTJ4b
 
-# Build
+# How to use
 
-See BUILD.md
-
-# Usage
-
-1. Install the [.NET (dotnet) 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
-2. Clone (or download) the repository: `git clone https://github.com/fixmycrypto/FixMyCrypto.git`
-3. Download package dependencies: `dotnet restore`
-4. **Disconnect from the network (unplug Ethernet cable, shut off WiFi).**
-5. Copy or rename "settings.example.json" to "settings.json"
-6. Edit the `settings.json` file, filling in the details as described below.
-7. Run program: `dotnet run`, or load the project is VS Code and use the Run configuration
+1. Download the latest release from the Releases tab (or see [`BUILD.md`](BUILD.md) to build from source)
+2. Extract the .zip file to a folder
+3. Copy or rename "settings.example.json" to "settings.json"
+4. (Optional) Run `FixMyCrypto` to watch it run with the default included settings (using a test recovery phrase)
+5. **Disconnect from the network (unplug Ethernet cable, shut off WiFi).**
+6. Edit the `settings.json` file, filling in the details as described below. At a **minimum**, you must provide:
+    * [Coin](#coin)
+    * [Phrase](#phrase)
+    * [Passphrase](#passphrase) (if used)
+    * [Known address](#known-addresses) (at least one)
+7. Run `FixMyCrypto`
 
 ---
 
-# Configuration (settings.json file):
+# Configuration (settings.json file)
 
-## Coin:
+## Coin
 
 ### Required
 
-Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`, `LTC`, `SOL`, `ALGO`, `DOT`, etc.). (For ADA or DOT used with a Ledger or Trezor hardware wallet, see the relevant "special use cases" section below.)
+Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`, `LTC`, `SOL`, `ALGO`, `DOT`, etc.). (For ADA or DOT used with a Ledger or Trezor hardware wallet, see the relevant [special use cases](#special-use-cases) section.)
 
     "coin": "BTC",
 
-## Phrase:
+If you have many coins tied to the same phrase, pick any coin for which you are sure you know the first address (account 0, index 0) which will speed up the search.
+
+## Phrase
 
 ### Required
 
@@ -81,9 +83,9 @@ Enter your recovery phrase between the quotation marks. The total number of word
 
 ### Unknown / Invalid Words:
 
-If you know the position of a word but you have absolutely no idea what that word is supposed to be, replace it with an asterisk (`*`). For example, if you're certain that you're missing the 2nd to last word:
+If you know the position of a word but you have no idea what that word is supposed to be, replace it with an asterisk (`*`). For example, if you're certain that you're missing the 2nd word:
 
-    "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon * kiwi",
+    "phrase": "apple * pear watermelon kiwi strawberry apple banana pear watermelon kiwi pear",
 
 **Hint:** You might be tempted to replace any invalid words (words you wrote down that aren't on the BIP39 list) with a valid word from the list or a `*`, but it's actually better to leave any mistakes as-is. By leaving the invalid words in place, the software will immediately know which word(s) need to be changed first, instead of needing to check every word in the phrase. Also, the program may do a better job than you of guessing which typos were made and which replacement words should be tested.
 
@@ -99,7 +101,7 @@ A single missing word (one `?`) can be solved quickly, two missing words will ta
 
 ---
 
-## Passphrase:
+## Passphrase
 
 ### Required
 
@@ -113,7 +115,7 @@ If you did use a BIP39 passphrase and you are 100% certain of the exact passphra
 
     "passphrase": "ThePassphrase!",
 
-## Passphrase Fuzzing:
+## Passphrase Fuzzing
 
 Fuzzing is used when you may have made typos in your passphrase when you created the wallet or wrote down the passphrase. Fuzzing will test all possible typo mistakes, including: insertions, deletions, substitutions, and transpositions.
 
@@ -133,7 +135,7 @@ This will test e.g. "ThePass**hp**rase**1**" and all other single **or double** 
 
 **Brute forcing more than 2 typos in a passphrase is unlikely to succeed due to the huge number of permutations**.  If you have at least some idea as to where the typo(s) were made, then try using wildcards.
 
-## Passphrase Wildcards:
+## Passphrase Wildcards
 
 If you have a good idea of the components that make up the passphrase, but not the exact order or exact characters, you can use the following wildcards. Each wildcard used will increase the search time exponentially. **Brute forcing the entirety of a long passphrase is not feasible.**
 
@@ -166,7 +168,7 @@ If you have a good idea of the components that make up the passphrase, but not t
     * `[0-9][0-9]?` will match any one or two digits 0 - 9 and 00 - 99 (including 00, 01, etc.)
     * `[1-9]?[0-9]` will match any one or two digit number 0 - 99 (but NOT 00, 01, etc.)
 
-### Example 1: 
+### Example 1
 Your passphrase contains the words "hello" and "dolly" (in that order, with uncertain capitalization), followed by one symbol out of `!@#$%^&*`, and finally one or two digits:
 
     "passphrase": "(H||h)ello(D||d)olly[!@#$%^&*][0-9][0-9]?",
@@ -176,7 +178,7 @@ This would match:
 * "HelloDolly$42"
 * "Hellodolly*69", etc. (3,520 permutations)
 
-### Example 2: 
+### Example 2
 Your passphrase contains the words "correct", "horse", "battery", and "staple", in unknown order or capitalization, followed by a one or two digit number, and then one non-alphanumeric symbol:
 
     "passphrase": "((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]",
@@ -186,7 +188,7 @@ This would match:
 * "horseStaplebatteryCorrect42?"
 * "batterystaplecorrectHorse99@", etc. (1,267,200 permutations)
 
-### Example 3:
+### Example 3
 
 You're certain that your passphrase is supposed to be "CorrectHorseBatteryStaple42!", but it doesn't generate matching addresses in your wallet. Try passphrase fuzzing:
 
@@ -199,7 +201,7 @@ This would match all possible single typos:
 
 ---
 
-## Known Addresses:
+## Known Addresses
 
 ### Strongly Recommended
 
@@ -207,13 +209,15 @@ Provide 1 or more addresses that you are certain belong to this wallet. Ideally,
 
 In the case of Ethereum, only one address (index 0) is typically used because the same address is used for every transaction on the same account.
 
-Example for one known address:
+### Example for one known address
 
     "knownAddresses":  [
         "bc1qmr9cmy3p3q695mkn5rnmz27csvnvr2ja05wa4p"
     ],
 
-Example for multiple known addresses:
+If the address you provide is not the first address for your first account (account 0, index 0), then you probably need to set the indices and accounts ranges as described below.
+
+### Example for multiple known addresses
 
     "knownAddresses":  [
             "bc1qmr9cmy3p3q695mkn5rnmz27csvnvr2ja05wa4p",
@@ -225,7 +229,7 @@ Example for multiple known addresses:
 
 ---
 
-## Indices:
+## Indices
 
 ### Recommended
 
@@ -237,19 +241,19 @@ ETH and SOL typically only use address index 0, so you should change this to `"0
 
 ALGO uses neither index nor account numbers.
 
-## Accounts:
+## Accounts
 
 ### Recommended
 
 Similar to indices, "accounts" specifies the range of accounts to check against. For most users, if you had only one account for a particular coin tied to this recovery phrase, the account should be set to `"0"`. As with "indices", you can specify a range using hyphens and commas.
 
-## Paths:
+## Paths
 
 ### Optional (usually)
 
 This specifies the derivation path(s) used to generate addresses. Most users can leave this blank to search using default derivation paths. In most cases we can detect the path from the address format or the default paths used by the coin. However, if you used a particularly old wallet software or one known to use a non-standard derivation path, it will be necessary to specify it here. You can specify one or more paths. The more paths you specify, the longer the search will take. Use `{account}` as the placeholder for the account number, and `{index}` as the placeholder for the address index.
 
-Examples:
+### Example
 
 If you used old versions of Ledger or Coinomi to generate legacy BTC addresses which start with "1…", you may need to specify this non-standard path:
 
@@ -260,8 +264,9 @@ If you used old versions of Ledger or Coinomi to generate legacy BTC addresses w
 Note that the search will fail if none of the paths you specify match the one used to generate your wallet addresses.
 
 ---
+## Special use cases
 
-## Ethereum special use cases:
+### Ethereum
 
 If you used a Ledger hardware wallet to generate an Ethereum address around 2019 or prior, you may need to specify the non-standard derivation path `m/44'/60'/{account}'/{index}`, as opposed to the standard path `m/44'/60'/{account}'/0/{index}` (note the extra 0 between the account & index, which is for specifying external vs internal change addresses, but was missing from older Ledger versions).
 
@@ -277,7 +282,7 @@ If you used older versions of Metamask together with a Ledger hardware wallet, s
 
     "accounts": "0-10",
 
-## Ethereum Classic (ETC):
+### Ethereum Classic (ETC)
 
 Use "ETH" for the coin type, and use one or more of the following paths:
 
@@ -288,13 +293,13 @@ Use "ETH" for the coin type, and use one or more of the following paths:
 
 See https://medium.com/myetherwallet/hd-wallets-and-derivation-paths-explained-865a643c7bf2 for other possible paths used by ETC and other ETH-derived coins. You can search multiple paths at the same time if you aren't sure which one to use.
 
-## Cardano (ADA) special use cases:
+### Cardano (ADA)
 
 Ledger & Trezor hardware wallets use unique methods to convert your recovery phrase into a master private key, which is not compatible with the official Cardano key spec used by software wallets like Daedalus, Yoroi, and Adalite. This means the same recovery phrase will create a different wallet (different addresses) depending on whether you use the phrase on a Ledger, Trezor, or software wallet. If you used a Ledger or Trezor wallet for Cardano and need to recover it, use the coin type `ADATrezor` or `ADALedger` to recover your address, otherwise the addresses won't match and recovery won't be possible.
 
     "coin": "ADALedger",
 
-## Algorand (ALGO) special use cases:
+### Algorand (ALGO)
 
 `My Algo` software wallet for Algorand uses a 25 word phrase (not including a passphrase) and the derivation path `m`.
 
@@ -308,7 +313,7 @@ If you happen to know which one you need, specifying the path will speed things 
 
 Other wallet software may use different phrases or paths.
 
-## Polkadot (DOT) special use cases:
+### Polkadot (DOT)
 
 For the coin `DOT`, Polkadot{.js} Extension style addresses (using sr25519 signatures) are supported. This includes Polkadot, Kusama, and Generic Substrate addresses.
 
@@ -322,7 +327,7 @@ Other address formats (e.g. secp256k signatures) or custom derivation paths are 
 
 ---
 
-## Other settings:
+## Other settings
 
 * `difficulty` (default 0, range 0-4) controls which algorithms (different types of word substitutions, swaps, etc.) will be tested. Leave this at default unless the program fails to find your correct phrase. If you're sure that your known addresses and paths are correct, you can try increasing the difficulty setting to 1-4. Higher settings will take MUCH longer to run.
 
