@@ -9,6 +9,8 @@
     <NoWarn>NU1701</NoWarn>
     <AssemblyVersion>1.9.0.0</AssemblyVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);lib\**</DefaultItemExcludes>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -28,12 +30,4 @@
     </None>
     <ProjectReference Include="lib\sr25519-dotnet\sr25519-dotnet.lib\sr25519-dotnet.lib.csproj" />
   </ItemGroup>
-
-  <Target Name="CopyDLLs" AfterTargets="Build" >
-    <Message Text="Copy DLL to $(OutDir)" Importance="High" />
-    <Copy Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' " Sourcefiles="lib\sr25519-dotnet\native\libs\x86_64-pc-windows-msvc\sr25519crust.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
-    <Copy Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' " Sourcefiles="lib\sr25519-dotnet\native\libs\x86_64-unknown-linux-gnu\libsr25519crust.so" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
-    <Copy Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' " Sourcefiles="lib\sr25519-dotnet\native\libs\universal-apple-darwin\libsr25519crust.dylib" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
-  </Target>
-
 </Project>
