@@ -160,7 +160,7 @@ namespace FixMyCrypto {
             //  TODO avoid string conversion
             string p = phrase.ToPhrase();
             Mnemonic b = new Mnemonic(p);
-            return new ExtKey(b.DeriveSeed(passphrase));
+            return ExtKey.CreateFromSeed(b.DeriveSeed(passphrase));
         }
         protected override Object DeriveChildKey(Object parentKey, uint index) {
             ExtKey key = (ExtKey)parentKey;
