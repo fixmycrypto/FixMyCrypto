@@ -1,7 +1,9 @@
 {
-    "coin": "BTC",  //  "BTC", "BCH", "ADA" ("ADATrezor", "ADALedger"), "ETH", "DOGE", "LTC"
+    "coin": "BTC",
 
     "phrase": "viable duck cable tunnel text pilot monkey huge hold laundry leave draft",
+
+    "passphrase": "",
 
     "knownAddresses":  [
         "bc1qmr9cmy3p3q695mkn5rnmz27csvnvr2ja05wa4p"
@@ -13,7 +15,5 @@
 
     "paths": [
 
-    ],
-
-    "passphrase": ""
+    ]
 }
