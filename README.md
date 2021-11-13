@@ -81,7 +81,7 @@ Enter your recovery phrase between the quotation marks. The total number of word
 
     "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon kiwi strawberry",
 
-### Unknown / Invalid Words:
+### Unknown / Invalid Words
 
 If you know the position of a word but you have no idea what that word is supposed to be, replace it with an asterisk (`*`). For example, if you're certain that you're missing the 2nd word:
 
@@ -91,7 +91,7 @@ If you know the position of a word but you have no idea what that word is suppos
 
 Repairing up to 3 invalid / incorrect words is typically feasible, sometimes 4 if the typos aren't too bad, but each additional incorrect word will increase the search time exponentially.
 
-### Missing Words:
+### Missing Words
 
 If you are missing some words and don't know where they go or which position(s) are missing, add a question mark (`?`) to the end of the phrase for each missing word. For example, if you only have 11 out of 12 words:
 
@@ -205,7 +205,7 @@ This would match all possible single typos:
 
 ### Strongly Recommended
 
-Provide 1 or more addresses that you are certain belong to this wallet. Ideally, you should put the first address that was created by the wallet (address 0). If you aren't sure which address is address 0, provide as many addresses as you can. Adding more addresses here doesn't slow the search down, in fact it is more likely to speed things up. Check your transaction history with exchanges, wallets, e-mail receipts, etc. to find the receive address(es) you used with this wallet. If you don't know ANY of your addresses, please see below for further instructions on using blockchain search mode.
+Provide 1 or more addresses that you are certain belong to this wallet. Ideally, you should put the first address that was created by the wallet (account 0, index 0). If you aren't sure which address is address 0, provide as many addresses as you can. Adding more addresses here doesn't slow the search down, in fact it is more likely to speed things up. Check your transaction history with exchanges, wallets, e-mail receipts, etc. to find the receive address(es) you used with this wallet. If you don't know ANY of your addresses, please see below for further instructions on using blockchain search mode.
 
 In the case of Ethereum, only one address (index 0) is typically used because the same address is used for every transaction on the same account.
 

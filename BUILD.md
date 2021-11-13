@@ -1,10 +1,10 @@
-# Prerequisites: 
+# Prerequisites
 
 [.NET (dotnet) 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
 
 # Build & Run from command line:
 
-Clone (or download) the repository: 
+Clone the repository: 
 
     git clone https://github.com/fixmycrypto/FixMyCrypto.git
 
@@ -21,11 +21,11 @@ VS Code project files are included, install "C# for Visual Studio Code (powered 
 
 Debug Run configuration in VS Code.
 
-# Build release:
+# Build release
 
     dotnet publish -c Release
 
-# Tests:
+# Tests
 
 * Unit tests: run Test configuration in VS Code (`FixMyCrypto -t`)
 * Unit tests require phrases and addresses specified in `secrets.json` (see `secrets.example.json`)
