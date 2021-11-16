@@ -33,7 +33,7 @@ namespace FixMyCrypto {
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
             //  https://github.com/paritytech/substrate-bip39/blob/c56994c06fe29693cfed445400ddc53bb12e472b/src/lib.rs#L45
             byte[] entropy = phrase.Indices.ElevenToEight();
-            byte[] salt = Encoding.UTF8.GetBytes("mnemonic" + passphrase);
+            byte[] salt = Cryptography.PassphraseToSalt(passphrase);
             byte[] seed = Cryptography.Pbkdf2_HMAC512(entropy, salt, 2048, 64);
 
             return new Cryptography.Key(seed, null);

@@ -27,13 +27,13 @@ namespace FixMyCrypto {
             int p = 0;
 
             while (p < 40) {
-                byte upper = (byte)(h[q] >> 4);
-                byte lower = (byte)(h[q] & 0x0f);
+                byte hi = (byte)(h[q] >> 4);
+                byte lo = (byte)(h[q] & 0x0f);
                 q++;
 
-                ret[p + 2] = GetChecksumDigit(upper, addr[p]);
+                ret[p + 2] = GetChecksumDigit(hi, addr[p]);
                 p++;
-                ret[p + 2] = GetChecksumDigit(lower, addr[p]);
+                ret[p + 2] = GetChecksumDigit(lo, addr[p]);
                 p++;
             }
 
@@ -57,10 +57,10 @@ namespace FixMyCrypto {
         }
  
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
-            //  TODO avoid string conversion
             string p = phrase.ToPhrase();
-            Mnemonic b = new Mnemonic(p);
-            return ExtKey.CreateFromSeed(b.DeriveSeed(passphrase));
+            byte[] salt = Cryptography.PassphraseToSalt(passphrase);
+            byte[] seed = Cryptography.Pbkdf2_HMAC512(p, salt, 2048, 64);
+            return ExtKey.CreateFromSeed(seed);
         }
         protected override Object DeriveChildKey(Object parentKey, uint index) {
             ExtKey key = (ExtKey)parentKey;

@@ -35,6 +35,10 @@ namespace FixMyCrypto {
             return h;
         }
 
+        public static byte[] PassphraseToSalt(string passphrase) {
+            return Encoding.UTF8.GetBytes("mnemonic" + passphrase);
+        }
+
         public static byte[] Pbkdf2_HMAC512(byte[] password, byte[] salt, int iterations, int length) {
             using var rfc = new Rfc2898DeriveBytes(password, salt, iterations, HashAlgorithmName.SHA512);
             return rfc.GetBytes(length);
@@ -55,12 +59,12 @@ namespace FixMyCrypto {
 
         protected static byte[] ed25519_seed = Encoding.ASCII.GetBytes("ed25519 seed");
 
-        public static byte[] HMAC512Hash(byte[] data) {
+        public static byte[] HMAC512_Ed25519(byte[] data) {
             using HMACSHA512 HMAC512 = new HMACSHA512(ed25519_seed);
             return HMAC512.ComputeHash(data);
         }
 
-        public static byte[] HMAC256Hash(byte[] data) {
+        public static byte[] HMAC256_Edd25519(byte[] data) {
             using HMACSHA256 HMAC256 = new HMACSHA256(ed25519_seed);
             return HMAC256.ComputeHash(data);
         }
@@ -77,7 +81,7 @@ namespace FixMyCrypto {
         }
 
         public static byte[] HashRepeatedly(byte[] message) {
-            var iLiR = HMAC512Hash(message);
+            var iLiR = HMAC512_Ed25519(message);
             if ((iLiR[31] & 0b0010_0000) != 0) {
                 return HashRepeatedly(iLiR);
             }
@@ -89,7 +93,7 @@ namespace FixMyCrypto {
             //  expand_seed_ed25519_bip32(...)
             
             string password = phrase.ToPhrase();
-            byte[] salt = Encoding.UTF8.GetBytes("mnemonic" + passphrase);
+            byte[] salt = PassphraseToSalt(passphrase);
             var seed = Pbkdf2_HMAC512(password, salt, 2048, 64);
 
             byte[] message = new byte[seed.Length + 1];
@@ -98,7 +102,7 @@ namespace FixMyCrypto {
 
             //  Chain code
 
-            var cc = HMAC256Hash(message);
+            var cc = HMAC256_Edd25519(message);
 
             var iLiR = HashRepeatedly(seed);
             iLiR = TweakBits(iLiR);

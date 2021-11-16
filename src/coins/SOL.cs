@@ -22,13 +22,13 @@ namespace FixMyCrypto {
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
             //  https://github.com/LedgerHQ/speculos/blob/c0311aef48412e40741a55f113939469da78e8e5/src/bolos/os_bip32.c#L112
 
-            byte[] salt = Encoding.UTF8.GetBytes("mnemonic" + passphrase);
+            byte[] salt = Cryptography.PassphraseToSalt(passphrase);
             string password = phrase.ToPhrase();
             var seed = Cryptography.Pbkdf2_HMAC512(password, salt, 2048, 64);
 
             //  expand_seed_slip10
 
-            var hash = Cryptography.HMAC512Hash(seed);
+            var hash = Cryptography.HMAC512_Ed25519(seed);
 
             var iL = hash.Slice(0, 32);
             var iR = hash.Slice(32);

@@ -57,9 +57,13 @@ namespace FixMyCrypto {
                     foreach (string address in knownAddresses) {
                         //  Guess path from known address format
 
-                        if (address.StartsWith("bc1")) {
+                        if (address.StartsWith("bc1q")) {
                             //  BIP84
                             paths.Add("m/84'/0'/{account}'/0/{index}");
+                        }
+                        else if (address.StartsWith("bc1p")) {
+                            //  BIP86
+                            paths.Add("m/86'/0'/{account}'/0/{index}");
                         }
                         else if (address.StartsWith("3")) {
                             //  BIP49
@@ -154,13 +158,14 @@ namespace FixMyCrypto {
             ScriptPubKeyType keyType = ScriptPubKeyType.Legacy;
             if (path.StartsWith("m/49")) keyType = ScriptPubKeyType.SegwitP2SH;
             if (path.StartsWith("m/84")) keyType = ScriptPubKeyType.Segwit;
+            if (path.StartsWith("m/86")) keyType = ScriptPubKeyType.TaprootBIP86;
             return keyType;
         }
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
-            //  TODO avoid string conversion
             string p = phrase.ToPhrase();
-            Mnemonic b = new Mnemonic(p);
-            return ExtKey.CreateFromSeed(b.DeriveSeed(passphrase));
+            byte[] salt = Cryptography.PassphraseToSalt(passphrase);
+            byte[] seed = Cryptography.Pbkdf2_HMAC512(p, salt, 2048, 64);
+            return ExtKey.CreateFromSeed(seed);
         }
         protected override Object DeriveChildKey(Object parentKey, uint index) {
             ExtKey key = (ExtKey)parentKey;
