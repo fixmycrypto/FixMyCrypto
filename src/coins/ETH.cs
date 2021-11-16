@@ -1,8 +1,6 @@
 using System;
 using System.Text;
 using System.Collections.Concurrent;
-using Org.BouncyCastle.Crypto.Digests;
-using Cryptography.ECDSA;
 using NBitcoin;
 
 namespace FixMyCrypto {
@@ -19,11 +17,8 @@ namespace FixMyCrypto {
             }
         }
         public string Checksum(string addr) {
-            var digest = new KeccakDigest(256);
             byte[] bytes = Encoding.ASCII.GetBytes(addr.ToLower());
-            digest.BlockUpdate(bytes, 0, bytes.Length);
-            byte[] h = new byte[digest.GetByteLength()];
-            digest.DoFinal(h, 0);
+            byte[] h = Cryptography.KeccakDigest(bytes);
 
             char[] ret = new char[42];
             ret[0] = '0';
@@ -46,12 +41,9 @@ namespace FixMyCrypto {
         }
         private string SkToAddress(ExtKey sk) {
             byte[] pkeyBytes = sk.PrivateKey.PubKey.ToBytes();
-            byte[] converted = Secp256K1Manager.PublicKeyDecompress(pkeyBytes);
+            byte[] converted = Cryptography.Secp256KPublicKeyDecompress(pkeyBytes);
 
-            var digest = new KeccakDigest(256);
-            digest.BlockUpdate(converted,1,64);
-            byte[] hash = new byte[digest.GetByteLength()];
-            digest.DoFinal(hash, 0);
+            byte[] hash = Cryptography.KeccakDigest(converted.Slice(1, 64));
 
             string l = hash.ToHexString(12, 20);
 

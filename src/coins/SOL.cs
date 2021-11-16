@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Security.Cryptography;
-using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Cryptography.ECDSA;
 
 namespace FixMyCrypto {
@@ -25,17 +24,16 @@ namespace FixMyCrypto {
 
             byte[] salt = Encoding.UTF8.GetBytes("mnemonic" + passphrase);
             string password = phrase.ToPhrase();
-            var seed = KeyDerivation.Pbkdf2(password, salt, KeyDerivationPrf.HMACSHA512, 2048, 64);
+            var seed = Cryptography.Pbkdf2_HMAC512(password, salt, 2048, 64);
 
             //  expand_seed_slip10
 
-            HMAC512.Initialize();
-            var hash = HMAC512.ComputeHash(seed);
+            var hash = Cryptography.HMAC512Hash(seed);
 
             var iL = hash.Slice(0, 32);
             var iR = hash.Slice(32);
 
-            return new Key(iL, iR);
+            return new Cryptography.Key(iL, iR);
         }
         protected override Object DeriveChildKey(Object parentKey, uint index) {
             //  https://github.com/LedgerHQ/speculos/blob/c0311aef48412e40741a55f113939469da78e8e5/src/bolos/os_bip32.c#L342
@@ -45,7 +43,7 @@ namespace FixMyCrypto {
                 throw new NotSupportedException("SOL non-hardened path not supported");
             }
 
-            Key x = (Key)parentKey;
+            var x = (Cryptography.Key)parentKey;
 
             byte[] tmp = new byte[37];
             tmp[0] = 0;
@@ -59,13 +57,13 @@ namespace FixMyCrypto {
             using HMACSHA512 hmac = new HMACSHA512(x.cc);
             byte[] I = hmac.ComputeHash(tmp);
 
-            return new Key(I.Slice(0, 32), I.Slice(32));
+            return new Cryptography.Key(I.Slice(0, 32), I.Slice(32));
         }
 
         protected override Address DeriveAddress(PathNode node) {
-            Key key = (Key)node.Key;
+            var key = (Cryptography.Key)node.Key;
 
-            byte[] pub = Chaos.NaCl.Ed25519.PublicKeyFromSeed(key.data);
+            byte[] pub = Cryptography.Ed25519PublicKeyFromSeed(key.data);
 
             string address = Base58.Encode(pub);
             return new Address(address, node.GetPath());

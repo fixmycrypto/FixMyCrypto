@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Net.Http;
 using Newtonsoft.Json;
 
@@ -64,6 +65,16 @@ namespace FixMyCrypto
     public class WebClient {
         public static int retryCount = 5;
         public static readonly HttpClient client = new HttpClient();
+    }
+
+    public static class StringExtensions {
+        public static byte[] ToASCIIBytes(this string s) {
+            return Encoding.ASCII.GetBytes(s);
+        }
+
+        public static byte[] ToUTF8Bytes(this string s) {
+            return Encoding.UTF8.GetBytes(s);
+        }
     }
 
     public static class ArrayExtensions {

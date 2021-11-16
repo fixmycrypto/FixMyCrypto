@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Text;
 using CardanoSharp.Wallet.Extensions.Models;
 using Cryptography.ECDSA;
-using System.Security.Cryptography;
 
 namespace FixMyCrypto {
 
@@ -35,10 +34,9 @@ namespace FixMyCrypto {
             //  https://github.com/paritytech/substrate-bip39/blob/c56994c06fe29693cfed445400ddc53bb12e472b/src/lib.rs#L45
             byte[] entropy = phrase.Indices.ElevenToEight();
             byte[] salt = Encoding.UTF8.GetBytes("mnemonic" + passphrase);
-            using var rfc = new Rfc2898DeriveBytes(entropy, salt, 2048, HashAlgorithmName.SHA512);
-            byte[] seed = rfc.GetBytes(64);
+            byte[] seed = Cryptography.Pbkdf2_HMAC512(entropy, salt, 2048, 64);
 
-            return new Key(seed, null);
+            return new Cryptography.Key(seed, null);
         }
 
         protected override Object DeriveChildKey(Object parentKey, uint index) {
@@ -46,17 +44,14 @@ namespace FixMyCrypto {
         }
 
         protected virtual byte[] GetPublicKey(byte[] seed) {
-            //  SR25519
-            string seedHex = seed.ToHexString();
-            var keypair = sr25519_dotnet.lib.SR25519.GenerateKeypairFromSeed(seedHex);
-            return keypair.Public;
+            return Cryptography.Sr25519PublicKeyFromSeed(seed);
         }
 
         protected virtual byte GetPrefix(PathNode node) {
             return (byte)node.Value;
         }
         protected override Address DeriveAddress(PathNode node) {
-            Key key = (Key)node.Key;
+            var key = (Cryptography.Key)node.Key;
             if (key == null) return null;
 
             byte[] pub = GetPublicKey(key.data);
@@ -69,7 +64,7 @@ namespace FixMyCrypto {
             prefixed[7] = GetPrefix(node);
             Array.Copy(pub, 0, prefixed, 8, 32);
 
-            byte[] blake2b = Blake2Fast.Blake2b.ComputeHash(prefixed);
+            byte[] blake2b = Cryptography.Blake2bHash(prefixed);
 
             byte[] checksummed = new byte[35];
             checksummed[0] = GetPrefix(node);
@@ -91,7 +86,7 @@ namespace FixMyCrypto {
             byte[] toHash = new byte[32 + 8];
             Array.Copy(ssPrefixed1, 0, toHash, 0, 7);
             Array.Copy(prefixedPub, 0, toHash, 7, 33);
-            byte[] blake2b = Blake2Fast.Blake2b.ComputeHash(toHash);
+            byte[] blake2b = Cryptography.Blake2bHash(toHash);
 
             if (data[33] != blake2b[0] || data[34] != blake2b[1]) throw new Exception("Incorrect DOT checksum");
         }
@@ -110,18 +105,18 @@ namespace FixMyCrypto {
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
 
             //  Ledger: https://github.com/algorand/ledger-app-algorand/blob/master/src/algo_keys.c
-            return Ledger_expand_seed_ed25519_bip32(phrase, passphrase);
+            return Cryptography.Ledger_expand_seed_ed25519_bip32(phrase, passphrase);
         }
 
         protected override Object DeriveChildKey(Object parentKey, uint index) {
-            var k = (Key)parentKey;
+            var k = (Cryptography.Key)parentKey;
 
             //  Borrowing CardanoSharp's BIP32 Derive
 
             var key = new CardanoSharp.Wallet.Models.Keys.PrivateKey(k.data, k.cc);
             string path = PathNode.GetPath(index);
             var derived = key.Derive(path);
-            return new Key(derived.Key, derived.Chaincode);
+            return new Cryptography.Key(derived.Key, derived.Chaincode);
         }
 
         protected override byte GetPrefix(PathNode node) {
@@ -129,7 +124,7 @@ namespace FixMyCrypto {
         }
         protected override byte[] GetPublicKey(byte[] seed) {
             //  Ed25519
-            return Chaos.NaCl.Ed25519.PublicKeyFromSeed(seed.Slice(0, 32));
+            return Cryptography.Ed25519PublicKeyFromSeed(seed.Slice(0, 32));
         }
     }
 }

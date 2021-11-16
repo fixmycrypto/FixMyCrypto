@@ -14,8 +14,6 @@ namespace FixMyCrypto {
         PathTree tree;
         Passphrase passphrases;
 
-        protected HMACSHA512 HMAC512;
-        protected HMACSHA256 HMAC256;
         public static PhraseToAddress Create(CoinType coin, BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) {
             switch (coin) {
                 case CoinType.ADA:
@@ -72,8 +70,6 @@ namespace FixMyCrypto {
             this.mutex = new object();
 
             this.passphrases = new Passphrase(Settings.Passphrase, Settings.FuzzDepth);
-            this.HMAC512 = new HMACSHA512(ed25519_seed);
-            this.HMAC256 = new HMACSHA256(ed25519_seed);
         }
         public abstract Object DeriveMasterKey(Phrase phrase, string passphrase);
         protected abstract Object DeriveChildKey(Object parentKey, uint index);
@@ -274,59 +270,6 @@ namespace FixMyCrypto {
 
             if (count > 0) Log.Info("P2A" + threadNum + " done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, time/req: {(count != 0 ? ((double)stopWatch.ElapsedMilliseconds/count) : 0):F2}ms/req, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
             Finish();
-        }
-
-        protected static byte[] ed25519_seed = Encoding.ASCII.GetBytes("ed25519 seed");
-
-        protected static byte[] TweakBits(byte[] data) {
-            // * clear the lowest 3 bits
-            // * clear the highest bit
-            // * set the highest 2nd bit
-            data[0]  &= 0b1111_1000;
-            data[31] &= 0b0111_1111;
-            data[31] |= 0b0100_0000;
-
-            return data;         
-        }
-        protected byte[] HashRepeatedly(byte[] message) {
-            HMAC512.Initialize();
-            var iLiR = HMAC512.ComputeHash(message);
-            if ((iLiR[31] & 0b0010_0000) != 0) {
-                return HashRepeatedly(iLiR);
-            }
-            return iLiR;
-        }
-
-        protected class Key {
-            public byte[] data { get; }
-            public byte[] cc { get; }
-            public Key(byte[] data, byte[] cc) {
-                this.data = data;
-                this.cc = cc;
-            }
-        }
-
-        protected Key Ledger_expand_seed_ed25519_bip32(Phrase phrase, string passphrase) {
-            //  https://github.com/LedgerHQ/speculos/blob/c0311aef48412e40741a55f113939469da78e8e5/src/bolos/os_bip32.c#L123
-            //  expand_seed_ed25519_bip32(...)
-            
-            byte[] salt = Encoding.UTF8.GetBytes("mnemonic" + passphrase);
-            string password = phrase.ToPhrase();
-            var seed = KeyDerivation.Pbkdf2(password, salt, KeyDerivationPrf.HMACSHA512, 2048, 64);
-
-            byte[] message = new byte[seed.Length + 1];
-            message[0] = 1;
-            Array.Copy(seed, 0, message, 1, seed.Length);
-
-            //  Chain code
-
-            HMAC256.Initialize();
-            var cc = HMAC256.ComputeHash(message);
-
-            var iLiR = HashRepeatedly(seed);
-            iLiR = TweakBits(iLiR);
-
-            return new Key(iLiR, cc);            
         }
     }
 }

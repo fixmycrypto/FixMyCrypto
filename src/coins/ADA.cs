@@ -3,8 +3,6 @@ using System.Collections.Concurrent;
 using CardanoSharp.Wallet;
 using CardanoSharp.Wallet.Extensions.Models;
 using CardanoSharp.Wallet.Enums;
-using Microsoft.AspNetCore.Cryptography.KeyDerivation;
-using System.Security.Cryptography;
 
 namespace FixMyCrypto {
     class PhraseToAddressCardano : PhraseToAddress {
@@ -61,8 +59,7 @@ namespace FixMyCrypto {
 
             // Checksum is the "first" CS bits of hash: [****xxxx]
 
-            using SHA256 sha256 = SHA256.Create();
-            byte[] hash = sha256.ComputeHash(includeChecksum ? entropy.Slice(0, 32) : entropy);
+            byte[] hash = Cryptography.SHA256Hash(includeChecksum ? entropy.Slice(0, 32) : entropy);
             byte actualChecksum = (byte)(hash[0] >> (8 - CS));
 
             if (expectedChecksum != actualChecksum) {
@@ -87,7 +84,7 @@ namespace FixMyCrypto {
         }
         public override CoinType GetCoinType() { return CoinType.ADALedger; }
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
-            Key key = Ledger_expand_seed_ed25519_bip32(phrase, passphrase);
+            var key = Cryptography.Ledger_expand_seed_ed25519_bip32(phrase, passphrase);
 
             return new CardanoSharp.Wallet.Models.Keys.PrivateKey(key.data, key.cc);
         }
@@ -111,8 +108,8 @@ namespace FixMyCrypto {
                 l = Restore(phrase);
             }
 
-            var rootKey = KeyDerivation.Pbkdf2(passphrase, l.Entropy, KeyDerivationPrf.HMACSHA512, 4096, 96);
-            rootKey = TweakBits(rootKey);
+            var rootKey = Cryptography.Pbkdf2_HMAC512(passphrase, l.Entropy, 4096, 96);
+            rootKey = Cryptography.TweakBits(rootKey);
 
             return new CardanoSharp.Wallet.Models.Keys.PrivateKey(rootKey.Slice(0, 64), rootKey.Slice(64));
         }

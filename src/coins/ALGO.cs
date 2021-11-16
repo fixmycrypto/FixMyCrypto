@@ -21,7 +21,7 @@ namespace FixMyCrypto {
  
         //  https://github.com/algorand/js-algorand-sdk/blob/a80a1e6d683aef12bf72431c6842530b1bb26235/src/mnemonic/mnemonic.ts
 
-        protected Key Restore25(Phrase phrase) {
+        protected Cryptography.Key Restore25(Phrase phrase) {
             if (phrase.Length != 25) throw new NotSupportedException();
 
             short[] indices = phrase.Indices;
@@ -34,10 +34,7 @@ namespace FixMyCrypto {
             short expectedChecksum = indices[24];
 
             //  Use SHA512/256 instead of SHA256
-            byte[] hash = new byte[256/8];
-            Org.BouncyCastle.Crypto.Digests.Sha512tDigest h = new Org.BouncyCastle.Crypto.Digests.Sha512tDigest(256);
-            h.BlockUpdate(entropy, 0, entropy.Length - 1);
-            h.DoFinal(hash, 0);
+            byte[] hash = Cryptography.SHA512_256Hash(entropy.Slice(0, entropy.Length - 1));
 
             //  use first 11 bits of hash, not 8
             short actualChecksum = (short)((hash[1] & 7) << 8 | hash[0]);
@@ -46,17 +43,17 @@ namespace FixMyCrypto {
                 throw new FormatException("Wrong checksum.");
             }
 
-            return new Key(entropy.Slice(0, 32), null);
+            return new Cryptography.Key(entropy.Slice(0, 32), null);
         }
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
             if (phrase.Length == 25) return this.Restore25(phrase);
 
             //  Ledger: https://github.com/algorand/ledger-app-algorand/blob/master/src/algo_keys.c
-            return Ledger_expand_seed_ed25519_bip32(phrase, passphrase);
+            return Cryptography.Ledger_expand_seed_ed25519_bip32(phrase, passphrase);
 
         }
         protected override Object DeriveChildKey(Object parentKey, uint index) {
-            var k = (Key)parentKey;
+            var k = (Cryptography.Key)parentKey;
             if (k == null || k.data.Length != 64) return null;  //  for non-Ledger
 
             //  Borrowing CardanoSharp's BIP32 Derive
@@ -64,18 +61,15 @@ namespace FixMyCrypto {
             var key = new CardanoSharp.Wallet.Models.Keys.PrivateKey(k.data, k.cc);
             string path = PathNode.GetPath(index);
             var derived = key.Derive(path);
-            return new Key(derived.Key, derived.Chaincode);
+            return new Cryptography.Key(derived.Key, derived.Chaincode);
         }
         protected override Address DeriveAddress(PathNode node) {
-            Key key = (Key)node.Key;
+            var key = (Cryptography.Key)node.Key;
             if (key == null) return null;
 
-            byte[] pub = Chaos.NaCl.Ed25519.PublicKeyFromSeed(key.data.Slice(0, 32));
+            byte[] pub = Cryptography.Ed25519PublicKeyFromSeed(key.data.Slice(0, 32));
 
-            byte[] hash = new byte[32];
-            Org.BouncyCastle.Crypto.Digests.Sha512tDigest h = new Org.BouncyCastle.Crypto.Digests.Sha512tDigest(256);
-            h.BlockUpdate(pub, 0, 32);
-            h.DoFinal(hash, 0);
+            byte[] hash = Cryptography.SHA512_256Hash(pub);
 
             byte[] addr = new byte[36];
             Array.Copy(pub, addr, 32);
@@ -93,10 +87,7 @@ namespace FixMyCrypto {
             byte[] pub = data.Slice(0, 32);
             byte[] cs = data.Slice(32, 4);
 
-            byte[] hash = new byte[32];
-            Org.BouncyCastle.Crypto.Digests.Sha512tDigest h = new Org.BouncyCastle.Crypto.Digests.Sha512tDigest(256);
-            h.BlockUpdate(pub, 0, 32);
-            h.DoFinal(hash, 0);
+            byte[] hash = Cryptography.SHA512_256Hash(pub);
 
             for (int i = 0; i < 4; i++) if (cs[i] != hash[(32 - 4) + i]) throw new Exception("ALGO checksum invalid");
         }

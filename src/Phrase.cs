@@ -107,10 +107,7 @@ namespace FixMyCrypto {
                 short expectedChecksum = indices[24];
 
                 //  Use SHA512/256 instead of SHA256
-                byte[] hash = new byte[32];
-                Org.BouncyCastle.Crypto.Digests.Sha512tDigest h = new Org.BouncyCastle.Crypto.Digests.Sha512tDigest(256);
-                h.BlockUpdate(entropy, 0, entropy.Length - 1);
-                h.DoFinal(hash, 0);
+                byte[] hash = Cryptography.SHA512_256Hash(entropy.Slice(0, entropy.Length - 1));
 
                 //  use first 11 bits of hash, not 8
                 short actualChecksum = (short)((hash[1] & 7) << 8 | hash[0]);
@@ -126,8 +123,7 @@ namespace FixMyCrypto {
 
                 // Checksum is the "first" CS bits of hash: [****xxxx]
 
-                using SHA256 sha256 = SHA256.Create();
-                byte[] hash = sha256.ComputeHash(entropy);
+                byte[] hash = Cryptography.SHA256Hash(entropy);
                 byte actualChecksum = (byte)(hash[0] >> (8 - CS));
 
                 return ((expectedChecksum == actualChecksum), BitConverter.ToInt32(hash));
