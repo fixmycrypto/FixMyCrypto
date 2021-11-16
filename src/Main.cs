@@ -24,6 +24,8 @@ namespace FixMyCrypto {
 
             bool test = args.Length > 0 && args[0] == "-t";
 
+            bool benchmark = args.Length > 0 && args[0] == "-b";
+
             interactive = !(args.Length > 0 && args[0] == "-ni");
 
             try {
@@ -50,6 +52,11 @@ namespace FixMyCrypto {
                     PauseAndExit(1);
                 }
                 PauseAndExit(0);
+            }
+
+            if (benchmark) {
+                Benchmark.RunBenchmarks();
+                Environment.Exit(0);
             }
             
             Stopwatch stopWatch = new Stopwatch();
