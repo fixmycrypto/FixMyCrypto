@@ -5,15 +5,16 @@ namespace FixMyCrypto {
     public class Phrase {
         private short[] ix;
         private int hash;
+        private bool valid;
 
         public int Length { get { return ix.Length; } }
         public short[] Indices { get { return ix; } }
-        public Phrase(short[] indices, int hash) { ix = indices; this.hash = hash; }
+        public bool IsValid { get { return valid; } }
+        public Phrase(short[] indices, int hash) { ix = indices; this.hash = hash; valid = true; }
         public Phrase(string[] phrase) {
             ix = new short[phrase.Length];
             for (int i = 0; i < phrase.Length; i++) ix[i] = Wordlists.GetWordIndex(phrase[i]);
-            (bool b, int hash) = VerifyChecksum(ix);
-            this.hash = hash;
+            (valid, hash) = VerifyChecksum(ix);
         }
         public Phrase(string phrase) : this(phrase.Split(' ', StringSplitOptions.RemoveEmptyEntries)) { }
 

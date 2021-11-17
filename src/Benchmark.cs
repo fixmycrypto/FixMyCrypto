@@ -1,10 +1,35 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using System.Threading.Tasks;
-using System.Text;
 
 namespace FixMyCrypto {
-    public class Benchmark {
+    public class BenchmarkMnemonic {
+
+        /*
+        [Benchmark]
+        public void MnemonicToEntropy_100_NBitcoin() {
+            string phrase = "siren bottom inform vehicle else donkey dirt task cook tide general when";
+            Parallel.For(0, 100, i => {
+                var m = new NBitcoin.Mnemonic(phrase);
+                var ix = m.Indices;
+                bool valid = m.IsValidChecksum;
+            });
+        }
+        */
+
+        [Benchmark]
+        public void MnemonicToEntropy_100_Native() {
+            Wordlists.Initialize();
+            string phrase = "siren bottom inform vehicle else donkey dirt task cook tide general when";
+            Parallel.For(0, 100, i => {
+                var m = new Phrase(phrase);
+                var ix = m.Indices;
+                bool valid = m.IsValid;
+            });
+        }
+    }
+
+    public class BenchmarkCrypto {
 
         [Benchmark]
         public void Sha256_1m() {
@@ -26,10 +51,13 @@ namespace FixMyCrypto {
         public void Pbkdf2_Sha512_1k() {
             Parallel.For(0, 1000, i => {
                 string password = "siren bottom inform vehicle else donkey dirt task cook tide general when";
-                byte[] salt = Encoding.UTF8.GetBytes("mnemonic" + "ThePassphrase");
+                byte[] salt = Cryptography.PassphraseToSalt("ThePassphrase!");
                 var seed = Cryptography.Pbkdf2_HMAC512(password, salt, 2048, 64);
             });
         }
+    }
+
+    public class BenchmarkPassphrase {
 
         [Benchmark]
         public void PassphraseGuess() {
@@ -38,7 +66,7 @@ namespace FixMyCrypto {
             Passphrase p = new Passphrase(passphrase);
             int count = 0;
             Parallel.ForEach(p.Enumerate(), r => {
-                byte[] salt = Encoding.UTF8.GetBytes("mnemonic" + r);
+                byte[] salt = Cryptography.PassphraseToSalt(r);
                 var seed = Cryptography.Pbkdf2_HMAC512("siren bottom inform vehicle else donkey dirt task cook tide general when", salt, 2048, 64);
                 count++;
             }); 
@@ -51,14 +79,18 @@ namespace FixMyCrypto {
             Passphrase p = new Passphrase(passphrase, fuzzDepth: 1);
             int count = 0;
             Parallel.ForEach(p.Enumerate(), r => {
-                byte[] salt = Encoding.UTF8.GetBytes("mnemonic" + r);
+                byte[] salt = Cryptography.PassphraseToSalt(r);
                 var seed = Cryptography.Pbkdf2_HMAC512("siren bottom inform vehicle else donkey dirt task cook tide general when", salt, 2048, 64);
                 count++;
             }); 
         }
+    }
 
-        public static BenchmarkDotNet.Reports.Summary RunBenchmarks() {
-            return BenchmarkRunner.Run<Benchmark>();
+    class Benchmark {
+        public static void RunBenchmarks() {
+           BenchmarkRunner.Run<BenchmarkMnemonic>();
+           BenchmarkRunner.Run<BenchmarkCrypto>();
+           BenchmarkRunner.Run<BenchmarkPassphrase>();
         }
     }
 }

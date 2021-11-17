@@ -63,7 +63,7 @@ namespace FixMyCrypto {
             return keys;
         }
 
-        public static void Initialize(string[] phrase) {
+        public static void Initialize(string[] phrase = null) {
 
             if (Wordlist == null) {
                 Wordlist = new Dictionary<string, short>();

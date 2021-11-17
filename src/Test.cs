@@ -143,19 +143,6 @@ namespace FixMyCrypto {
             throw new Exception($"TestPassphrase({pattern}, {expect}) didn't throw an exception");
         }
 
-        public static void BenchmarkPassphrase(string pattern) {
-            Log.Debug($"Benchmark passphrase: {pattern}");
-            Passphrase p = new Passphrase(pattern);
-            int count = 0;
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            foreach (string pass in p.Enumerate()) {
-                // Log.Debug(pass);
-                count++;
-            }
-            sw.Stop();
-            Log.Debug($"Generated {count} results in {sw.ElapsedMilliseconds}ms ({1000.0 * (double)sw.ElapsedMilliseconds/count:F4}us/attempt)");
-        }
         public static void TestRandomPassphrase() {
             int length = Random.Shared.Next(0, 12);
             string expect = "";
@@ -293,10 +280,6 @@ namespace FixMyCrypto {
             FailPassphrase("((a&&b)||c)", "ac");
             FailPassphrase("((a&&b)||c)", "bc");
             FailPassphrase("((a||b)&&c)", "ab");
-
-            //  Benchmark
-            //  976683582 results in 303864ms (0.3111us/attempt)
-            // BenchmarkPassphrase("[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?[a-zA-Z0-9]?");
 
             //  test phrase checksums
             TestPhraseChecksum("fantasy curious recycle slot tilt forward call jar fashion concert around symbol");
