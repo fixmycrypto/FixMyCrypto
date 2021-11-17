@@ -61,7 +61,7 @@ namespace FixMyCrypto {
                             //  BIP84
                             paths.Add("m/84'/0'/{account}'/0/{index}");
                         }
-                        else if (address.StartsWith("bc1p")) {
+                        else if (address.StartsWith("bc1p") || address.StartsWith("tb1")) {
                             //  BIP86
                             paths.Add("m/86'/0'/{account}'/0/{index}");
                         }
@@ -193,6 +193,10 @@ namespace FixMyCrypto {
                 else if (address.StartsWith("bc1q"))
                 {
                     var addr = new BitcoinWitPubKeyAddress(address, Network.Main);
+                }
+                else if (address.StartsWith("bc1p") || address.StartsWith("tb1"))
+                {
+                    var addr = TaprootAddress.Create(address, Network.Main);
                 }
                 else
                 {
