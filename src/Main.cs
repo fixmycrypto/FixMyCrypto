@@ -109,7 +109,7 @@ namespace FixMyCrypto {
             Log.All($"Phrase to test: \"{Settings.Phrase}\"");
 
             if (!String.IsNullOrEmpty(Settings.Passphrase)) {
-                Log.All($"passphrase: \"{Settings.Passphrase}\"{(Settings.FuzzDepth == 1 ? "" : $" (fuzz edepth = {Settings.FuzzDepth})")}");
+                Log.All($"passphrase: \"{Settings.Passphrase}\"{(Settings.FuzzDepth == 1 ? "" : $" (fuzz depth = {Settings.FuzzDepth})")}");
 
                 Passphrase p = new Passphrase(Settings.Passphrase, Settings.FuzzDepth);
                 Log.All($"passphrase permutations: {p.GetCount()}");

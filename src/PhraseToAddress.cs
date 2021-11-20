@@ -12,7 +12,7 @@ namespace FixMyCrypto {
         protected int threadNum, threadMax;
         string[] defaultPaths;
         PathTree tree;
-        Passphrase passphrases;
+        string[] passphrases;
 
         public static PhraseToAddress Create(CoinType coin, BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) {
             switch (coin) {
@@ -69,7 +69,33 @@ namespace FixMyCrypto {
             this.threadMax = threadMax;
             this.mutex = new object();
 
-            this.passphrases = new Passphrase(Settings.Passphrase, Settings.FuzzDepth);
+            //  Generate passphrase list
+            List<string> list = new List<string>();
+            Passphrase p = new Passphrase(Settings.Passphrase, Settings.FuzzDepth);
+            foreach (string pass in p) list.Add(pass);
+            this.passphrases = list.ToArray();
+            // Log.Debug($"P2A{threadNum} passphrases[].Length={passphrases.Length}");
+        }
+        private MasterKey[] DeriveMasterKeys(Phrase phrase, string[] passphrases) {
+            MasterKey[] keys = new MasterKey[passphrases.Length];
+            int i = 0;
+            foreach (string passphrase in passphrases) {
+                keys[i++] = new MasterKey(DeriveMasterKey(phrase, passphrase), phrase, passphrase);
+            }
+            return keys;
+        }
+        private class MasterKey {
+            public object key { get; }
+
+            public Phrase phrase { get; }
+
+            public string passphrase { get; }
+
+            public MasterKey(object key, Phrase phrase, string passphrase) {
+                this.key = key;
+                this.phrase = phrase;
+                this.passphrase = passphrase;
+            }
         }
         public abstract Object DeriveMasterKey(Phrase phrase, string passphrase);
         protected abstract Object DeriveChildKey(Object parentKey, uint index);
@@ -102,12 +128,13 @@ namespace FixMyCrypto {
                 DeriveAddresses(child, addresses);
             }
         }
-        private List<Address> GetAddresses(Phrase phrase, string passphrase, int account, int index, string[] paths) {
+        private List<Address> GetAddresses(Phrase phrase, string[] passphrases, int account, int index, string[] paths) {
             int[] accounts = { account };
             int[] indices = { index };
-            return GetAddresses(phrase, passphrase, paths, accounts, indices);
+            return GetAddresses(phrase, passphrases, paths, accounts, indices);
         }
-        public List<Address> GetAddresses(Phrase phrase, string passphrase, string[] paths, int[] accounts, int[] indices) {
+
+        public List<Address> GetAddresses(Phrase phrase, string[] passphrases, string[] paths, int[] accounts, int[] indices) {
             //  Create default path list if needed
             if (paths == null || paths.Length == 0 || (paths.Length == 1 && String.IsNullOrEmpty(paths[0]))) {
                 if (defaultPaths == null) {
@@ -160,20 +187,49 @@ namespace FixMyCrypto {
 
             //  Derive descendent keys
 
-            tree.Root.Key = DeriveMasterKey(phrase, passphrase);
+            List<Address> addresses = new();
 
-            foreach (PathNode child in tree.Root.Children) {
-                DeriveChildKeys(child);
+            // MasterKey[] masterKeys = DeriveMasterKeys(phrase, passphrases);
+            // foreach (MasterKey key in masterKeys) {
+
+            foreach (string passphrase in passphrases) {
+                if (Global.Done) break;
+
+                // tree.Root.Key = key.key;
+                tree.Root.Key = DeriveMasterKey(phrase, passphrase);
+
+                foreach (PathNode child in tree.Root.Children) {
+                    DeriveChildKeys(child);
+                }
+
+                List<Address> addrs = new();
+
+                DeriveAddresses(tree.Root, addrs);
+
+                bool found = false;
+
+                foreach (Address address in addrs) {
+                    // address.phrase = key.phrase;
+                    // address.passphrase = key.passphrase;
+                    address.phrase = phrase;
+                    address.passphrase = passphrase;
+
+                    if (Settings.KnownAddresses != null && Settings.KnownAddresses.Length > 0) {
+                        foreach (string known in Settings.KnownAddresses) {
+                            if (known.Equals(address.address, StringComparison.OrdinalIgnoreCase)) {
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                addresses.AddRange(addrs);
+
+                if (found) break;
             }
 
-            List<Address> addresses = new List<Address>();
-
-            DeriveAddresses(tree.Root, addresses);
-
-            foreach (Address address in addresses) {
-                address.phrase = phrase;
-                address.passphrase = passphrase;
-            }
+            //  TODO: Make this call checkaddress on each address, instead of returning lists of addresses
 
             return addresses;
         }
@@ -181,7 +237,8 @@ namespace FixMyCrypto {
         public List<Address> GetAddress(string phrase, string passphrase, int account, int index, string path = null) {
             string[] paths = { path };
             Phrase p = new Phrase(phrase);
-            return GetAddresses(p, passphrase, account, index, paths);
+            string[] passphrases = { passphrase };
+            return GetAddresses(p, passphrases, account, index, paths);
         }
         public abstract CoinType GetCoinType();
         public void Finish() {
@@ -205,66 +262,64 @@ namespace FixMyCrypto {
 
                 if (w != null) {
  
-                    foreach (string passphrase in this.passphrases.Enumerate()) {
-                        if (Global.Done) break;
-                        
-                        //  Convert phrase to address
+                    if (Global.Done) break;
+                    
+                    //  Convert phrase to address
 
-                        List<Address> addresses = null;
-                        try {
-                            stopWatch.Start();
-                            if (Settings.KnownAddresses != null && Settings.KnownAddresses.Length > 0) {
-                                //  Try to generate the known address
-                                addresses = GetAddresses(w.phrase, passphrase, Settings.Paths, Settings.Accounts, Settings.Indices);
-                                count++;
-                            } 
-                            else {
-                                //  Generate address for account 0 index 0
-                                addresses = GetAddresses(w.phrase, passphrase, 0, 0, Settings.Paths);
-                                count++;
-                            }
-                        }
-                        catch (Exception e) {
-                            Log.Error("P2A error: " + e.Message);
-                        }
-                        finally {
-                            stopWatch.Stop();
-                        }
-
-                        if (addresses == null) continue;
-
+                    List<Address> addresses = null;
+                    try {
+                        stopWatch.Start();
                         if (Settings.KnownAddresses != null && Settings.KnownAddresses.Length > 0) {
-                            //  See if we generated the known address
-                            foreach (Address address in addresses) {
-                                foreach (string knownAddress in Settings.KnownAddresses) {
-                                    if (address.address.Equals(knownAddress, StringComparison.OrdinalIgnoreCase)) {
-                                        //  Found known address
-                                        Finish();
+                            //  Try to generate the known address
+                            addresses = GetAddresses(w.phrase, passphrases, Settings.Paths, Settings.Accounts, Settings.Indices);
+                            count += addresses.Count;
+                        } 
+                        else {
+                            //  Generate address for account 0 index 0
+                            addresses = GetAddresses(w.phrase, passphrases, 0, 0, Settings.Paths);
+                            count += addresses.Count;
+                        }
+                    }
+                    catch (Exception e) {
+                        Log.Error("P2A error: " + e.Message);
+                    }
+                    finally {
+                        stopWatch.Stop();
+                    }
 
-                                        FoundResult.DoFoundResult(this.GetCoinType(), address);
-                                    }
+                    if (addresses == null) continue;
+
+                    if (Settings.KnownAddresses != null && Settings.KnownAddresses.Length > 0) {
+                        //  See if we generated the known address
+                        foreach (Address address in addresses) {
+                            foreach (string knownAddress in Settings.KnownAddresses) {
+                                if (address.address.Equals(knownAddress, StringComparison.OrdinalIgnoreCase)) {
+                                    //  Found known address
+                                    Finish();
+
+                                    FoundResult.DoFoundResult(this.GetCoinType(), address);
                                 }
                             }
                         }
-                        else {
-                            //  Need to search blockchain for address
-
-                            Work w2 = new Work(w.phrase, addresses);
-
-                            //  Enqueue address
-
-                            queueWaitTime.Start();
-                            try {
-                                addressQueue.Add(w2);
-                            }
-                            catch (InvalidOperationException) {
-                                break;
-                            }
-                            finally {
-                                queueWaitTime.Stop();
-                            }
-                        }
                     }
+                    else {
+                        //  Need to search blockchain for address
+
+                        Work w2 = new Work(w.phrase, addresses);
+
+                        //  Enqueue address
+
+                        queueWaitTime.Start();
+                        try {
+                            addressQueue.Add(w2);
+                        }
+                        catch (InvalidOperationException) {
+                            break;
+                        }
+                        finally {
+                            queueWaitTime.Stop();
+                        }
+                    }                    
                 }
             }
 

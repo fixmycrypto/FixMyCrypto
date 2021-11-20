@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace FixMyCrypto {
 
-    class Part {
+    class Part : IEnumerable<string> {
 
         enum OpType {
             Ordered,
@@ -279,7 +279,7 @@ namespace FixMyCrypto {
                 yield break;
             }
 
-            foreach (string p in parts[start].Enumerate()) {
+            foreach (string p in parts[start]) {
                 foreach (string r in Recurse(prefix + p, parts, start + 1)) {
                     yield return r;
                 }
@@ -307,7 +307,7 @@ namespace FixMyCrypto {
             }
         }
 
-        public IEnumerable<string> Enumerate() {
+        public IEnumerator<string> GetEnumerator() {
             if (this.optional) {
                 yield return "";
             }
@@ -328,11 +328,15 @@ namespace FixMyCrypto {
             else {
                 //  OR
                 foreach (Part p in this.parts) {
-                    foreach (string s in p.Enumerate()) {
+                    foreach (string s in p) {
                         yield return s;
                     }
                 }
             }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+            return GetEnumerator();
         }
 
         public int GetCount() {
@@ -461,7 +465,7 @@ namespace FixMyCrypto {
         }
     }
 
-    class Passphrase {
+    class Passphrase : IEnumerable<string> {
         Part root;
         string toFuzz;
         int depth = 1;
@@ -478,9 +482,9 @@ namespace FixMyCrypto {
             }
         }
 
-        public IEnumerable<string> Enumerate() {
+        public IEnumerator<string> GetEnumerator() {
             if (root != null) {
-                foreach (string r in root.Enumerate()) yield return r;
+                foreach (string r in root) yield return r;
             }
             else if (toFuzz != null) {
                 foreach (string r in Fuzz(toFuzz, depth)) yield return r;
@@ -488,6 +492,10 @@ namespace FixMyCrypto {
             else {
                 yield return "";
             }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+            return GetEnumerator();
         }
 
         public override string ToString() {

@@ -36,7 +36,7 @@ namespace FixMyCrypto {
             Parallel.For(0, 100, i => {
                 PhraseToAddress p2a = PhraseToAddress.Create(CoinType.BTC, null, null, 0, 0);
                 Phrase phrase = new Phrase(12);
-                List<Address> addresses = p2a.GetAddresses(phrase, "", paths, accounts, indices);
+                List<Address> addresses = p2a.GetAddresses(phrase, new string[] { "" }, paths, accounts, indices);
             });
         }
 
@@ -49,7 +49,7 @@ namespace FixMyCrypto {
             Parallel.For(0, 100, i => {
                 PhraseToAddress p2a = PhraseToAddress.Create(CoinType.ETH, null, null, 0, 0);
                 Phrase phrase = new Phrase(12);
-                List<Address> addresses = p2a.GetAddresses(phrase, "", paths, accounts, indices);
+                List<Address> addresses = p2a.GetAddresses(phrase, new string[] { "" }, paths, accounts, indices);
             });
         }
 
@@ -62,7 +62,7 @@ namespace FixMyCrypto {
             Parallel.For(0, 100, i => {
                 PhraseToAddress p2a = PhraseToAddress.Create(CoinType.ADA, null, null, 0, 0);
                 Phrase phrase = new Phrase(12);
-                List<Address> addresses = p2a.GetAddresses(phrase, "", paths, accounts, indices);
+                List<Address> addresses = p2a.GetAddresses(phrase, new string[] { "" }, paths, accounts, indices);
             });
         }
 
@@ -75,7 +75,7 @@ namespace FixMyCrypto {
             Parallel.For(0, 100, i => {
                 PhraseToAddress p2a = PhraseToAddress.Create(CoinType.SOL, null, null, 0, 0);
                 Phrase phrase = new Phrase(12);
-                List<Address> addresses = p2a.GetAddresses(phrase, "", paths, accounts, indices);
+                List<Address> addresses = p2a.GetAddresses(phrase, new string[] { "" }, paths, accounts, indices);
             });
         }
     }
@@ -116,7 +116,7 @@ namespace FixMyCrypto {
             string passphrase = "(The||the)(P||p)assphrase[0-9]?[!@#$%^&*()]?";
             Passphrase p = new Passphrase(passphrase);
             int count = 0;
-            Parallel.ForEach(p.Enumerate(), r => {
+            Parallel.ForEach(p, r => {
                 byte[] salt = Cryptography.PassphraseToSalt(r);
                 var seed = Cryptography.Pbkdf2_HMAC512("siren bottom inform vehicle else donkey dirt task cook tide general when", salt, 2048, 64);
                 count++;
@@ -129,7 +129,7 @@ namespace FixMyCrypto {
             // Passphrase p = new Passphrase(passphrase, fuzzDepth: 2);
             Passphrase p = new Passphrase(passphrase, fuzzDepth: 1);
             int count = 0;
-            Parallel.ForEach(p.Enumerate(), r => {
+            Parallel.ForEach(p, r => {
                 byte[] salt = Cryptography.PassphraseToSalt(r);
                 var seed = Cryptography.Pbkdf2_HMAC512("siren bottom inform vehicle else donkey dirt task cook tide general when", salt, 2048, 64);
                 count++;
