@@ -14,7 +14,7 @@ namespace FixMyCrypto {
             Log.Info($"TestKnownPhrase {coin} phrase: {phrase}");
             try {
                 PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null, 0, 0);
-                List<Address> addresses = p2a.GetAddress(phrase, passphrase, 0, 0, path);
+                List<Address> addresses = p2a.GetAddressList(phrase, passphrase, 0, 0, path);
                 LookupAddress la = LookupAddress.Create(coin, null, 0, 0);
                 foreach (Address address in addresses) {
                     LookupAddress.LookupResult result = la.GetContents(address.address);
@@ -49,7 +49,7 @@ namespace FixMyCrypto {
 
             Path.GetAccountIndex(path, out account, out index);
 
-            List<Address> addresses = p2a.GetAddress(phrase, passphrase, account, index, path);
+            List<Address> addresses = p2a.GetAddressList(phrase, passphrase, account, index, path);
 
             return addresses;
         }

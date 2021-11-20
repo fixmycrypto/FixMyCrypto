@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 namespace FixMyCrypto {
     class Settings {
 
-        public static int[] Indices, Accounts;
+        public static int[] Indices = { 0 }, Accounts = { 0 };
         public static string Phrase { get { return result.phrase; } }
 
         public static string Passphrase { get { if (result != null && result.passphrase != null) return (string)result.passphrase.Value; else return null; } }

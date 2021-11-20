@@ -133,6 +133,12 @@ namespace FixMyCrypto {
                     Log.All($"knownAddress: {knownAddress}");
                 }
             }
+            
+            //  Log the path tree
+            PhraseToAddress p2at = PhraseToAddress.Create(Settings.CoinType, null, null, 0, 0);
+            PathTree tree = p2at.CreateTree(Settings.Paths, Settings.Accounts, Settings.Indices);
+            Log.All($"Derivation path tree:\n{tree.ToString()}");
+
             Log.All($"difficulty: {Settings.Difficulty}, wordDistance: {Settings.WordDistance}");
 
             //  Initialize word lists
