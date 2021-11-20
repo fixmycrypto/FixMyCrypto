@@ -10,9 +10,9 @@ namespace FixMyCrypto {
         public static int[] Indices, Accounts;
         public static string Phrase { get { return result.phrase; } }
 
-        public static string Passphrase { get { if (result.passphrase != null) return (string)result.passphrase.Value; else return null; } }
+        public static string Passphrase { get { if (result != null && result.passphrase != null) return (string)result.passphrase.Value; else return null; } }
 
-        public static int FuzzDepth { get { if (result.fuzzDepth != null) return (int)result.fuzzDepth.Value; else return 1; }}
+        public static int FuzzDepth { get { if (result != null && result.fuzzDepth != null) return (int)result.fuzzDepth.Value; else return 1; }}
 
         public static string[] KnownAddresses { get { return result.knownAddresses.ToObject<string[]>(); } }
 
@@ -30,21 +30,21 @@ namespace FixMyCrypto {
 
         public static BtcApiType BtcApiType { get { return (BtcApiType)Enum.Parse(typeof(BtcApiType), result.btcApiType.Value, true); } }
 
-        public static string[] Paths {get { if (result.paths == null) return null; return result.paths.ToObject<string[]>(); } }
+        public static string[] Paths {get { if (result != null && result.paths == null) return null; return result.paths.ToObject<string[]>(); } }
 
         public static string AltcoinApi {get { return result.altcoinApi; } }
 
         public static AltcoinApiType AltcoinApiType { get { return (AltcoinApiType)Enum.Parse(typeof(AltcoinApiType), result.altcoinApiType.Value, true); } }
 
-        public static int Threads {get { if (result.threads != null) return (int)result.threads.Value; else return Environment.ProcessorCount; } }
+        public static int Threads {get { if (result != null && result.threads != null) return (int)result.threads.Value; else return Environment.ProcessorCount; } }
 
-        public static double WordDistance {get { if (result.wordDistance != null) return (double)result.wordDistance.Value; else return 2.0; } }
+        public static double WordDistance {get { if (result != null && result.wordDistance != null) return (double)result.wordDistance.Value; else return 2.0; } }
 
-        public static int Difficulty {get { if (result.difficulty != null) return (int)result.difficulty.Value; else return 0; } }
+        public static int Difficulty {get { if (result != null && result.difficulty != null) return (int)result.difficulty.Value; else return 0; } }
 
-        public static LogLevel logLevel {get { if (result.logLevel != null) return (LogLevel)Enum.Parse(typeof(LogLevel), result.logLevel.Value.ToString(), true); else return LogLevel.Info; } }
+        public static LogLevel logLevel {get { if (result != null && result.logLevel != null) return (LogLevel)Enum.Parse(typeof(LogLevel), result.logLevel.Value.ToString(), true); else return LogLevel.Info; } }
 
-        public static string TopologyFile { get { return result.topologyFile; } }
+        public static string TopologyFile { get { if (result != null) return result.topologyFile; else return null; } }
 
         public static string GetApiPath(CoinType coin) {
             switch (coin) {

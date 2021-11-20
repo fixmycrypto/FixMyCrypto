@@ -217,6 +217,16 @@ namespace FixMyCrypto {
             throw new Exception($"checksum should've failed: {phrase}");
         }
 
+        public static void TestRandomPhrases(int len) {
+            Parallel.For(0, 1000, i => {
+                Phrase p = new Phrase(len);
+                (bool valid, int hash) = Phrase.VerifyChecksum(p.Indices);
+                if (!valid) throw new Exception($"phrase invalid: {p.ToPhrase()}");
+                Mnemonic m = new Mnemonic(p.ToPhrase());
+                if (!m.IsValidChecksum) throw new Exception($"phrase invalid (NBitcoin): {p.ToPhrase()}");
+            });
+        }
+
         public static void Run(int count, string opts) {
             //  Needed to init word lists
             Wordlists.Initialize(null);
@@ -304,7 +314,12 @@ namespace FixMyCrypto {
             FailValidatePhrase("siren bottom inform vehicle ? donkey dirt task cook tide general when");
             FailValidatePhrase("nope nope nope nope nope donkey dirt task cook tide general when");
 
-            //  TODO: benchmark phrase checksums
+            //  test phrase generation / checksumming
+            TestRandomPhrases(12);
+            TestRandomPhrases(15);
+            TestRandomPhrases(18);
+            TestRandomPhrases(21);
+            TestRandomPhrases(24);
 
             //  Test address validation
             //  Should pass

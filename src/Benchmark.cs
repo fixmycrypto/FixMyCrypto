@@ -1,30 +1,81 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace FixMyCrypto {
     public class BenchmarkMnemonic {
 
         /*
+        //  Slow!
         [Benchmark]
-        public void MnemonicToEntropy_100_NBitcoin() {
-            string phrase = "siren bottom inform vehicle else donkey dirt task cook tide general when";
+        public void MnemonicCreate_NBitcoin_100() {
             Parallel.For(0, 100, i => {
-                var m = new NBitcoin.Mnemonic(phrase);
-                var ix = m.Indices;
-                bool valid = m.IsValidChecksum;
+                NBitcoin.Mnemonic m = new NBitcoin.Mnemonic(NBitcoin.Wordlist.English, NBitcoin.WordCount.Twelve);
+                string phrase = String.Join(' ', m.Words);
             });
         }
         */
 
         [Benchmark]
-        public void MnemonicToEntropy_100_Native() {
+        public void MnemonicCreate_Native_100() {
             Wordlists.Initialize();
-            string phrase = "siren bottom inform vehicle else donkey dirt task cook tide general when";
             Parallel.For(0, 100, i => {
-                var m = new Phrase(phrase);
-                var ix = m.Indices;
-                bool valid = m.IsValid;
+                Phrase p = new Phrase(12);
+                string phrase = p.ToPhrase();
+            });
+        }
+
+        [Benchmark]
+        public void MnemonicToAddress_Bitcoin_100() {
+            Wordlists.Initialize();
+            string[] paths = { "m/84'/0'/0'/0/0" };
+            int[] accounts = { 0 };
+            int[] indices = { 0 };
+            Parallel.For(0, 100, i => {
+                PhraseToAddress p2a = PhraseToAddress.Create(CoinType.BTC, null, null, 0, 0);
+                Phrase phrase = new Phrase(12);
+                List<Address> addresses = p2a.GetAddresses(phrase, "", paths, accounts, indices);
+            });
+        }
+
+        [Benchmark]
+        public void MnemonicToAddress_Eth_100() {
+            Wordlists.Initialize();
+            string[] paths = { "m/44'/60'/0'/0/0" };
+            int[] accounts = { 0 };
+            int[] indices = { 0 };
+            Parallel.For(0, 100, i => {
+                PhraseToAddress p2a = PhraseToAddress.Create(CoinType.ETH, null, null, 0, 0);
+                Phrase phrase = new Phrase(12);
+                List<Address> addresses = p2a.GetAddresses(phrase, "", paths, accounts, indices);
+            });
+        }
+
+        [Benchmark]
+        public void MnemonicToAddress_Cardano_100() {
+            Wordlists.Initialize();
+            string[] paths = { "m/1852'/1815'/0'/0/0" };
+            int[] accounts = { 0 };
+            int[] indices = { 0 };
+            Parallel.For(0, 100, i => {
+                PhraseToAddress p2a = PhraseToAddress.Create(CoinType.ADA, null, null, 0, 0);
+                Phrase phrase = new Phrase(12);
+                List<Address> addresses = p2a.GetAddresses(phrase, "", paths, accounts, indices);
+            });
+        }
+
+        [Benchmark]
+        public void MnemonicToAddress_Solana_100() {
+            Wordlists.Initialize();
+            string[] paths = { "m/44'/501'" };
+            int[] accounts = { 0 };
+            int[] indices = { 0 };
+            Parallel.For(0, 100, i => {
+                PhraseToAddress p2a = PhraseToAddress.Create(CoinType.SOL, null, null, 0, 0);
+                Phrase phrase = new Phrase(12);
+                List<Address> addresses = p2a.GetAddresses(phrase, "", paths, accounts, indices);
             });
         }
     }

@@ -467,6 +467,8 @@ namespace FixMyCrypto {
         int depth = 1;
 
         public Passphrase(string passphrase, int fuzzDepth = 1) {
+            if (passphrase == null) return;
+
             if (passphrase.StartsWith("{{") && passphrase.EndsWith("}}")) {
                 toFuzz = passphrase.Substring(2, passphrase.Length - 4);
                 depth = fuzzDepth;
@@ -480,8 +482,11 @@ namespace FixMyCrypto {
             if (root != null) {
                 foreach (string r in root.Enumerate()) yield return r;
             }
-            else {
+            else if (toFuzz != null) {
                 foreach (string r in Fuzz(toFuzz, depth)) yield return r;
+            }
+            else {
+                yield return "";
             }
         }
 
