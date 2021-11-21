@@ -36,7 +36,7 @@ namespace FixMyCrypto {
                 PhraseToAddress p2a = PhraseToAddress.Create(ct, null, null, 0, 0);
                 PathTree tree = p2a.CreateTree(paths, accounts, indices);
                 Phrase phrase = new Phrase(12);
-                p2a.GetAddresses(phrase, passphrases, tree, false);
+                p2a.GetAddressesBatchPassphrases(phrase, passphrases, tree, null);
             });
         }
 
