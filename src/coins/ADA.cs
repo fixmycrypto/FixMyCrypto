@@ -7,7 +7,7 @@ using CardanoSharp.Wallet.Enums;
 namespace FixMyCrypto {
     class PhraseToAddressCardano : PhraseToAddress {
         protected AddressService addressService;
-        public PhraseToAddressCardano(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
+        public PhraseToAddressCardano(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses) {
             this.addressService = new AddressService();
         }
         public override CoinType GetCoinType() { return CoinType.ADA; }
@@ -80,7 +80,7 @@ namespace FixMyCrypto {
     }
 
     class PhraseToAddressCardanoLedger : PhraseToAddressCardano {
-        public PhraseToAddressCardanoLedger(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
+        public PhraseToAddressCardanoLedger(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses) {
         }
         public override CoinType GetCoinType() { return CoinType.ADALedger; }
         public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
@@ -90,7 +90,7 @@ namespace FixMyCrypto {
         }
     }
     class PhraseToAddressCardanoTrezor : PhraseToAddressCardano {
-        public PhraseToAddressCardanoTrezor(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
+        public PhraseToAddressCardanoTrezor(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses) {
         }
 
         public override CoinType GetCoinType() { return CoinType.ADATrezor; }

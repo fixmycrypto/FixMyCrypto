@@ -131,6 +131,16 @@ namespace FixMyCrypto {
         public PathTree() {
             Root = new PathNode(null, PathNode.RootIndex);
         }
+
+        public PathTree(PathTree src) {
+            Root = new PathNode(null, PathNode.RootIndex);
+            Root.End = src.Root.End;
+            foreach (PathNode child in src.Root.Children) {
+                PathNode c = new PathNode(child);
+                Root.AddChild(c);
+            }
+        }
+
         public void AddPath(string path, bool valid = true) {
             if (path.StartsWith("m/")) {
                 Root.AddPath(path.Substring(2), valid);
@@ -153,13 +163,14 @@ namespace FixMyCrypto {
         private string ToString(PathNode node, String indent, bool last) {
             string s;
             if (node == Root) {
-                s = "m\n";
+                s = "m";
             }
             else {
                 s = indent + "\\ " + PathNode.GetPath(node.Value);
-                if (node.End) s += " *";
-                s += "\n";
             }
+
+            if (node.End) s += " *";
+            s += "\n";
 
             indent += last ? "  " : "| ";
 
@@ -173,7 +184,7 @@ namespace FixMyCrypto {
     public class PathNode {
         public static uint Hardened = 0x80000000U;
         public static uint RootIndex = 0x7fffffffU;
-        public PathNode Parent { get; }
+        public PathNode Parent { get; private set; }
         public uint Value { get; }
         public List<PathNode> Children { get; }
         public bool End { get; set; }
@@ -185,6 +196,24 @@ namespace FixMyCrypto {
             this.Value = prefix;
             this.End = false;
         }
+
+        //  Copy constructor
+        public PathNode(PathNode src) {
+            this.Value = src.Value;
+            this.End = src.End;
+            this.Key = src.Key;
+            this.Children = new List<PathNode>();
+            foreach (var child in src.Children) {
+                PathNode c = new PathNode(child);
+                AddChild(c);
+            }
+        }
+
+        public void AddChild(PathNode child) {
+            this.Children.Add(child);
+            child.Parent = this;
+        }
+
         public static bool IsHardened(uint val) {
             return ((val & Hardened) == Hardened);
         }

@@ -92,15 +92,15 @@ namespace FixMyCrypto {
             BlockingCollection<Work> addressQueue = new BlockingCollection<Work>(Settings.Threads * 2);
 
             int phraseProducerCount = 1,
-                phraseToAddressCount = Math.Max(Settings.Threads / 2, 1),
-                addressLookupCount = Math.Max(Settings.Threads / 2 - 1, 1);
+                phraseToAddressCount = 1,
+                addressLookupCount = Math.Max(Settings.Threads - 2, 1);
 
             string api = Settings.GetApiPath(Settings.CoinType);
             if (!String.IsNullOrEmpty(api)) {
                 Log.All($"API Server: {api}");
             }
             else {
-                phraseToAddressCount = Math.Max(Settings.Threads - 1, 1);
+                phraseToAddressCount = 1;
                 addressLookupCount = 0;
             }
 
@@ -127,18 +127,18 @@ namespace FixMyCrypto {
             }
             Log.All($"Accounts: {Settings.GetRangeString(Settings.Accounts)}");
             Log.All($"Indices: {Settings.GetRangeString(Settings.Indices)}");
+
+            //  Log the path tree
+            PhraseToAddress p2at = PhraseToAddress.Create(Settings.CoinType, null, null);
+            PathTree tree = p2at.CreateTree(Settings.Paths, Settings.Accounts, Settings.Indices);
+            Log.All($"Derivation path tree:\n{tree.ToString()}");
+
             if (Settings.KnownAddresses != null) {
                 foreach (string knownAddress in Settings.KnownAddresses) {
-                    //  TODO: validate addresses
                     Log.All($"knownAddress: {knownAddress}");
                 }
             }
             
-            //  Log the path tree
-            PhraseToAddress p2at = PhraseToAddress.Create(Settings.CoinType, null, null, 0, 0);
-            PathTree tree = p2at.CreateTree(Settings.Paths, Settings.Accounts, Settings.Indices);
-            Log.All($"Derivation path tree:\n{tree.ToString()}");
-
             Log.All($"difficulty: {Settings.Difficulty}, wordDistance: {Settings.WordDistance}");
 
             //  Initialize word lists
@@ -165,7 +165,7 @@ namespace FixMyCrypto {
             PhraseToAddress[] p2a = new PhraseToAddress[phraseToAddressCount];
             List<Thread> p2aThreads = new List<Thread>();
             for (int i = 0; i < phraseToAddressCount; i++) {
-                p2a[i] = PhraseToAddress.Create(Settings.CoinType, phraseQueue, addressQueue, i, phraseToAddressCount);
+                p2a[i] = PhraseToAddress.Create(Settings.CoinType, phraseQueue, addressQueue);
 
                 if (i == 0 && Settings.KnownAddresses != null) {
                     //  Validate addresses

@@ -6,7 +6,7 @@ using Cryptography.ECDSA;
 
 namespace FixMyCrypto {
     class PhraseToAddressSolana : PhraseToAddress {
-        public PhraseToAddressSolana(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
+        public PhraseToAddressSolana(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses) {
         }
         public override CoinType GetCoinType() { return CoinType.SOL; }
         public override string[] GetDefaultPaths(string[] knownAddresses) {

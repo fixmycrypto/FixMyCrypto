@@ -13,7 +13,7 @@ namespace FixMyCrypto {
             if (expectTx == 0 && expectCoins == 0) return;
             Log.Info($"TestKnownPhrase {coin} phrase: {phrase}");
             try {
-                PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null, 0, 0);
+                PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null);
                 List<Address> addresses = p2a.GetAddressList(phrase, passphrase, 0, 0, path);
                 LookupAddress la = LookupAddress.Create(coin, null, 0, 0);
                 foreach (Address address in addresses) {
@@ -41,7 +41,7 @@ namespace FixMyCrypto {
         }
 
         public static List<Address> TestDerivation(string phrase, string passphrase, CoinType coin, string path) {
-            PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null, 0, 0);
+            PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null);
 
             int account, index;
 
@@ -89,7 +89,7 @@ namespace FixMyCrypto {
             throw new Exception($"validation should have failed: {phrase}");
         }
         public static void TestCardanoKeyVector(string name, string phrase, string passphrase, CoinType coin, string expectSK, string expectCC) {
-            PhraseToAddress p = PhraseToAddress.Create(coin, null, null, 0, 0);
+            PhraseToAddress p = PhraseToAddress.Create(coin, null, null);
             Phrase ph = new Phrase(phrase);
             CardanoSharp.Wallet.Models.Keys.PrivateKey sk = (CardanoSharp.Wallet.Models.Keys.PrivateKey)p.DeriveMasterKey(ph, passphrase);
             string gotSK = sk.Key.ToHexString();

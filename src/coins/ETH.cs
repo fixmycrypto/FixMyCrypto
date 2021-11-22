@@ -5,7 +5,7 @@ using NBitcoin;
 
 namespace FixMyCrypto {
     class PhraseToAddressEth : PhraseToAddress {
-        public PhraseToAddressEth(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) : base(phrases, addresses, threadNum, threadMax) {
+        public PhraseToAddressEth(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses) {
         }
         public override CoinType GetCoinType() { return CoinType.ETH; }
         private char GetChecksumDigit(byte h, char c) {

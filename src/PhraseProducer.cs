@@ -29,6 +29,7 @@ namespace FixMyCrypto {
         public void Finish() {
             Global.Done = true;
             queue.CompleteAdding();
+            Log.Info("PP done, valid: " + valid + " invalid: " + invalid + $", dupes: {dupes}, total time: {sw1.ElapsedMilliseconds/1000.0:F2}s, time/req: {((valid + invalid != 0) ? ((double)sw1.ElapsedMilliseconds/(valid+invalid)) : 0):F3}ms/req, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
         }
         private static ConcurrentDictionary<Phrase, byte> testedPhrases = new();
         private void TestPhrase(short[] phraseArray) {
@@ -602,6 +603,8 @@ namespace FixMyCrypto {
             if (Global.Done) return;
         }
     
+        Stopwatch sw1 = new Stopwatch();
+
         public void ProduceWork() {
             Log.Debug("PP start");
 
@@ -621,7 +624,6 @@ namespace FixMyCrypto {
             Phrase p = new Phrase(this.phrase);
             short[] phrase = p.Indices;
 
-            Stopwatch sw1 = new Stopwatch();
             sw1.Start();
 
             if (missingWords > 0) {
@@ -665,7 +667,6 @@ namespace FixMyCrypto {
             }
 
             sw1.Stop();
-            Log.Info("PP done, valid: " + valid + " invalid: " + invalid + $", dupes: {dupes}, total time: {sw1.ElapsedMilliseconds/1000.0:F2}s, time/req: {((valid + invalid != 0) ? ((double)sw1.ElapsedMilliseconds/(valid+invalid)) : 0):F3}ms/req, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
             Finish();
         }
 

@@ -2,32 +2,29 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
-using System.Security.Cryptography;
-using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using System.Threading.Tasks;
 
 namespace FixMyCrypto {
     abstract class PhraseToAddress {
         protected BlockingCollection<Work> phraseQueue, addressQueue;
-        protected int threadNum, threadMax;
 
-        public static PhraseToAddress Create(CoinType coin, BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) {
+        public static PhraseToAddress Create(CoinType coin, BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) {
             switch (coin) {
                 case CoinType.ADA:
 
-                return new PhraseToAddressCardano(phrases, addresses, threadNum, threadMax);
+                return new PhraseToAddressCardano(phrases, addresses);
 
                 case CoinType.ADALedger:
 
-                return new PhraseToAddressCardanoLedger(phrases, addresses, threadNum, threadMax);
+                return new PhraseToAddressCardanoLedger(phrases, addresses);
 
                 case CoinType.ADATrezor:
 
-                return new PhraseToAddressCardanoTrezor(phrases, addresses, threadNum, threadMax);
+                return new PhraseToAddressCardanoTrezor(phrases, addresses);
 
                 case CoinType.ETH:
 
-                return new PhraseToAddressEth(phrases, addresses, threadNum, threadMax);
+                return new PhraseToAddressEth(phrases, addresses);
 
                 case CoinType.BTC:
                 case CoinType.DOGE:
@@ -35,23 +32,23 @@ namespace FixMyCrypto {
                 case CoinType.BCH:
                 case CoinType.XRP:
 
-                return new PhraseToAddressBitAltcoin(phrases, addresses, threadNum, threadMax, coin);
+                return new PhraseToAddressBitAltcoin(phrases, addresses, coin);
 
                 case CoinType.SOL:
 
-                return new PhraseToAddressSolana(phrases, addresses, threadNum, threadMax);
+                return new PhraseToAddressSolana(phrases, addresses);
 
                 case CoinType.ALGO:
 
-                return new PhraseToAddressAlgorand(phrases, addresses, threadNum, threadMax);
+                return new PhraseToAddressAlgorand(phrases, addresses);
 
                 case CoinType.DOT:
 
-                return new PhraseToAddressPolkadot(phrases, addresses, threadNum, threadMax);
+                return new PhraseToAddressPolkadot(phrases, addresses);
 
                 case CoinType.DOTLedger:
 
-                return new PhraseToAddressPolkadotLedger(phrases, addresses, threadNum, threadMax);
+                return new PhraseToAddressPolkadotLedger(phrases, addresses);
 
                 default:
 
@@ -59,12 +56,12 @@ namespace FixMyCrypto {
             }
         }
         Stopwatch queueWaitTime = new Stopwatch();
-        protected PhraseToAddress(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, int threadNum, int threadMax) {
+        Stopwatch stopWatch = new Stopwatch();
+        int count = 0;
+
+        protected PhraseToAddress(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) {
             this.phraseQueue = phrases;
             this.addressQueue = addresses;
-            this.threadNum = threadNum;
-            this.threadMax = threadMax;
-            this.mutex = new object();
         }
         private MasterKey[] DeriveMasterKeys(Phrase phrase, string[] passphrases) {
             MasterKey[] keys = new MasterKey[passphrases.Length];
@@ -93,11 +90,9 @@ namespace FixMyCrypto {
         public abstract void ValidateAddress(string address);
 
         public static void ValidateAddress(CoinType coin, string address) {
-            PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null, 0, 0);
+            PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null);
             p2a.ValidateAddress(address);
         }
-
-        private Object mutex;
 
         protected virtual string GetStakePath() { return null; }
         private void DeriveChildKeys(PathNode node) {
@@ -224,24 +219,25 @@ namespace FixMyCrypto {
 
             //  Derive path keys
 
-            foreach (string passphrase in passphrases) {
-                if (Global.Done) break;
+            Parallel.ForEach (passphrases, passphrase => {
+                if (Global.Done) return;
 
-                tree.Root.Key = DeriveMasterKey(phrase, passphrase);
+                PathTree t = new PathTree(tree);
 
-                foreach (PathNode child in tree.Root.Children) {
+                t.Root.Key = DeriveMasterKey(phrase, passphrase);
+
+                foreach (PathNode child in t.Root.Children) {
                     DeriveChildKeys(child);
                 }
 
                 List<Address> addrs = new();
 
-                DeriveAddresses(tree.Root, phrase, passphrase, addrs);
+                DeriveAddresses(t.Root, phrase, passphrase, addrs);
 
                 if (Produce != null) Produce(addrs);
 
                 count += addrs.Count;
-            }
-            
+            });
 
             return count;
         }
@@ -252,24 +248,25 @@ namespace FixMyCrypto {
 
             //  Derive path keys
 
-            foreach (Phrase phrase in phrases) {
-                if (Global.Done) break;
+            Parallel.ForEach (phrases, phrase => {
+                if (Global.Done) return;
 
-                tree.Root.Key = DeriveMasterKey(phrase, passphrase);
+                PathTree t = new PathTree(tree);
 
-                foreach (PathNode child in tree.Root.Children) {
+                t.Root.Key = DeriveMasterKey(phrase, passphrase);
+
+                foreach (PathNode child in t.Root.Children) {
                     DeriveChildKeys(child);
                 }
 
                 List<Address> addrs = new();
 
-                DeriveAddresses(tree.Root, phrase, passphrase, addrs);
+                DeriveAddresses(t.Root, phrase, passphrase, addrs);
 
                 if (Produce != null) Produce(addrs);
 
                 count += addrs.Count;
-            }
-            
+            });
 
             return count;
         }
@@ -285,11 +282,11 @@ namespace FixMyCrypto {
             Global.Done = true;
             phraseQueue.CompleteAdding();
             addressQueue.CompleteAdding();
+            if (count > 0) Log.Info("P2A done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, time/req: {(count != 0 ? ((double)stopWatch.ElapsedMilliseconds/count) : 0):F2}ms/req, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
+            count = 0;
         }
         public void Consume() {
-            int count = 0;
-            Stopwatch stopWatch = new Stopwatch();
-            Log.Debug("P2A" + threadNum + " start");
+            Log.Debug("P2A start");
 
             PathTree tree = CreateTree(Settings.Paths, Settings.Accounts, Settings.Indices);
 
@@ -301,6 +298,8 @@ namespace FixMyCrypto {
             // Log.Debug($"P2A{threadNum} passphrases[].Length={passphrases.Length}");
             int batchSize = 1024;
             Queue<Phrase> phraseBatch = new(batchSize);
+
+            stopWatch.Start();
 
             while (!Global.Done) {
 
@@ -355,8 +354,8 @@ namespace FixMyCrypto {
                 count += GetAddressesBatchPhrases(phrases, passphrases[0], tree, Produce);
             }
 
-            if (count > 0) Log.Info("P2A" + threadNum + " done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, time/req: {(count != 0 ? ((double)stopWatch.ElapsedMilliseconds/count) : 0):F2}ms/req, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
             Finish();
+            stopWatch.Stop();
         }
 
         public void Produce(List<Address> addresses) {
