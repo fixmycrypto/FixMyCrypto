@@ -4,3 +4,9 @@
 [submodule "lib/sr25519-crust"]
 	path = lib/sr25519-crust
 	url = https://github.com/fixmycrypto/sr25519-crust.git
+[submodule "lib/opencl-dotnet"]
+	path = lib/opencl-dotnet
+	url = https://github.com/fixmycrypto/opencl-dotnet.git
+[submodule "lib/opencl_brute"]
+	path = lib/opencl_brute
+	url = https://github.com/fixmycrypto/opencl_brute

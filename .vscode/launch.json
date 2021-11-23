@@ -18,7 +18,8 @@
             "cwd": "${workspaceFolder}",
             "OS-COMMENT5": "For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console",
             "console": "internalConsole",
-            "stopAtEntry": false
+            "stopAtEntry": false,
+            "env": { "DYLD_LIBRARY_PATH": "/System/Library/Frameworks/OpenCL.framework" }
         },
         {
             "OS-COMMENT1": "Use IntelliSense to find out which attributes exist for C# debugging",
@@ -34,7 +35,8 @@
             "cwd": "${workspaceFolder}",
             "OS-COMMENT5": "For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console",
             "console": "internalConsole",
-            "stopAtEntry": false
+            "stopAtEntry": false,
+            "env": { "DYLD_LIBRARY_PATH": "/System/Library/Frameworks/OpenCL.framework" }
         },
         {
             "OS-COMMENT1": "Use IntelliSense to find out which attributes exist for C# debugging",
@@ -50,7 +52,8 @@
             "cwd": "${workspaceFolder}",
             "OS-COMMENT5": "For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console",
             "console": "internalConsole",
-            "stopAtEntry": false
+            "stopAtEntry": false,
+            "env": { "DYLD_LIBRARY_PATH": "/System/Library/Frameworks/OpenCL.framework" }
         }
     ]
 }

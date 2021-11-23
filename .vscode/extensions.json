@@ -1,6 +1,7 @@
 {
     "recommendations": [
         "ms-dotnettools.csharp",
-        "joaompinto.vscode-graphviz"
+        "joaompinto.vscode-graphviz",
+        "galarius.vscode-opencl"
     ]
 }
