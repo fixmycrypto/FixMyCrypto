@@ -350,6 +350,11 @@ namespace FixMyCrypto {
             FailValidateAddress(CoinType.ALGO, "CA73GRGZZPMVE57DVFDPEBTHUHM3RT76RZGH4MGBZFJGAAL3ODN2WVDN7Q");
             FailValidateAddress(CoinType.DOT, "12G1bZ4Ki2H37o4iZHTADd46aZSAyG93SpBZSubzrM2sYHND");
 
+            //  Validate donation addresses
+            foreach (var pair in FoundResult.DonationAddresses) {
+                PhraseToAddress.ValidateAddress(pair.Key, pair.Value);
+            }
+
             //  Test vectors
             //  TODO: Test addresses
             //  TODO: Add Ledger/Trezor 12/15/18-word test vectors

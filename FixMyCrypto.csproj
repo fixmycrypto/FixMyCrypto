@@ -7,7 +7,7 @@
     <TargetName>FixMyCrypto</TargetName>
     <AssemblyName>FixMyCrypto</AssemblyName>
     <NoWarn>NU1701</NoWarn>
-    <AssemblyVersion>1.9.2.0</AssemblyVersion>
+    <AssemblyVersion>1.9.3.0</AssemblyVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);lib\**</DefaultItemExcludes>
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
@@ -31,6 +31,6 @@
     <None Update="README.md" CopyToOutputDirectory="Always" />
     <None Update="LICENSE" CopyToOutputDirectory="Always" />
     <ProjectReference Include="lib\sr25519-dotnet\sr25519-dotnet.lib\sr25519-dotnet.lib.csproj" />
-    <ProjectReference Include="lib\opencl-dotnet\OpenCl.DotNetCore\OpenCl.DotNetCore.csproj" />
+    <!-- <ProjectReference Include="lib\opencl-dotnet\OpenCl.DotNetCore\OpenCl.DotNetCore.csproj" /> -->
   </ItemGroup>
 </Project>

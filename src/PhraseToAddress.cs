@@ -30,7 +30,6 @@ namespace FixMyCrypto {
                 case CoinType.DOGE:
                 case CoinType.LTC:
                 case CoinType.BCH:
-                case CoinType.XRP:
 
                 return new PhraseToAddressBitAltcoin(phrases, addresses, coin);
 
@@ -49,6 +48,10 @@ namespace FixMyCrypto {
                 case CoinType.DOTLedger:
 
                 return new PhraseToAddressPolkadotLedger(phrases, addresses);
+
+                case CoinType.XRP:
+
+                return new PhraseToAddressXrp(phrases, addresses);
 
                 default:
 

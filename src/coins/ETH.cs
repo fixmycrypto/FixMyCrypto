@@ -40,6 +40,7 @@ namespace FixMyCrypto {
             return new string(ret);
         }
         private string SkToAddress(ExtKey sk) {
+            //  TODO: Get decompressed pubkey directly?
             byte[] pkeyBytes = sk.PrivateKey.PubKey.ToBytes();
             byte[] converted = Cryptography.Secp256KPublicKeyDecompress(pkeyBytes);
 

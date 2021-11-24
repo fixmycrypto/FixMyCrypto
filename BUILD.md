@@ -6,7 +6,7 @@
 
 Clone the repository: 
 
-    git clone https://github.com/fixmycrypto/FixMyCrypto.git
+    git clone --recurse-submodules https://github.com/fixmycrypto/FixMyCrypto.git
 
 Install dependencies and run:
 
@@ -15,7 +15,7 @@ Install dependencies and run:
 
 # Develop
 
-VS Code project files are included, install "C# for Visual Studio Code (powered by OmniSharp)" extension.
+VS Code project files are included, install recommended workspace extensions.
 
 # Debug
 

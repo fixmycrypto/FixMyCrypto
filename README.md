@@ -20,6 +20,7 @@
     * SOL
     * ALGO
     * DOT (Polkadot)
+    * XRP (Ripple)
     * Need another coin? Let us know!
 * Smart typo detection drastically reduces the search time
     * Phrase words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
@@ -35,7 +36,7 @@ For technical support or help with any crypto recovery needs, please contact us 
 
 # Donations / Tips
 
-If you found this software useful, please consider donating to fund future development.
+Please consider donating to fund future development.
 
 * BTC: bc1q477afku8x7964gmzlsapgj8705e63ch89p8k4z
 * ETH: 0x0327DF6652D07eE6cc670626b034edFfceD1B20C
@@ -44,6 +45,7 @@ If you found this software useful, please consider donating to fund future devel
 * SOL: 7ky2LTXNwPASogjMURv88LoPRHAAL4v49HeD7MYARuM4
 * ALGO: EPQZU6GMEMKKEQH4CP7U2U2NTQE2ZVMOYAS7F5WMCUYIAYUKNJVUHW5W5A
 * DOT: 14jUHiE429X8HwPRmj2Sy4Xvo5Z9ewJJJ273ctvmQgxgTJ4b
+* XRP: rJtr6VfAP5Qmp2abKUfdJEGtHEckRpcKHk
 
 # How to use
 
@@ -67,7 +69,7 @@ If you found this software useful, please consider donating to fund future devel
 
 ### Required
 
-Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`, `LTC`, `SOL`, `ALGO`, `DOT`, etc.). (For ADA or DOT used with a Ledger or Trezor hardware wallet, see the relevant [special use cases](#special-use-cases) section.)
+Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`, `LTC`, `SOL`, `ALGO`, `DOT`, `XRP`, etc.). (For ADA or DOT used with a Ledger or Trezor hardware wallet, see the relevant [special use cases](#special-use-cases) section.)
 
     "coin": "BTC",
 

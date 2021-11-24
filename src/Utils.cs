@@ -223,14 +223,15 @@ namespace FixMyCrypto
 
     class FoundResult {
 
-        private static Dictionary<CoinType, string> DonationAddresses = new Dictionary<CoinType, string>() {
+        public static Dictionary<CoinType, string> DonationAddresses = new Dictionary<CoinType, string>() {
             { CoinType.BTC, "bc1q477afku8x7964gmzlsapgj8705e63ch89p8k4z" },
             { CoinType.ETH, "0x0327DF6652D07eE6cc670626b034edFfceD1B20C" },
             { CoinType.DOGE, "DT8iZF8RbqpRftgrWdiq34EZdJpCGiWBwG" },
             { CoinType.ADA, "addr1qxhjru35kv8fq66afxxdnjzf720anfcppktchh6mjuwxma3e876gh3czzkq0guls5qrkghexsuh543h7k2xqlje5lskqfp2elv" },
             { CoinType.SOL, "7ky2LTXNwPASogjMURv88LoPRHAAL4v49HeD7MYARuM4" },
             { CoinType.ALGO, "EPQZU6GMEMKKEQH4CP7U2U2NTQE2ZVMOYAS7F5WMCUYIAYUKNJVUHW5W5A" },
-            { CoinType.DOT, "14jUHiE429X8HwPRmj2Sy4Xvo5Z9ewJJJ273ctvmQgxgTJ4b" }
+            { CoinType.DOT, "14jUHiE429X8HwPRmj2Sy4Xvo5Z9ewJJJ273ctvmQgxgTJ4b" },
+            { CoinType.XRP, "rJtr6VfAP5Qmp2abKUfdJEGtHEckRpcKHk" }
         };
 
         public static void DoFoundResult(CoinType coin, Address addr) {

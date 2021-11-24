@@ -27,6 +27,10 @@ namespace FixMyCrypto {
             return Blake2Fast.Blake2b.ComputeHash(data);
         }
 
+        public static byte[] RipeMD160Hash(byte[] data) {
+            return Ripemd160Manager.GetHash(data);
+        }
+
         public static byte[] KeccakDigest(byte[] data) {
             var digest = new Org.BouncyCastle.Crypto.Digests.KeccakDigest(256);
             digest.BlockUpdate(data, 0, data.Length);

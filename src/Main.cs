@@ -5,14 +5,17 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+/*
 using OpenCl.DotNetCore.Platforms;
 using OpenCl.DotNetCore.Devices;
+*/
 using ConsoleTables;
 
 namespace FixMyCrypto {
     class FixMyCrypto {
         static bool interactive = true;
 
+        /*
         static void LogOpenCLInfo() {
             IEnumerable<Platform> platforms = Platform.GetPlatforms();
             ConsoleTable consoleTable = new ConsoleTable("Platform", "OpenCL Version", "Vendor", "Device", "Driver Version", "Bits", "Memory", "Clock Speed", "Available");
@@ -39,6 +42,8 @@ namespace FixMyCrypto {
             Device chosenDevice = platforms.FirstOrDefault().GetDevices(DeviceType.All).FirstOrDefault();
             Log.Info($"OpenCL Using: {chosenDevice.Name} ({chosenDevice.Vendor})");
         }
+        */
+        
         static void PauseAndExit(int code) {
             if (interactive) {
                 Log.All("Press 'E' to exit...");
@@ -67,7 +72,7 @@ namespace FixMyCrypto {
                 PauseAndExit(1);
             }
 
-            LogOpenCLInfo();
+            // LogOpenCLInfo();
 
             WebClient.client.Timeout = new System.TimeSpan(0, 0, 60);
 
