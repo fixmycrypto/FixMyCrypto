@@ -339,10 +339,10 @@ namespace FixMyCrypto {
             return GetEnumerator();
         }
 
-        public int GetCount() {
+        public long GetCount() {
             if (this.stringValue != null) return 1;
 
-            int count;
+            long count;
 
             if (this.opType == OpType.Or) {
                 count = 0;
@@ -439,7 +439,7 @@ namespace FixMyCrypto {
                         readableLabel += "\"" + p.ToString() + "\"";
                     }
                 }
-                string shape = "oval";
+                string shape = root ? "square" : "oval";
                 if (opType == OpType.Or && parts.Length > 1) shape = "invhouse";
                 if (opType == OpType.And) shape = "box style=rounded";
                 nodes = $"\t\"{id:X8}\" [label=\"{EscapeString(readableLabel)}\"{(root ? " root=\"true\"" : "")}{(opType == OpType.Ordered && parts.Length > 1 ? " ordering=\"out\"" : "")} shape={shape}]\n";
@@ -502,7 +502,7 @@ namespace FixMyCrypto {
             throw new NotSupportedException();
         }
 
-        public int GetCount() {
+        public long GetCount() {
             if (root != null) return root.GetCount();
 
             if (depth == 1) return
@@ -513,7 +513,7 @@ namespace FixMyCrypto {
 
             //  TODO: Better way to count permutations when depth > 1
             //  It isn't GetCount(depth: 1) ^ 2 due to insertions/deletions changing the length
-            int count = 0;
+            long count = 0;
             foreach (string r in Fuzz(toFuzz, depth)) count++;
             return count;
         }   
@@ -568,32 +568,77 @@ namespace FixMyCrypto {
         }
 
         public void WriteTopologyFile(string path) {
-            string topology = GetTopology();
+            string topology = "digraph G {\n\toverlap = false\n\tconcentrate = false\n" + GetTopology() + "}\n";
 
             System.IO.File.WriteAllText(path, topology);
         }
 
-        private string GetTopology() {
+        public string GetTopology() {
 
             //  https://graphviz.org/doc/info/lang.html
 
-            string topology = "digraph G {\n\toverlap = false\n\tconcentrate = false\n";
-
             if (root != null) {
-                topology += root.GetTopology(true);
+                return root.GetTopology(true);
             }
             else {
                 //  dummy topology for passphrase fuzz mode
 
                 Part p = new Part("{{" + toFuzz + "}}");
 
-                topology += p.GetTopology(true);
+                return p.GetTopology(true);
             }
-
-            topology += "}\n";
-
-            return topology;
         }
     }
 
+    class MultiPassphrase : IEnumerable<string> {
+
+        List<Passphrase> passphrases;
+
+        public MultiPassphrase(string[] src, int fuzzDepth = 1) {
+            passphrases = new();
+            foreach (string p in src) {
+                passphrases.Add(new Passphrase(p, fuzzDepth));
+            }
+        }
+
+        public long GetCount() {
+            long count = 0;
+            foreach (Passphrase p in passphrases) {
+                count += p.GetCount();
+            }
+            return count;
+        }
+
+        public IEnumerator<string> GetEnumerator() {
+            foreach (Passphrase p in passphrases) {
+                foreach (string s in p) {
+                    yield return s;
+                }
+            }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+            return GetEnumerator();
+        }
+
+        public void WriteTopologyFile(string path) {
+            string topology = "digraph G {\n\toverlap = false\n\tconcentrate = false\n" + GetTopology() + "}\n";
+
+            System.IO.File.WriteAllText(path, topology);
+        }
+
+        private string GetTopology() {
+            string topology = "";
+
+            foreach (Passphrase p in passphrases) {
+                topology += p.GetTopology();
+            }
+
+            return topology;
+        }
+
+        public override string ToString() {
+            throw new NotSupportedException();
+        }
+    }
 }

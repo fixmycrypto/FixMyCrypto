@@ -146,10 +146,16 @@ namespace FixMyCrypto {
             Log.All($"Coin type: {Settings.CoinType}");
             Log.All($"Phrase to test: \"{Settings.Phrase}\"");
 
-            if (!String.IsNullOrEmpty(Settings.Passphrase)) {
-                Log.All($"passphrase: \"{Settings.Passphrase}\"{(Settings.FuzzDepth == 1 ? "" : $" (fuzz depth = {Settings.FuzzDepth})")}");
+            if (Settings.Passphrases != null) {
+                foreach (string passphrase in Settings.Passphrases) {
+                    Log.All($"passphrase: \"{passphrase}\"");
+                }
 
-                Passphrase p = new Passphrase(Settings.Passphrase, Settings.FuzzDepth);
+                if (Settings.FuzzDepth > 1) {
+                    Log.All($"fuzz depth: {Settings.FuzzDepth}");
+                }
+
+                MultiPassphrase p = new MultiPassphrase(Settings.Passphrases, Settings.FuzzDepth);
                 Log.All($"passphrase permutations: {p.GetCount()}");
 
                 if (!String.IsNullOrEmpty(Settings.TopologyFile)) {

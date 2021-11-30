@@ -23,49 +23,16 @@ namespace FixMyCrypto {
             int entropyLength = (int)(length * 11 / 8.0 + 0.5);
 
             byte[] entropy = new byte[entropyLength];
-            var rng = RandomNumberGenerator.Create();
+            using var rng = RandomNumberGenerator.Create();
             rng.GetBytes(entropy, 0, entropy.Length - 1);
 
             byte[] hash = Cryptography.SHA256Hash(entropy.Slice(0, entropy.Length - 1));
 
             entropy[entropy.Length - 1] = hash[0];
 
-            this.ix = EightToEleven(entropy);
+            this.ix = entropy.EightToEleven();
             this.hash = BitConverter.ToInt32(hash);
             this.valid = true;
-        }
-
-        public static short[] EightToEleven(byte[] src) {
-            /*
-            string bits = "";
-            for (int i = 0; i < src.Length; i++) bits += Convert.ToString(src[i], 2).PadLeft(8, '0') + ' ';
-            Log.Debug($"entropy:\n{bits}");
-            */
-
-            short[] b = new short[(src.Length * 8) / 11];
-            int ix = 0;
-            int acc = 0;
-            int accBits = 0;
-
-            for (int i = 0; i < src.Length; i++) {
-                acc <<= 8;
-                acc |= src[i];
-                accBits += 8;
-                while (accBits >= 11) {
-                    int val = (acc >> (accBits - 11));
-                    b[ix++] = (short)(val & 0xffff);
-                    acc &= (1 << (accBits - 11)) - 1;
-                    accBits -= 11;
-                }
-            }
-
-            /*
-            bits = "";
-            for (int i = 0; i < b.Length; i++) bits += Convert.ToString(b[i], 2).PadLeft(11, '0') + ' ';
-            Log.Debug($"output:\n{bits}");
-            */
-
-            return b;
         }
 
         public override bool Equals(object obj) {

@@ -109,13 +109,24 @@ A single missing word (one `?`) can be solved quickly, two missing words will ta
 
 A BIP39 passphrase (a.k.a. "extra word" or "advanced security") is not to be confused with your spending password, wallet password, or app login password.
 
-If you didn't use a "BIP39 passphrase" when you created the wallet or you're not sure what this is, then leave this as blank:
+If you didn't use a BIP39 passphrase when you created the wallet or you're not sure what this is, then leave this as blank:
 
     "passphrase": "",
 
-If you did use a BIP39 passphrase and you are 100% certain of the exact passphrase you used, specify it here:
+If you used a BIP39 passphrase and you are 100% certain of the exact passphrase you used, specify it here:
 
     "passphrase": "ThePassphrase!",
+
+If you used a BIP39 passphrase and you're 100% certain it's one of a list of possible passphrases, you can specify a list of passphrases to test like this:
+
+    "passphrases": [
+
+        "FirstPossibility",
+
+        "SecondPossibility"
+    ],
+
+This will match a passphrase of "FirstPossibility" or "SecondPossibility" **(exact matches only)**.
 
 ## Passphrase Fuzzing
 
@@ -126,6 +137,17 @@ To use passphrase fuzzing, place two curly braces `{{` at the start of the passp
     "passphrase": "{{ThePassphrase!}}",
 
 This will test e.g. "ThePass**hp**rase!" and all other single typos of "ThePassphrase!" (2,846 permutations).
+
+You can fuzz multiple passphrases if you're not sure which one you used:
+
+    "passphrases": [
+
+        "{{FirstPossibility}}",
+
+        "{{SecondPossibility}}
+    ],
+
+This will perform a fuzzy match of all possible typos of "FirstPossibility" and "SecondPossibility" (6,716 permutations).
 
 If you think you have more than 1 typo in your passphrase, you can set the `fuzzDepth` setting to 2 (this increases the search time exponentially):
 
@@ -171,6 +193,7 @@ If you have a good idea of the components that make up the passphrase, but not t
     * `[1-9]?[0-9]` will match any one or two digit number 0 - 99 (but NOT 00, 01, etc.)
 
 ### Example 1
+
 Your passphrase contains the words "hello" and "dolly" (in that order, with uncertain capitalization), followed by one symbol out of `!@#$%^&*`, and finally one or two digits:
 
     "passphrase": "(H||h)ello(D||d)olly[!@#$%^&*][0-9][0-9]?",
@@ -181,6 +204,7 @@ This would match:
 * "Hellodolly*69", etc. (3,520 permutations)
 
 ### Example 2
+
 Your passphrase contains the words "correct", "horse", "battery", and "staple", in unknown order or capitalization, followed by a one or two digit number, and then one non-alphanumeric symbol:
 
     "passphrase": "((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]",
@@ -200,6 +224,24 @@ This would match all possible single typos:
 * "CorrectHorseBatterySta**b**le42!"
 * "Co**r**ectHorseBatteryStaple42!"
 * "CorrectHo**o**rseBatteryStaple42!", etc. (5,793 permutations)
+
+### Example 4
+
+You're certain your passphrase was either "MyUsualPassword", "MyOtherPassword", or "4321", but none of those works. You can try fuzzing all of them simultaneously:
+
+    "passphrases": [
+
+        "{{MyUsualPassword}}",
+
+        "{{MyOtherPassword}},
+
+        "{{4321}}"
+    ],
+
+This will match typos of any of those passphrases, e.g.:
+* "MyUsualPassw**a**rd"
+* "MyOt**t**erPassword"
+* "4**23**1", etc. (6961 permutations)
 
 ---
 
@@ -353,8 +395,7 @@ Blockchain search mode can be used if you have a partially valid recovery phrase
     * BCH, DOGE, LTC, other BTC-alts: bitcore
     * ETH: geth (serves as both the node and indexer)
     * ADA: cardano-graphql (docker-compose runs both the node and the indexer)
-    * SOL: (not yet supported)
-    * ALGO: (not yet supported)
+    * SOL/ALGO/DOT/XRP: (not yet supported)
 * Refer to node/indexer documentation for setting up the node
 * Allow IBD and index to complete, then take system offline before entering recovery phrase & starting the search.
 
@@ -373,5 +414,5 @@ To use blockchain search mode, leave the knownAddresses field blank. You must sp
 * Only English BIP39 wordlist and QWERTY keyboard layouts are currently implemented
 * BCH only supports legacy (1...) style addresses
 * SOL deprecated derivation path `m/501'/{account}'/0/{index}` not supported
-* SOL/ALGO/DOT blockchain search not implemented
+* SOL/ALGO/DOT/XRP blockchain search not implemented
 

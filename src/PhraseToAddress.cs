@@ -60,7 +60,7 @@ namespace FixMyCrypto {
         }
         Stopwatch queueWaitTime = new Stopwatch();
         Stopwatch stopWatch = new Stopwatch();
-        int count = 0;
+        long count = 0;
 
         protected PhraseToAddress(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) {
             this.phraseQueue = phrases;
@@ -295,12 +295,21 @@ namespace FixMyCrypto {
 
             //  Generate passphrase list
             List<string> list = new List<string>();
-            Passphrase p = new Passphrase(Settings.Passphrase, Settings.FuzzDepth);
-            foreach (string pass in p) list.Add(pass);
-            string[] passphrases = list.ToArray();
+            MultiPassphrase p = new MultiPassphrase(Settings.Passphrases, Settings.FuzzDepth);
+            string passphrase = null;
+            long passphraseCount = p.GetCount();
+            if (passphraseCount == 1) {
+                foreach (string s in p) {
+                    passphrase = s;
+                    break;
+                }
+            }
+            // foreach (string pass in p) list.Add(pass);
+            // string[] passphrases = list.ToArray();
             // Log.Debug($"P2A{threadNum} passphrases[].Length={passphrases.Length}");
             int batchSize = 1024;
             Queue<Phrase> phraseBatch = new(batchSize);
+            Queue<string> passphraseBatch = new(batchSize);
 
             stopWatch.Start();
 
@@ -321,20 +330,35 @@ namespace FixMyCrypto {
 
                     try {
                         stopWatch.Start();
-                        if (passphrases.Length > 1) {
-                            count += GetAddressesBatchPassphrases(w.phrase, passphrases, tree, Produce);
+                        if (passphraseCount > 1) {
+                            IEnumerator<string> e = p.GetEnumerator();
+                            while (e.MoveNext()) {
+                                passphraseBatch.Enqueue(e.Current);
+                                if (passphraseBatch.Count >= batchSize) {
+                                    string[] passphrases = passphraseBatch.ToArray();
+                                    passphraseBatch.Clear();
+                                    count += GetAddressesBatchPassphrases(w.phrase, passphrases, tree, Produce);
+                                }
+                            }
+
+                            //  Finish remaining in batch
+                            if (passphraseBatch.Count > 0) {
+                                string[] passphrases = passphraseBatch.ToArray();
+                                passphraseBatch.Clear();
+                                count += GetAddressesBatchPassphrases(w.phrase, passphrases, tree, Produce);
+                            }
                         }
                         else {
                             phraseBatch.Enqueue(w.phrase);
                             if (phraseBatch.Count >= batchSize) {
                                 Phrase[] phrases = phraseBatch.ToArray();
                                 phraseBatch.Clear();
-                                count += GetAddressesBatchPhrases(phrases, passphrases[0], tree, Produce);
+                                count += GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
                             }
                         }
                     }
-                    catch (Exception e) {
-                        Log.Error("P2A error: " + e.Message);
+                    catch (Exception ex) {
+                        Log.Error("P2A error: " + ex.Message);
                     }
                     finally {
                         stopWatch.Stop();
@@ -345,16 +369,16 @@ namespace FixMyCrypto {
 
                     Phrase[] phrases = phraseBatch.ToArray();
                     phraseBatch.Clear();
-                    count += GetAddressesBatchPhrases(phrases, passphrases[0], tree, Produce);
+                    count += GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
                 }
             }
 
-            if (phraseBatch.Count > 0) {
-                //  End of phrase generation; finish any remaining in queue
+            //  End of phrase generation; finish any remaining phrases in queue
 
+            if (phraseBatch.Count > 0) {
                 Phrase[] phrases = phraseBatch.ToArray();
                 phraseBatch.Clear();
-                count += GetAddressesBatchPhrases(phrases, passphrases[0], tree, Produce);
+                count += GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
             }
 
             Finish();

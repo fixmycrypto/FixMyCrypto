@@ -9,7 +9,7 @@ namespace FixMyCrypto {
     class PhraseProducer {
         public BlockingCollection<Work> queue;
         int internalThreads;
-        int valid = 0, invalid = 0, dupes = 0;
+        long valid = 0, invalid = 0, dupes = 0;
         string[] phrase;
 
         enum SwapMode {

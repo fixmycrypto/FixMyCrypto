@@ -201,6 +201,27 @@ namespace FixMyCrypto
 
             return b;
         }
+
+        public static short[] EightToEleven(this byte[] src) {
+            short[] b = new short[(src.Length * 8) / 11];
+            int ix = 0;
+            int acc = 0;
+            int accBits = 0;
+
+            for (int i = 0; i < src.Length; i++) {
+                acc <<= 8;
+                acc |= src[i];
+                accBits += 8;
+                while (accBits >= 11) {
+                    int val = (acc >> (accBits - 11));
+                    b[ix++] = (short)(val & 0xffff);
+                    acc &= (1 << (accBits - 11)) - 1;
+                    accBits -= 11;
+                }
+            }
+
+            return b;
+        }
     }
     class Work {
         public Phrase phrase;

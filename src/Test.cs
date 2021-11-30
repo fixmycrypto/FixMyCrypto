@@ -103,16 +103,20 @@ namespace FixMyCrypto {
                 throw new Exception("test failed");
             }
         }
-        public static void TestPassphrase(string pattern, string expect, int expectCount = -1, int depth = 1) {
+        public static void TestPassphrase(string pattern, string expect, long expectCount = -1, int depth = 1) {
             string[] s = { expect };
             TestPassphrase(pattern, s, expectCount, depth);
         }
 
-        public static void TestPassphrase(string pattern, string[] expect, int expectCount = -1, int depth = 1) {
-            // Log.Debug($"Test Passphrase: {pattern}");
+        public static void TestPassphrase(string pattern, string[] expect, long expectCount = - 1, int depth = 1) {
+            string[] patterns = { pattern };
+            TestPassphrase(patterns, expect, expectCount, depth);
+        }
 
-            Passphrase ph = new Passphrase(pattern, depth);
-            int measuredCount = ph.GetCount();
+        public static void TestPassphrase(string[] patterns, string[] expect, long expectCount = -1, int depth = 1) {
+            MultiPassphrase ph = new MultiPassphrase(patterns, depth);
+            string pattern = String.Join(" , ", patterns);
+            long measuredCount = ph.GetCount();
             if (expectCount > -1 && measuredCount != expectCount) throw new Exception($"Passphrase pattern: \"{pattern}\" GetCount() returned {measuredCount} permutations; expected {expectCount}");
             bool[] found = new bool[expect.Length];
             int count = 0;
@@ -276,6 +280,9 @@ namespace FixMyCrypto {
             //  fuzz depth 2
             TestPassphrase("{{Foo92!}}", new string[] { "Foo93!", "Foo92", "Foo9!", "Food92!", "Foo92!a", "Foo83!", "Fo92", "food92!", "Foo92!ab" }, depth: 2, expectCount: 1691670 );
             TestPassphrase("{{ThePassphrase!}}", new string[] { "ThePasshprase!", "thePassphrase!", "ThePasshprase1" }, depth: 2, expectCount: 8387574);
+            //  multi
+            TestPassphrase(new string[] { "{{MyUsualPassward}}", "{{MyOtterPassword}}", "{{4231}}" }, new string[] { "MyUsualPassword", "MyOtherPassword", "4321" }, 6961);
+            TestPassphrase(new string[] { "{{FirstPossibility}}", "{{SecondPossibility}}" }, new string[] { "SecondPossability" }, 6716);
 
             //  random passphrase testing
             Parallel.For(0, 1000000, i => TestRandomPassphrase());

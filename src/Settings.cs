@@ -10,7 +10,19 @@ namespace FixMyCrypto {
         public static int[] Indices = { 0 }, Accounts = { 0 };
         public static string Phrase { get { return result.phrase; } }
 
-        public static string Passphrase { get { if (result != null && result.passphrase != null) return (string)result.passphrase.Value; else return null; } }
+        public static string[] Passphrases { 
+            
+            get {
+                if (result == null) 
+                    return null;
+                else if (result.passphrases != null) 
+                    return result.passphrases.ToObject<string[]>(); 
+                else if (result.passphrase != null) 
+                    return new string[] { result.passphrase.Value }; 
+                else 
+                    return null; 
+            } 
+        }
 
         public static int FuzzDepth { get { if (result != null && result.fuzzDepth != null) return (int)result.fuzzDepth.Value; else return 1; }}
 
