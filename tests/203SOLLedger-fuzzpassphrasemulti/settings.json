@@ -1,0 +1,30 @@
+{
+    "phrase": "dutch stuff alien rail dizzy mango uphold safe toddler infant fire viable off home anger popular police harsh zoo shop enroll garbage carry regular",
+
+    "passphrase": [
+        "",
+        "TestMulti",
+        "{{Food92!}}",
+        "Final[0-9]"
+    ],
+
+    "fuzzDepth": 2,
+
+    "paths": [
+        "m/44'/501'"
+    ],
+
+    "knownAddresses":  [
+        "6zh6VED8p1TBycvwuVyN938FcgjWnD8WADoczSXs2AzV"
+    ],
+
+    "accounts": "0",
+
+    "indices": "0",
+
+    "coin": "SOL",  //  "BTC", "ADA", "ETH", "DOGE", "LTC"
+
+    "logLevel": 5,      //  Debug = 5, Info = 4, Warning = 3, Error = 2, None = 0,
+
+    "topologyFile": "graph.dot"
+}

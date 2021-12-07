@@ -117,9 +117,9 @@ If you used a BIP39 passphrase and you are 100% certain of the exact passphrase 
 
     "passphrase": "ThePassphrase!",
 
-If you used a BIP39 passphrase and you're 100% certain it's one of a list of possible passphrases, you can specify a list of passphrases to test like this:
+If you used a BIP39 passphrase and you're 100% certain it's one from a list of possible passphrases, you can specify an array of passphrases to test:
 
-    "passphrases": [
+    "passphrase": [
 
         "FirstPossibility",
 
@@ -140,7 +140,7 @@ This will test e.g. "ThePass**hp**rase!" and all other single typos of "ThePassp
 
 You can fuzz multiple passphrases if you're not sure which one you used:
 
-    "passphrases": [
+    "passphrase": [
 
         "{{FirstPossibility}}",
 
@@ -229,7 +229,7 @@ This would match all possible single typos:
 
 You're certain your passphrase was either "MyUsualPassword", "MyOtherPassword", or "4321", but none of those works. You can try fuzzing all of them simultaneously:
 
-    "passphrases": [
+    "passphrase": [
 
         "{{MyUsualPassword}}",
 

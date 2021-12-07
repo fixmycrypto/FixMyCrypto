@@ -13,12 +13,23 @@ namespace FixMyCrypto {
         public static string[] Passphrases { 
             
             get {
-                if (result == null) 
+                if (result == null) {
                     return null;
-                else if (result.passphrases != null) 
-                    return result.passphrases.ToObject<string[]>(); 
+                }
                 else if (result.passphrase != null) 
-                    return new string[] { result.passphrase.Value }; 
+                {
+                    string[] passphrases = null;
+
+                    try {
+                        passphrases = result.passphrase.ToObject<string[]>(); 
+                    }
+                    catch (Exception) { }
+
+                    if (passphrases == null) 
+                        passphrases = new string[] { result.passphrase.Value };
+
+                    return passphrases;
+                }
                 else 
                     return null; 
             } 
