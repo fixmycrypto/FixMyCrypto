@@ -62,7 +62,9 @@ namespace FixMyCrypto {
         Stopwatch stopWatch = new Stopwatch();
         long count = 0;
         string lastPassphrase = null;
+        Phrase lastPhrase = null;
         Checkpoint checkpoint = null;
+        long passphraseTested = 0, passphraseTotal = 0;
 
         protected PhraseToAddress(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) {
             this.phraseQueue = phrases;
@@ -70,6 +72,9 @@ namespace FixMyCrypto {
         }
         public void SetCheckpoint(Checkpoint c) {
             checkpoint = c;
+        }
+        public Phrase GetLastPhrase() {
+            return this.lastPhrase;
         }
         public string GetLastPassphrase() {
             return this.lastPassphrase;
@@ -248,8 +253,10 @@ namespace FixMyCrypto {
                 if (Produce != null) Produce(addrs);
 
                 count += addrs.Count;
+                passphraseTested++;
             });
 
+            lastPhrase = phrase;
             lastPassphrase = passphrases[passphrases.Length - 1];
 
             return count;
@@ -281,6 +288,9 @@ namespace FixMyCrypto {
                 count += addrs.Count;
             });
 
+            lastPhrase = phrases[phrases.Length - 1];
+            lastPassphrase = passphrase;
+
             return count;
         }
         public abstract string[] GetDefaultPaths(string[] knownAddresses);
@@ -297,6 +307,9 @@ namespace FixMyCrypto {
             addressQueue.CompleteAdding();
             if (count > 0) Log.Info("P2A done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, time/req: {(count != 0 ? ((double)stopWatch.ElapsedMilliseconds/count) : 0):F2}ms/req, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
             count = 0;
+        }
+        public void PassphraseLog() {
+            Log.Info($"passphrases tested {passphraseTested}/{passphraseTotal} ({100.0*passphraseTested/passphraseTotal:F2}%)");
         }
         public void Consume() {
             Log.Debug("P2A start");
@@ -320,6 +333,11 @@ namespace FixMyCrypto {
 
             stopWatch.Start();
 
+            System.Timers.Timer passphraseLogger = new System.Timers.Timer(15 * 1000);
+            passphraseLogger.Elapsed += (StringReader, args) => {
+                PassphraseLog();
+            };
+
             while (!Global.Done) {
 
                 //  Dequeue phrase
@@ -338,6 +356,9 @@ namespace FixMyCrypto {
                     try {
                         stopWatch.Start();
                         if (passphraseCount > 1) {
+                            passphraseTested = 0;
+                            passphraseTotal = passphraseCount;
+                            passphraseLogger.Start();
                             IEnumerator<string> e = p.GetEnumerator();
                             while (e.MoveNext()) {
                                 string current = e.Current;
@@ -351,6 +372,7 @@ namespace FixMyCrypto {
                                         checkpoint.Start();
                                     }
                                     else {
+                                        passphraseTested++;
                                         continue;
                                     }
                                 }
@@ -369,6 +391,8 @@ namespace FixMyCrypto {
                                 passphraseBatch.Clear();
                                 count += GetAddressesBatchPassphrases(w.phrase, passphrases, tree, Produce);
                             }
+
+                            passphraseLogger.Stop();
                         }
                         else {
                             phraseBatch.Enqueue(w.phrase);

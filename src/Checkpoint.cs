@@ -63,7 +63,7 @@ namespace FixMyCrypto {
 
             try {
                 lock(mutex) {
-                    Phrase phrase = pp.GetLastPhrase();
+                    Phrase phrase = p2a.GetLastPhrase();
                     string passphrase = p2a.GetLastPassphrase();
 
                     //  Write to checkpoint file
@@ -77,7 +77,7 @@ namespace FixMyCrypto {
                     StreamWriter writer = File.CreateText("checkpoint.json");
                     writer.WriteLine(json);
                     writer.Close();
-                    Log.Info("Wrote checkpoint file");
+                    Log.Info("Updated checkpoint file");
                 }
             }
             catch (Exception e) {
@@ -104,7 +104,6 @@ namespace FixMyCrypto {
                 this.passphrase = null;
                 throw;
             }
-            return false;
         }
     }
 }

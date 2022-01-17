@@ -11,7 +11,6 @@ namespace FixMyCrypto {
         int internalThreads;
         long valid = 0, invalid = 0, dupes = 0;
         string[] phrase;
-        private Phrase lastPhrase = null;
         private Checkpoint checkpoint = null;
 
         enum SwapMode {
@@ -34,9 +33,6 @@ namespace FixMyCrypto {
             Log.Info("PP done, valid: " + valid + " invalid: " + invalid + $", dupes: {dupes}, total time: {sw1.ElapsedMilliseconds/1000.0:F2}s, time/req: {((valid + invalid != 0) ? ((double)sw1.ElapsedMilliseconds/(valid+invalid)) : 0):F3}ms/req, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
         }
 
-        public Phrase GetLastPhrase() {
-            return this.lastPhrase;
-        }
         public void SetCheckpoint(Checkpoint c) {
             this.checkpoint = c;
         }
@@ -91,8 +87,6 @@ namespace FixMyCrypto {
                 finally {
                     queueWaitTime.Stop();
                 }
-
-                this.lastPhrase = p.Clone();
             }
             else {
                 invalid++;

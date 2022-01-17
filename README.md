@@ -63,7 +63,7 @@ Please consider donating to fund future development.
 
 # Paranoid "Amnesia" Environment
 
-If you want to be extra careful, you can run the software in an "amnesiac" environment which doesn't save any files to your hard drive, such as Tails Linux. You still need to disconnect from the network before entering your phrase, but this ensures that no traces will be left behind once you reboot your system.
+If you want to be extra careful, you can run the software in an amnesiac environment which doesn't save any files to your hard drive, such as [`Tails Linux`](https://tails.boum.org). You still need to disconnect from the network before entering your phrase, but this ensures that no traces will be left behind once you reboot your system.
 
 ---
 
