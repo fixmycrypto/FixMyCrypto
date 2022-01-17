@@ -42,7 +42,7 @@ namespace FixMyCrypto {
             this.p2a.SetCheckpoint(this);
         }
 
-        public Phrase? GetCheckpointPhrase() {
+        public Phrase GetCheckpointPhrase() {
             return this.phrase;
         }
 
@@ -50,7 +50,7 @@ namespace FixMyCrypto {
             this.phrase = null;
         }
 
-        public string? GetCheckpointPassphrase() {
+        public string GetCheckpointPassphrase() {
             return this.passphrase;
         }
 

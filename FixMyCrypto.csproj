@@ -7,6 +7,7 @@
     <TargetName>FixMyCrypto</TargetName>
     <AssemblyName>FixMyCrypto</AssemblyName>
     <NoWarn>NU1701</NoWarn>
+    <!--<Nullable>enable</Nullable>-->
     <AssemblyVersion>1.9.5.0</AssemblyVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);lib\**</DefaultItemExcludes>
     <PublishSingleFile>true</PublishSingleFile>
