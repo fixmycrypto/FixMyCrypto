@@ -61,9 +61,13 @@ Please consider donating to fund future development.
     * [Known address](#known-addresses) (at least one)
 7. Run `FixMyCrypto`
 
+# Checkpoints
+
+The software will save the current progress every 30 seconds to the file `checkpoint.json` so you can resume a long running job after it gets interrupted. If this file exists when the program starts, it will resume near where it left off. If you change your settings or start a new job, you should delete `checkpoint.json` to restart from the beginning.
+
 # Paranoid "Amnesia" Environment
 
-If you want to be extra careful, you can run the software in an amnesiac environment which doesn't save any files to your hard drive, such as [`Tails Linux`](https://tails.boum.org). You still need to disconnect from the network before entering your phrase, but this ensures that no traces will be left behind once you reboot your system.
+If you want to be extra careful, you can run the software in an amnesiac environment which doesn't save any files to your hard drive, such as [`Tails Linux`](https://tails.boum.org). You still need to disconnect from the network before entering your phrase, but this ensures that no traces will be left behind once you reboot your system. Note that in the case of a power failure or reboot, your progress will be lost since the checkpoint file won't persist after a reboot.
 
 ---
 
