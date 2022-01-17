@@ -126,6 +126,23 @@ namespace FixMyCrypto {
                 PauseAndExit(1);
             }
 
+            //  Initialize word lists
+            string[] phraseArray = Settings.Phrase.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+            Wordlists.Initialize(phraseArray);
+
+            Checkpoint checkpoint = new Checkpoint();
+            bool resumeFromCheckpoint = false;
+
+            //  Check for checkpoint file
+            try {
+                if (File.Exists("checkpoint.json")) {
+                    resumeFromCheckpoint = checkpoint.RestoreCheckpoint();
+                }
+            }
+            catch (Exception) {
+                PauseAndExit(1);
+            }
+
             BlockingCollection<Work> phraseQueue = new BlockingCollection<Work>(Settings.Threads * 2);
             BlockingCollection<Work> addressQueue = new BlockingCollection<Work>(Settings.Threads * 2);
 
@@ -185,10 +202,6 @@ namespace FixMyCrypto {
             
             Log.All($"difficulty: {Settings.Difficulty}, wordDistance: {Settings.WordDistance}");
 
-            //  Initialize word lists
-            string[] phraseArray = Settings.Phrase.Split(" ", StringSplitOptions.RemoveEmptyEntries);
-            Wordlists.Initialize(phraseArray);
-
             System.Timers.Timer timer = new System.Timers.Timer(30 * 1000);
             timer.Elapsed += (StringReader, args) => { 
                 if (phraseQueue.Count > 0 || addressQueue.Count > 0) Log.Debug($"Queue status: phrases {phraseQueue.Count} addresses {addressQueue.Count}");
@@ -210,6 +223,8 @@ namespace FixMyCrypto {
             List<Thread> p2aThreads = new List<Thread>();
             for (int i = 0; i < phraseToAddressCount; i++) {
                 p2a[i] = PhraseToAddress.Create(Settings.CoinType, phraseQueue, addressQueue);
+
+                if (i == 0) checkpoint.SetPhraseToAddress(p2a[i]);
 
                 if (i == 0 && Settings.KnownAddresses != null) {
                     //  Validate addresses
@@ -235,11 +250,15 @@ namespace FixMyCrypto {
             for (int i = 0; i < phraseProducerCount; i++) {
                 phrasers[i] = new PhraseProducer(phraseQueue, phraseArray);
 
+                if (i == 0) checkpoint.SetPhraseProducer(phrasers[i]);
+
                 Thread thread = new Thread (phrasers[i].ProduceWork);
                 thread.Name = "PP" + i;
                 phraseThreads.Add(thread);
                 thread.Start(); 
             }
+
+            if (!resumeFromCheckpoint) checkpoint.Start();
 
             for (int i = 0; i < phraseProducerCount; i++) {
                 phraseThreads[i].Join();
@@ -253,6 +272,7 @@ namespace FixMyCrypto {
                 laThreads[i].Join();
             }
 
+            checkpoint.Stop();
             timer.Stop();
             stopWatch.Stop();
 

@@ -61,10 +61,18 @@ namespace FixMyCrypto {
         Stopwatch queueWaitTime = new Stopwatch();
         Stopwatch stopWatch = new Stopwatch();
         long count = 0;
+        string lastPassphrase = null;
+        Checkpoint checkpoint = null;
 
         protected PhraseToAddress(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) {
             this.phraseQueue = phrases;
             this.addressQueue = addresses;
+        }
+        public void SetCheckpoint(Checkpoint c) {
+            checkpoint = c;
+        }
+        public string GetLastPassphrase() {
+            return this.lastPassphrase;
         }
         private MasterKey[] DeriveMasterKeys(Phrase phrase, string[] passphrases) {
             MasterKey[] keys = new MasterKey[passphrases.Length];
@@ -242,6 +250,8 @@ namespace FixMyCrypto {
                 count += addrs.Count;
             });
 
+            lastPassphrase = passphrases[passphrases.Length - 1];
+
             return count;
         }
 
@@ -294,7 +304,6 @@ namespace FixMyCrypto {
             PathTree tree = CreateTree(Settings.Paths, Settings.Accounts, Settings.Indices);
 
             //  Generate passphrase list
-            List<string> list = new List<string>();
             MultiPassphrase p = new MultiPassphrase(Settings.Passphrases, Settings.FuzzDepth);
             string passphrase = null;
             long passphraseCount = p.GetCount();
@@ -304,9 +313,7 @@ namespace FixMyCrypto {
                     break;
                 }
             }
-            // foreach (string pass in p) list.Add(pass);
-            // string[] passphrases = list.ToArray();
-            // Log.Debug($"P2A{threadNum} passphrases[].Length={passphrases.Length}");
+
             int batchSize = 1024;
             Queue<Phrase> phraseBatch = new(batchSize);
             Queue<string> passphraseBatch = new(batchSize);
@@ -333,7 +340,22 @@ namespace FixMyCrypto {
                         if (passphraseCount > 1) {
                             IEnumerator<string> e = p.GetEnumerator();
                             while (e.MoveNext()) {
-                                passphraseBatch.Enqueue(e.Current);
+                                string current = e.Current;
+
+                                //  If checkpoint is set, skip passphrases until we reach the checkpoint
+                                string checkpointPassphrase = checkpoint.GetCheckpointPassphrase();
+                                if (checkpointPassphrase != null) {
+                                    if (checkpointPassphrase == current) {
+                                        Log.Info($"Resuming from last checkpoint passphrase: {current}");
+                                        checkpoint.ClearPassphrase();
+                                        checkpoint.Start();
+                                    }
+                                    else {
+                                        continue;
+                                    }
+                                }
+
+                                passphraseBatch.Enqueue(current);
                                 if (passphraseBatch.Count >= batchSize) {
                                     string[] passphrases = passphraseBatch.ToArray();
                                     passphraseBatch.Clear();

@@ -11,6 +11,8 @@ namespace FixMyCrypto {
         int internalThreads;
         long valid = 0, invalid = 0, dupes = 0;
         string[] phrase;
+        private Phrase lastPhrase = null;
+        private Checkpoint checkpoint = null;
 
         enum SwapMode {
             SameLetter,
@@ -31,8 +33,28 @@ namespace FixMyCrypto {
             queue.CompleteAdding();
             Log.Info("PP done, valid: " + valid + " invalid: " + invalid + $", dupes: {dupes}, total time: {sw1.ElapsedMilliseconds/1000.0:F2}s, time/req: {((valid + invalid != 0) ? ((double)sw1.ElapsedMilliseconds/(valid+invalid)) : 0):F3}ms/req, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
         }
+
+        public Phrase GetLastPhrase() {
+            return this.lastPhrase;
+        }
+        public void SetCheckpoint(Checkpoint c) {
+            this.checkpoint = c;
+        }
         private static ConcurrentDictionary<Phrase, byte> testedPhrases = new();
         private void TestPhrase(short[] phraseArray) {
+            //  If checkpoint is set, skip phrases until we reach the checkpoint
+            Phrase checkpointPhrase = checkpoint.GetCheckpointPhrase();
+            if (checkpointPhrase != null) {
+                if (checkpointPhrase.IndicesEquals(phraseArray)) {
+                    Log.Info($"Resuming from last checkpoint phrase: {checkpointPhrase.ToPhrase()}");
+                    checkpoint.ClearPhrase();
+                    if (String.IsNullOrEmpty(checkpoint.GetCheckpointPassphrase())) checkpoint.Start();
+                }
+                else {
+                    return;
+                }
+            }
+
             //  Check if phrase has valid BIP39 checksum
 
             (bool isValid, int hash) = Phrase.VerifyChecksum(phraseArray);
@@ -69,6 +91,8 @@ namespace FixMyCrypto {
                 finally {
                     queueWaitTime.Stop();
                 }
+
+                this.lastPhrase = p.Clone();
             }
             else {
                 invalid++;

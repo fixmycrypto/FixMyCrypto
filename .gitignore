@@ -3,6 +3,7 @@ bin/**
 obj/**
 results-decrypted.txt
 results.json
+checkpoint.json
 secrets.json
 /settings.json
 key.txt

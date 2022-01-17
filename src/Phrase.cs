@@ -18,6 +18,11 @@ namespace FixMyCrypto {
         }
         public Phrase(string phrase) : this(phrase.Split(' ', StringSplitOptions.RemoveEmptyEntries)) { }
 
+        public Phrase(short[] indices) {
+            ix = indices;
+            (valid, hash) = VerifyChecksum(ix);
+        }
+
         //  Create a randomly initialized phrase
         public Phrase(int length = 24) {
             int entropyLength = (int)(length * 11 / 8.0 + 0.5);
@@ -42,6 +47,14 @@ namespace FixMyCrypto {
             if (p.Length != ix.Length) return false;
 
             for (int i = 0; i < p.Length; i++) if (p.ix[i] != ix[i]) return false;
+
+            return true;
+        }
+
+        public bool IndicesEquals(short[] p) {
+            if (p.Length != ix.Length) return false;
+
+            for (int i = 0; i < p.Length; i++) if (p[i] != ix[i]) return false;
 
             return true;
         }
