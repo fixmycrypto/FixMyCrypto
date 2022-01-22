@@ -75,7 +75,7 @@ namespace FixMyCrypto {
                             //  BIP32 Bitcoin Core
                             paths.Add("m/0'/0'/{index}'");
                             //  BIP32 blockchain.info/Coinomi/Ledger
-                            //this.defaultPaths.Add("m/44'/0'/{account}'/{index}");
+                            paths.Add("m/44'/0'/{account}'/{index}");
                             //  BIP44
                             paths.Add("m/44'/0'/{account}'/0/{index}");
                         }
@@ -89,7 +89,7 @@ namespace FixMyCrypto {
                     //  BIP32 Bitcoin Core
                     paths.Add("m/0'/0'/{index}'");
                     //  BIP32 blockchain.info/Coinomi/Ledger
-                    //this.defaultPaths.Add("m/44'/0'/{account}'/{index}");
+                    paths.Add("m/44'/0'/{account}'/{index}");
                     //  BIP44
                     paths.Add("m/44'/0'/{account}'/0/{index}");
                     //  BIP49

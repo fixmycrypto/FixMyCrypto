@@ -53,7 +53,9 @@ namespace FixMyCrypto {
             return checksum;
         }
         public override string[] GetDefaultPaths(string[] knownAddresses) {
-            string[] p = { "m/44'/60'/{account}'/0/{index}" };
+            string[] p = { "m/44'/60'/{account}'/0/{index}",    //  BIP44
+                           "m/44'/60'/{account}'/{index}",      //  Coinomi, Old Ledger
+                         };
             return p;
         }
  

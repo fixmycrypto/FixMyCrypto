@@ -115,17 +115,17 @@ A single missing word (one `?`) can be solved quickly, two missing words will ta
 
 ### Required
 
-A BIP39 passphrase (a.k.a. "extra word" or "advanced security") is not to be confused with your spending password, wallet password, or app login password.
+A BIP39 passphrase (a.k.a. "extra word", "hidden wallet", or "advanced security") is not to be confused with your spending password, wallet password, or app login password.
 
-If you didn't use a BIP39 passphrase when you created the wallet or you're not sure what this is, then leave this as blank:
+If you didn't use a passphrase when you created the wallet or you're not sure what this is, then leave this as blank:
 
     "passphrase": "",
 
-If you used a BIP39 passphrase and you are 100% certain of the exact passphrase you used, specify it here:
+If you used a passphrase and you are 100% certain of the exact passphrase you used, specify it here:
 
     "passphrase": "ThePassphrase!",
 
-If you used a BIP39 passphrase and you're 100% certain it's one from a list of possible passphrases, you can specify an array of passphrases to test:
+If you used a passphrase and you're 100% certain it's one from a list of possible passphrases, you can specify an array of passphrases to test:
 
     "passphrase": [
 
@@ -135,6 +135,23 @@ If you used a BIP39 passphrase and you're 100% certain it's one from a list of p
     ],
 
 This will match a passphrase of "FirstPossibility" or "SecondPossibility" **(exact matches only)**.
+
+Hint: A fairly common mistake is setting your PIN, spending password, or other passwords as your passphrase. If there's any chance you may have done this, try setting these for the passphrase in case that's what happened. Also add a blank `""` as one of the options too, in case you didn't use any passphrase.
+
+### Example
+
+You're not sure if you used any passphrase, but your PIN was `8675309` and your spending password was `SpendingPassword`.
+
+    "passphrase": [
+
+        "",
+
+        "8675309",
+
+        "SpendingPassword"
+    ]
+
+If you think you may have done this AND also possibly made a typo when setting the passphrase, continue reading the next section.
 
 ## Passphrase Fuzzing
 
@@ -303,11 +320,11 @@ Similar to indices, "accounts" specifies the range of accounts to check against.
 
 ### Optional (usually)
 
-This specifies the derivation path(s) used to generate addresses. Most users can leave this blank to search using default derivation paths. In most cases we can detect the path from the address format or the default paths used by the coin. However, if you used a particularly old wallet software or one known to use a non-standard derivation path, it will be necessary to specify it here. You can specify one or more paths. The more paths you specify, the longer the search will take. Use `{account}` as the placeholder for the account number, and `{index}` as the placeholder for the address index.
+This specifies the derivation path(s) used to generate addresses. Most users can leave this blank to search using default derivation paths. In most cases we can detect the path from the address format or the default paths commonly used by the coin. If you know for certain which path your wallet used, you can specify it here to speed up the search. If you used a particularly old wallet software or one known to use a non-standard derivation path, it may be necessary to specify a custom path here. You can specify one or more paths. The more paths you specify, the longer the search will take. Use `{account}` as the placeholder for the account number, and `{index}` as the placeholder for the address index.
+
+If you happen to know for sure which path your wallet used, you can speed up the search by specifying it:
 
 ### Example
-
-If you used old versions of Ledger or Coinomi to generate legacy BTC addresses which start with "1…", you may need to specify this non-standard path:
 
     "paths": [
         "m/44'/0'/{account}'/{index}"
@@ -315,24 +332,44 @@ If you used old versions of Ledger or Coinomi to generate legacy BTC addresses w
 
 Note that the search will fail if none of the paths you specify match the one used to generate your wallet addresses.
 
----
-## Special use cases
+### Bitcoin
+
+By default, the program searches these derivation paths for BTC addresses:
+
+Addresses that start with 1... (Legacy):
+
+* `m/44'/0'/{account}'/0/{index}` - Modern BIP44 compatible wallets
+* `m/44'/0'/{account}'/{index}` - Coinomi, blockchain.com, old Ledger versions
+* `m/0'/0'/{index}'` - Bitcoin Core
+* `m/0'/0/{index}` - Multibit HD, BRD wallet
+
+Addresses that start with 3... (Segwit):
+
+* `m/49'/0'/{account}'/0/{index}` - BIP49
+
+Addresses that start with bc1q (Native Segwit):
+
+* `m/84'/0'/{account}'/0/{index}` - BIP84
+
+Addresses that start with bc1p or tb1 (Taproot):
+
+* `m/86'/0'/{account}'/0/{index}` - BIP86
 
 ### Ethereum
 
-If you used a Ledger hardware wallet to generate an Ethereum address around 2019 or prior, you may need to specify the non-standard derivation path `m/44'/60'/{account}'/{index}`, as opposed to the standard path `m/44'/60'/{account}'/0/{index}` (note the extra 0 between the account & index, which is for specifying external vs internal change addresses, but was missing from older Ledger versions).
+By default, the program searches two derivation paths for ETH addresses:
 
-You can search both paths at the same time like this (but the search will take a bit longer):
-
-    "paths": [
-        "m/44'/60'/{account}'/0/{index}",
-
-        "m/44'/60'/{account}'/{index}"
-    ],
+* `m/44'/60'/{account}'/0/{index}` - Used by most up-to-date wallets
+* `m/44'/60'/{account}'/{index}` - Used by Coinomi and old Ledger/MEW versions (2019 or older)
 
 If you used older versions of Metamask together with a Ledger hardware wallet, some users noted that it used an incorrect account value (e.g. 10) instead of 0 to generate addresses. In this case you can specify the account range to search as `"0,10"` (only accounts 0 and 10), or `"0-10"` (accounts 0 through 10). It's possible that other account numbers may have been used as well, so you may need to specify a larger range. Note that searching more account numbers increases the search time.
 
     "accounts": "0-10",
+
+See https://medium.com/myetherwallet/hd-wallets-and-derivation-paths-explained-865a643c7bf2 for other possible paths used by ETC and other ETH-derived coins. You can search multiple paths at the same time if you aren't sure which one to use.
+
+---
+## Special use cases
 
 ### Ethereum Classic (ETC)
 
@@ -343,11 +380,9 @@ Use "ETH" for the coin type, and use one or more of the following paths:
 * `m/44'/60'/160720'/0/{index}` – Ledger ETC
 * `m/44'/60'/160720'/0'/{index}` – Old Ledger, Vintage MEW
 
-See https://medium.com/myetherwallet/hd-wallets-and-derivation-paths-explained-865a643c7bf2 for other possible paths used by ETC and other ETH-derived coins. You can search multiple paths at the same time if you aren't sure which one to use.
-
 ### Cardano (ADA)
 
-Ledger & Trezor hardware wallets use unique methods to convert your recovery phrase into a master private key, which is not compatible with the official Cardano key spec used by software wallets like Daedalus, Yoroi, and Adalite. This means the same recovery phrase will create a different wallet (different addresses) depending on whether you use the phrase on a Ledger, Trezor, or software wallet. If you used a Ledger or Trezor wallet for Cardano and need to recover it, use the coin type `ADATrezor` or `ADALedger` to recover your address, otherwise the addresses won't match and recovery won't be possible.
+Ledger & Trezor hardware wallets generate your Cardano private key differently from the official spec used by software wallets like Daedalus, Yoroi, and Adalite. This means the same recovery phrase will create a different wallet (different addresses) depending on whether you use the phrase on a Ledger, Trezor, or software wallet. If you used a Ledger or Trezor wallet for Cardano and need to recover it, use the coin type `ADATrezor` or `ADALedger` to recover your address, otherwise the addresses won't match and recovery won't be possible.
 
     "coin": "ADALedger",
 
