@@ -77,7 +77,7 @@ namespace FixMyCrypto {
                     StreamWriter writer = File.CreateText("checkpoint.json");
                     writer.WriteLine(json);
                     writer.Close();
-                    Log.Info("Updated checkpoint file");
+                    Log.Debug("Updated checkpoint file");
                 }
             }
             catch (Exception e) {

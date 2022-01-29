@@ -305,11 +305,12 @@ namespace FixMyCrypto {
             Global.Done = true;
             phraseQueue.CompleteAdding();
             addressQueue.CompleteAdding();
-            if (count > 0) Log.Info("P2A done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, time/req: {(count != 0 ? ((double)stopWatch.ElapsedMilliseconds/count) : 0):F2}ms/req, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
+            if (count > 0) Log.Info("P2A done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, keys/s: {1000*count/stopWatch.ElapsedMilliseconds}, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
             count = 0;
         }
         public void PassphraseLog() {
-            Log.Info($"passphrases tested {passphraseTested}/{passphraseTotal} ({100.0*passphraseTested/passphraseTotal:F2}%)");
+            if (stopWatch.ElapsedMilliseconds == 0 || passphraseTested == 0 || passphraseTotal == 0) return;
+            Log.Info($"Passphrases tested {passphraseTested}/{passphraseTotal} ({100.0*passphraseTested/passphraseTotal:F2}%), passphrases/s: {1000*passphraseTested/stopWatch.ElapsedMilliseconds}");
         }
         public void Consume() {
             Log.Debug("P2A start");
@@ -427,6 +428,7 @@ namespace FixMyCrypto {
                 count += GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
             }
 
+            passphraseLogger.Stop();
             Finish();
             stopWatch.Stop();
         }
