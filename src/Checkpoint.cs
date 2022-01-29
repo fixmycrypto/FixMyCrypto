@@ -94,7 +94,7 @@ namespace FixMyCrypto {
                     dynamic result = JsonConvert.DeserializeObject(str);
                     this.phrase = new Phrase((string)result.phrase);
                     this.passphrase = result.passphrase;
-                    Log.Info($"Restoring from checkpoint\nphrase: {this.phrase.ToPhrase()}\npassphrase: {this.passphrase}");
+                    Log.Info($"Restoring from checkpoint:\n\tphrase: {this.phrase.ToPhrase()}\n\tpassphrase: {this.passphrase}");
                     return true;
                 }
             }

@@ -282,6 +282,11 @@ namespace FixMyCrypto {
                 Log.All("\n\nRecovery Failed. :( Contact help@fixmycrypto.com for further assistance.");
             }
 
+            //  Delete checkpoint file on clean exit
+            if (File.Exists("checkpoint.json")) {
+                File.Delete("checkpoint.json");
+            }
+
             PauseAndExit(0);
         }
     }

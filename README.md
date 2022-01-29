@@ -62,7 +62,7 @@ Please consider donating to fund future development.
 
 # Checkpoints
 
-The software will save the current progress every 30 seconds to the file `checkpoint.json` so you can resume a long running job after it gets interrupted. If this file exists when the program starts, it will resume near where it left off. If you change your settings or start a new job, you should delete `checkpoint.json` to restart from the beginning.
+The software will save the current progress every 30 seconds to the file `checkpoint.json` so you can resume a long running job if it gets interrupted. If this file exists when the program starts, it will resume near where it left off. If you cancel a job and change your settings or need to restart from the beginning, you should delete `checkpoint.json`.
 
 # Paranoid "Amnesia" Environment
 
