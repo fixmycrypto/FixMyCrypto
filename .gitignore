@@ -1,13 +1,12 @@
 .DS_Store
 bin/**
 obj/**
-results-decrypted.txt
 results.json
 checkpoint.json
-secrets.json
+/secrets.json
 /settings.json
-key.txt
 *.bak
 tests/**/log.txt
 graph.dot
 /BenchmarkDotNet.Artifacts/**
+/builds

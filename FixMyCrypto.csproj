@@ -8,7 +8,7 @@
     <AssemblyName>FixMyCrypto</AssemblyName>
     <NoWarn>NU1701</NoWarn>
     <!--<Nullable>enable</Nullable>-->
-    <AssemblyVersion>1.9.6.0</AssemblyVersion>
+    <AssemblyVersion>1.9.6.1</AssemblyVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);lib\**</DefaultItemExcludes>
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
@@ -19,6 +19,23 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
 
+  <Target Name="CopyFiles" AfterTargets="Publish">
+    <Copy SourceFiles="examples\settings.json" DestinationFolder="$(PublishDir)" />
+  </Target>
+
+  <Target Name="PackageLin" AfterTargets="Publish" Condition=" '$(RuntimeIdentifier)' == 'linux-x64' ">
+    <Exec Command="tar -cvzf '$(ProjectDir)builds/FixMyCrypto_$(AssemblyVersion)_$(RuntimeIdentifier).tar.gz' FixMyCrypto README.md LICENSE settings.json" WorkingDirectory="$(PublishDir)" />
+  </Target>
+  <Target Name="PackageWin" AfterTargets="Publish" Condition=" '$(RuntimeIdentifier)' == 'win-x64' ">
+    <Exec Command="PowerShell -NoProfile  Start-Sleep 2 ; Compress-Archive -Force -Path FixMyCrypto.exe, README.md, LICENSE, settings.json -DestinationPath '$(ProjectDir)builds/FixMyCrypto_$(AssemblyVersion)_$(RuntimeIdentifier).zip'" WorkingDirectory="$(PublishDir)" />
+  </Target>
+  <Target Name="PackageMac" AfterTargets="Publish" Condition="$(RuntimeIdentifier.Contains('osx'))">
+    <PropertyGroup>
+      <PlatformName>$(RuntimeIdentifier.Replace('osx', 'mac'))</PlatformName>
+    </PropertyGroup>
+    <Exec Command="zip $(ProjectDir)builds/FixMyCrypto_$(AssemblyVersion)_$(PlatformName).zip FixMyCrypto README.md LICENSE settings.json libsr25519crust.dylib" WorkingDirectory="$(PublishDir)" />
+  </Target>
+  
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.13.1" />
     <PackageReference Include="BouncyCastle" Version="1.8.9" />
@@ -28,7 +45,6 @@
     <PackageReference Include="Json.NET" Version="1.0.25" />
     <PackageReference Include="NBitcoin" Version="6.0.18" />
     <PackageReference Include="NBitcoin.Altcoins" Version="3.0.8" />
-    <None Update="settings.example.json" CopyToOutputDirectory="Always" />
     <None Update="README.md" CopyToOutputDirectory="Always" />
     <None Update="LICENSE" CopyToOutputDirectory="Always" />
     <ProjectReference Include="lib\sr25519-dotnet\sr25519-dotnet.lib\sr25519-dotnet.lib.csproj" />

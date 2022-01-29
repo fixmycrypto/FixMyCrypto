@@ -51,15 +51,14 @@ Please consider donating to fund future development.
 
 1. Download the latest release from the Releases tab (or see [`BUILD.md`](BUILD.md) to build from source)
 2. Extract the .zip file to a folder
-3. Copy or rename "settings.example.json" to "settings.json"
-4. (Optional) Run `FixMyCrypto` to watch it run with the default included settings (using a test recovery phrase)
-5. **Disconnect from the network (unplug Ethernet cable, shut off WiFi).**
-6. Edit the `settings.json` file, filling in the details as described below. At a **minimum**, you must provide:
+3. (Optional) Run `FixMyCrypto` to watch it run with the default included settings (using a test recovery phrase)
+4. **Disconnect from the network (unplug Ethernet cable, shut off WiFi).**
+5. Edit the `settings.json` file, filling in the details as described below. At a **minimum**, you must provide:
     * [Coin](#coin)
     * [Phrase](#phrase)
     * [Passphrase](#passphrase) (if used)
     * [Known address](#known-addresses) (at least one)
-7. Run `FixMyCrypto`
+6. Run `FixMyCrypto`
 
 # Checkpoints
 
