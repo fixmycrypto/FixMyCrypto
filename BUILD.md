@@ -28,6 +28,6 @@ Debug Run configuration in VS Code.
 # Tests
 
 * Unit tests: run Test configuration in VS Code (`FixMyCrypto -t`)
-* Unit tests require phrases and addresses specified in `secrets.json` (see `secrets.example.json`)
+* Unit tests require phrases and addresses specified in `secrets.json` (see example in /examples)
     * Blockchain search tests require some coins to be deposited in those addresses
 * Release tests: Run `./tests.sh`

@@ -28,6 +28,7 @@
 * Simultaneous search of multiple derivation paths (including non-standard paths)
 * Search a specified range of accounts and indices
 * Highly multi-threaded, efficient key reuse when searching multiple paths/accounts/indices
+* Checkpoints to resume progress if interrupted
 * Blockchain search mode (requires local node & indexer)
 
 # Support
@@ -62,7 +63,7 @@ Please consider donating to fund future development.
 
 # Checkpoints
 
-The software will save the current progress every 30 seconds to the file `checkpoint.json` so you can resume a long running job if it gets interrupted. If this file exists when the program starts, it will resume near where it left off. If you cancel a job and change your settings or need to restart from the beginning, you should delete `checkpoint.json`.
+The current progress will be saved every 30 seconds to the file `checkpoint.json` so you can resume a long running job if it gets interrupted. If this file exists when the program starts, it will resume near where it left off. If you cancel a job and change your settings or need to restart from the beginning, you should delete `checkpoint.json`.
 
 # Paranoid "Amnesia" Environment
 
