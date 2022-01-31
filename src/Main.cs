@@ -44,7 +44,7 @@ namespace FixMyCrypto {
         }
         */
         
-        static void PauseAndExit(int code) {
+        public static void PauseAndExit(int code) {
             if (interactive) {
                 Log.All("Press 'E' to exit...");
                 try {

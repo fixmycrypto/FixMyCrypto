@@ -8,6 +8,8 @@ namespace FixMyCrypto {
 
         private string passphrase = null;
 
+        private long passphraseNum = -1;
+
         private PhraseProducer pp;
 
         private PhraseToAddress p2a;
@@ -50,12 +52,13 @@ namespace FixMyCrypto {
             this.phrase = null;
         }
 
-        public string GetCheckpointPassphrase() {
-            return this.passphrase;
+        public (string, long) GetCheckpointPassphrase() {
+            return (this.passphrase, this.passphraseNum);
         }
 
         public void ClearPassphrase() {
             this.passphrase = null;
+            this.passphraseNum = -1;
         }
 
         private void SaveCheckpoint() {
@@ -63,14 +66,15 @@ namespace FixMyCrypto {
 
             try {
                 lock(mutex) {
-                    Phrase phrase = p2a.GetLastPhrase();
-                    string passphrase = p2a.GetLastPassphrase();
+                    (Phrase phrase, string passphrase, long passphraseNum) = p2a.GetLastTested();
 
                     //  Write to checkpoint file
 
                     var checkpoint = new {
                         phrase = phrase.ToPhrase(),
-                        passphrase = passphrase
+                        phraseNum = phrase.SequenceNum,
+                        passphrase = passphrase,
+                        passphraseNum = passphraseNum
                     };
 
                     string json = JsonConvert.SerializeObject(checkpoint, Formatting.Indented);
@@ -92,16 +96,17 @@ namespace FixMyCrypto {
                     //  Read from checkpoint file
                     string str = File.ReadAllText("checkpoint.json");
                     dynamic result = JsonConvert.DeserializeObject(str);
-                    this.phrase = new Phrase((string)result.phrase);
+                    this.phrase = new Phrase((string)result.phrase, (long)result.phraseNum.Value);
                     this.passphrase = result.passphrase;
+                    this.passphraseNum = result.passphraseNum.Value;
                     Log.Info($"Restoring from checkpoint:\n\tphrase: {this.phrase.ToPhrase()}\n\tpassphrase: {this.passphrase}");
                     return true;
                 }
             }
             catch (Exception e) {
                 Log.Error($"Error reading checkpoint file: {e}");
-                this.phrase = null;
-                this.passphrase = null;
+                ClearPhrase();
+                ClearPassphrase();
                 throw;
             }
         }

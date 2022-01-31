@@ -64,7 +64,8 @@ namespace FixMyCrypto {
         string lastPassphrase = null;
         Phrase lastPhrase = null;
         Checkpoint checkpoint = null;
-        long passphraseTested = 0, passphraseTotal = 0;
+        long passphraseTested = 0, passphraseTotal = 0, passphraseDone = 0, passphraseStart = 0;
+        object mutex = new();
 
         protected PhraseToAddress(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) {
             this.phraseQueue = phrases;
@@ -73,12 +74,12 @@ namespace FixMyCrypto {
         public void SetCheckpoint(Checkpoint c) {
             checkpoint = c;
         }
-        public Phrase GetLastPhrase() {
-            return this.lastPhrase;
+        public (Phrase, string, long) GetLastTested() {
+            lock(mutex) {
+                return (this.lastPhrase, this.lastPassphrase, this.passphraseDone);
+            }
         }
-        public string GetLastPassphrase() {
-            return this.lastPassphrase;
-        }
+        /*
         private MasterKey[] DeriveMasterKeys(Phrase phrase, string[] passphrases) {
             MasterKey[] keys = new MasterKey[passphrases.Length];
             int i = 0;
@@ -100,6 +101,7 @@ namespace FixMyCrypto {
                 this.passphrase = passphrase;
             }
         }
+        */
         public abstract Object DeriveMasterKey(Phrase phrase, string passphrase);
         protected abstract Object DeriveChildKey(Object parentKey, uint index);
         protected abstract Address DeriveAddress(PathNode node);
@@ -252,12 +254,17 @@ namespace FixMyCrypto {
 
                 if (Produce != null) Produce(addrs);
 
-                count += addrs.Count;
-                passphraseTested++;
+                lock(mutex) {
+                    count += addrs.Count;
+                    passphraseTested++;
+                }
             });
 
-            lastPhrase = phrase;
-            lastPassphrase = passphrases[passphrases.Length - 1];
+            lock(mutex) {
+                lastPhrase = phrase;
+                lastPassphrase = passphrases[passphrases.Length - 1];
+                passphraseDone = passphraseTested;
+            }
 
             return count;
         }
@@ -265,6 +272,7 @@ namespace FixMyCrypto {
         public int GetAddressesBatchPhrases(Phrase[] phrases, string passphrase, PathTree tree, ProduceAddress Produce = null) {
 
             int count = 0;
+            object mutex = new();
 
             //  Derive path keys
 
@@ -285,11 +293,15 @@ namespace FixMyCrypto {
 
                 if (Produce != null) Produce(addrs);
 
-                count += addrs.Count;
+                lock(mutex) { 
+                    count += addrs.Count; 
+                }
             });
 
-            lastPhrase = phrases[phrases.Length - 1];
-            lastPassphrase = passphrase;
+            lock(mutex) {
+                lastPhrase = phrases[phrases.Length - 1];
+                lastPassphrase = passphrase;
+            }
 
             return count;
         }
@@ -309,8 +321,8 @@ namespace FixMyCrypto {
             count = 0;
         }
         public void PassphraseLog() {
-            if (stopWatch.ElapsedMilliseconds == 0 || passphraseTested == 0 || passphraseTotal == 0) return;
-            Log.Info($"Passphrases tested {passphraseTested}/{passphraseTotal} ({100.0*passphraseTested/passphraseTotal:F2}%), passphrases/s: {1000*passphraseTested/stopWatch.ElapsedMilliseconds}");
+            if (stopWatch.ElapsedMilliseconds == 0 || (passphraseTested - passphraseStart) == 0 || passphraseTotal == 0) return;
+            Log.Info($"Passphrases tested {passphraseTested}/{passphraseTotal} ({100.0*passphraseTested/passphraseTotal:F2}%), passphrases/s: {1000*(passphraseTested - passphraseStart)/stopWatch.ElapsedMilliseconds}");
         }
         public void Consume() {
             Log.Debug("P2A start");
@@ -365,15 +377,25 @@ namespace FixMyCrypto {
                                 string current = e.Current;
 
                                 //  If checkpoint is set, skip passphrases until we reach the checkpoint
-                                string checkpointPassphrase = checkpoint.GetCheckpointPassphrase();
+                                (string checkpointPassphrase, long num) = checkpoint.GetCheckpointPassphrase();
                                 if (checkpointPassphrase != null) {
-                                    if (checkpointPassphrase == current) {
-                                        Log.Info($"Resuming from last checkpoint passphrase: {current}");
-                                        checkpoint.ClearPassphrase();
-                                        checkpoint.Start();
+                                    passphraseTested++;
+                                    if (num == passphraseTested) {
+                                        if (checkpointPassphrase == current) {
+                                            Log.Info($"Resuming from last checkpoint passphrase: {current}");
+                                            passphraseDone = passphraseTested;
+                                            passphraseStart = passphraseTested;
+                                            checkpoint.ClearPassphrase();
+                                            checkpoint.Start();
+                                            stopWatch.Restart();
+                                            continue;
+                                        }
+                                        else {
+                                            Log.Error($"Passphrase restore error\nexpect:  {checkpointPassphrase}\ncurrent: {current}");
+                                            FixMyCrypto.PauseAndExit(1);
+                                        }
                                     }
                                     else {
-                                        passphraseTested++;
                                         continue;
                                     }
                                 }

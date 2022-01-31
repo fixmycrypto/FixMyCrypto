@@ -9,7 +9,7 @@ namespace FixMyCrypto {
     class PhraseProducer {
         public BlockingCollection<Work> queue;
         int internalThreads;
-        long valid = 0, invalid = 0, dupes = 0;
+        long valid = 0, invalid = 0, dupes = 0, phraseTotal = 0;
         string[] phrase;
         private Checkpoint checkpoint = null;
 
@@ -39,16 +39,24 @@ namespace FixMyCrypto {
         private static ConcurrentDictionary<Phrase, byte> testedPhrases = new();
         public void PhraseLog() {
             if (sw1.ElapsedMilliseconds == 0 || valid == 0) return;
-            Log.Info($"Phrases Tested total: {valid+invalid}, valid: {valid}, Total phrases/s: {1000*(valid+invalid)/sw1.ElapsedMilliseconds}, Valid phrases/s: {1000*valid/sw1.ElapsedMilliseconds}");
+            Log.Info($"Phrases Tested total: {phraseTotal}, valid: {valid}, Total phrases/s: {1000*(valid+invalid)/sw1.ElapsedMilliseconds}, Valid phrases/s: {1000*valid/sw1.ElapsedMilliseconds}");
         }
         private void TestPhrase(short[] phraseArray) {
+            phraseTotal++;
+
             //  If checkpoint is set, skip phrases until we reach the checkpoint
             Phrase checkpointPhrase = checkpoint.GetCheckpointPhrase();
             if (checkpointPhrase != null) {
-                if (checkpointPhrase.IndicesEquals(phraseArray)) {
-                    Log.Info($"Resuming from last checkpoint phrase: {checkpointPhrase.ToPhrase()}");
-                    checkpoint.ClearPhrase();
-                    if (String.IsNullOrEmpty(checkpoint.GetCheckpointPassphrase())) checkpoint.Start();
+                if (checkpointPhrase.SequenceNum == phraseTotal) {
+                    if (checkpointPhrase.IndicesEquals(phraseArray)) {
+                        Log.Info($"Resuming from last checkpoint phrase: {checkpointPhrase.ToPhrase()}");
+                        checkpoint.ClearPhrase();
+                        if (String.IsNullOrEmpty(checkpoint.GetCheckpointPassphrase().Item1)) checkpoint.Start();
+                    }
+                    else {
+                        Log.Error($"Phrase restore error\nexpect: {checkpointPhrase.ToPhrase()}\ncurrent: {Phrase.ToPhrase(phraseArray)}");
+                        FixMyCrypto.PauseAndExit(1);
+                    }
                 }
                 else {
                     return;
@@ -61,7 +69,7 @@ namespace FixMyCrypto {
             
             if (isValid) {
                 //  don't retest valid phrases
-                Phrase p = new Phrase(phraseArray, hash);
+                Phrase p = new Phrase(phraseArray, hash, phraseTotal);
 
                 if (testedPhrases.ContainsKey(p)) {
                     dupes++;
