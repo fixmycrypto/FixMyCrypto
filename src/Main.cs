@@ -168,11 +168,7 @@ namespace FixMyCrypto {
                     Log.All($"passphrase: \"{passphrase}\"");
                 }
 
-                if (Settings.FuzzDepth > 1) {
-                    Log.All($"fuzz depth: {Settings.FuzzDepth}");
-                }
-
-                MultiPassphrase p = new MultiPassphrase(Settings.Passphrases, Settings.FuzzDepth);
+                MultiPassphrase p = new MultiPassphrase(Settings.Passphrases);
                 Log.All($"passphrase permutations: {p.GetCount()}");
 
                 if (!String.IsNullOrEmpty(Settings.TopologyFile)) {

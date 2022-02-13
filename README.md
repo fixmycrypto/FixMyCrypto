@@ -10,7 +10,7 @@
     * Incorrect words (e.g. fix -> fox/fit/fog etc.)
     * Swapped word order
     * Missing or unknown words
-* BIP39 passphrase cracking, including: typo repair, wildcards, and partial brute forcing
+* BIP39 passphrase cracking, including: typo repair, wildcards, and brute forcing
 * Coin support: 
     * BTC (+ forks e.g. BCH, etc.)
     * ETH (+ forks e.g. ETC, BSC, etc.)
@@ -157,9 +157,9 @@ If you think you may have done this AND also possibly made a typo when setting t
 
 Fuzzing is used when you may have made typos in your passphrase when you created the wallet or wrote down the passphrase. Fuzzing will test all possible typo mistakes, including: insertions, deletions, substitutions, and transpositions.
 
-To use passphrase fuzzing, place two curly braces `{{` at the start of the passphrase, and 2 at the end `}}`:
+To use passphrase fuzzing, surround the passphrase (or a part of it) with curly braces `{` and `}`:
 
-    "passphrase": "{{ThePassphrase!}}",
+    "passphrase": "{ThePassphrase!}",
 
 This will test e.g. "ThePass**hp**rase!" and all other single typos of "ThePassphrase!" (2,846 permutations).
 
@@ -167,18 +167,17 @@ You can fuzz multiple passphrases if you're not sure which one you used:
 
     "passphrase": [
 
-        "{{FirstPossibility}}",
+        "{FirstPossibility}",
 
-        "{{SecondPossibility}}
+        "{SecondPossibility}
     ],
 
 This will perform a fuzzy match of all possible typos of "FirstPossibility" and "SecondPossibility" (6,716 permutations).
 
-If you think you have more than 1 typo in your passphrase, you can set the `fuzzDepth` setting to 2 (this increases the search time exponentially):
+If you think you have more than 1 typo in your passphrase, you can put double curly braces to test for 2 typos (this increases the search time exponentially):
 
     "passphrase": "{{ThePassphrase!}}",
 
-    "fuzzDepth": 2,
 
 This will test e.g. "ThePass**hp**rase**1**" and all other single **or double** typos of "ThePassphrase!" (8,387,574 permutations).
 
@@ -204,9 +203,9 @@ If you have a good idea of the components that make up the passphrase, but not t
     * `[!@#$%^&*()]` will match one of the listed special symbols
     * `([)`, `(])` use parenthesis to escape a square bracket in the passphrase
     * `[(]`, `[)]` use square brackets to escape a parenthesis in the passphrase
-    * `[{]` use square brackets around a curly brace to escape it, if your passphrase happens to start AND end with 2 curly braces
-    * `[?]` will escape a question mark (only needed if it comes immediately after a right square bracket or right parenthesis)
-    * `^` at the start of a bracket expression means to exclude all the listed items, i.e. match any ASCII printable character except for those that are listed.
+    * `[{]` use square brackets around a curly brace to escape it
+    * `[?]` will escape a question mark (only needed if it comes immediately after a right square bracket, right parenthesis, or right curly bracket)
+    * `^` at the start of a square bracket expression means to exclude all the listed items, i.e. match any ASCII printable character except for those that are listed.
         * `[^a-zA-Z]` will match any non-letter character (matches one digit or symbol)
         * `[^a-zA-Z0-9]` will match any non-alphanumeric character
         * `[^^]` Two carets will escape a caret (matches "^"); `[^^$]` will match "^" or "$"
@@ -243,7 +242,7 @@ This would match:
 
 You're certain that your passphrase is supposed to be "CorrectHorseBatteryStaple42!", but it doesn't generate matching addresses in your wallet. Try passphrase fuzzing:
 
-    "passphrase": "{{CorrectHorseBatteryStaple42!}}",
+    "passphrase": "{CorrectHorseBatteryStaple42!}",
 
 This would match all possible single typos:
 * "CorrectHorseBatterySta**b**le42!"
@@ -256,11 +255,11 @@ You're certain your passphrase was either "MyUsualPassword", "MyOtherPassword", 
 
     "passphrase": [
 
-        "{{MyUsualPassword}}",
+        "{MyUsualPassword}",
 
-        "{{MyOtherPassword}},
+        "{MyOtherPassword},
 
-        "{{4321}}"
+        "{4321}"
     ],
 
 This will match typos of any of those passphrases, e.g.:

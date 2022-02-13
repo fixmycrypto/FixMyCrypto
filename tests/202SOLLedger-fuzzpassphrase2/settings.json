@@ -3,8 +3,6 @@
 
     "passphrase": "{{Food92!}}",
 
-    "fuzzDepth": 2,
-
     "paths": [
         "m/44'/501'"
     ],

@@ -330,7 +330,7 @@ namespace FixMyCrypto {
             PathTree tree = CreateTree(Settings.Paths, Settings.Accounts, Settings.Indices);
 
             //  Generate passphrase list
-            MultiPassphrase p = new MultiPassphrase(Settings.Passphrases, Settings.FuzzDepth);
+            MultiPassphrase p = new MultiPassphrase(Settings.Passphrases);
             string passphrase = null;
             long passphraseCount = p.GetCount();
             if (passphraseCount == 1) {

@@ -35,8 +35,6 @@ namespace FixMyCrypto {
             } 
         }
 
-        public static int FuzzDepth { get { if (result != null && result.fuzzDepth != null) return (int)result.fuzzDepth.Value; else return 1; }}
-
         public static string[] KnownAddresses { get { return result.knownAddresses.ToObject<string[]>(); } }
 
         public static CoinType CoinType { get { return GetCoinType(result.coin.Value); } }

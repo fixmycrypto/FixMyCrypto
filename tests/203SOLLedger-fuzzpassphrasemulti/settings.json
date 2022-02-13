@@ -8,8 +8,6 @@
         "Final[0-9]"
     ],
 
-    "fuzzDepth": 2,
-
     "paths": [
         "m/44'/501'"
     ],

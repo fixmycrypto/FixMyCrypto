@@ -15,6 +15,7 @@ namespace FixMyCrypto {
         Part[] parts;
         string stringValue;
         bool optional;
+        bool fuzz;
 
         //  for graphviz only
         string range;
@@ -23,6 +24,7 @@ namespace FixMyCrypto {
             switch (c) {
                 case '[':
                 case '(':
+                case '{':
                 return true;
 
                 default:
@@ -36,6 +38,9 @@ namespace FixMyCrypto {
 
                 case '(':
                 return ')';
+
+                case '{':
+                return '}';
 
                 default:
                 return ' ';
@@ -193,13 +198,17 @@ namespace FixMyCrypto {
             return IsSet(set, '[', ']');
         }
 
+        private bool IsFuzzSet(string set) {
+            return IsSet(set, '{', '}');
+        }
+
         public Part(string set) {
             // Log.Debug($"Part: {set}");
 
             List<Part> values = new List<Part>();
             stringValue = null;
 
-            if ((set.StartsWith("(") && set.EndsWith(")?")) || (set.StartsWith("[") && set.EndsWith("]?"))) {
+            if ((set.StartsWith("(") && set.EndsWith(")?")) || (set.StartsWith("[") && set.EndsWith("]?")) || (set.StartsWith('{') && set.EndsWith("}?"))) {
                 optional = true;
                 set = set.Substring(0, set.Length - 1);
             }
@@ -214,7 +223,13 @@ namespace FixMyCrypto {
 
                 values.AddRange(CreateOptionSet(set));
             }
-            else if (((set.Contains("(") && set.Contains(")")) || (set.Contains("[") && set.Contains("]")))) {
+            else if (IsFuzzSet(set)) {
+                set = set.Substring(1, set.Length - 2);
+
+                values.Add(new Part(set));
+                this.fuzz = true;
+            }
+            else if (((set.Contains("(") && set.Contains(")")) || (set.Contains("[") && set.Contains("]")) || (set.Contains("{") && set.Contains("}")))) {
                 string current = "";
                 int depth = 0;
                 char blockType = ' ';
@@ -312,6 +327,46 @@ namespace FixMyCrypto {
                 yield return "";
             }
             
+            if (this.fuzz) {
+                foreach (string r in parts[0]) {
+                    //  Deletions
+                    for (int i = 0; i < r.Length; i++) {
+                        yield return r.Substring(0, i) + r.Substring(i + 1);
+                    }
+
+                    //  Substitutions
+                    for (int i = 0; i < r.Length; i++) {
+                        for (byte c = 0x20; c < 0x7f; c++) {
+                            if (r[i] == (char)c) continue;
+
+                            yield return r.Substring(0, i) + (char)c + r.Substring(i + 1);
+                        }
+                    }
+
+                    //  Insertions
+                    for (int i = 0; i <= r.Length; i++) {
+                        for (byte c = 0x20; c < 0x7f; c++) {
+                            yield return r.Substring(0, i) + (char)c + r.Substring(i);
+                        }
+                    }
+
+                    //  Transpositions
+                    for (int i = 0; i < r.Length - 1; i++) {
+                        for (int j = i + 1; j < r.Length; j++) {
+                            char[] c = r.ToCharArray();
+
+                            char tmp = c[i];
+                            c[i] = c[j];
+                            c[j] = tmp;
+
+                            yield return new string(c);
+                        }
+                    }
+                }
+
+                yield break;
+            }
+
             if (this.stringValue != null) {
                 yield return this.stringValue;
                 yield break;
@@ -391,6 +446,8 @@ namespace FixMyCrypto {
                     label = "(" + String.Join("&&", (object[])this.parts) + ")";
                     if (optional) label += "?";
                 }
+
+                if (fuzz) label = "{" + label + "}";
             }
 
             return label;
@@ -410,7 +467,7 @@ namespace FixMyCrypto {
                 int record = 0;
                 foreach (Part p in parts) {
                     if (recordLabel.Length > 0) recordLabel += "|";
-                    recordLabel += $"<f{record}> {EscapeString(p.ToString())}";
+                    recordLabel += $"<f{record}>{EscapeString(p.ToString())}";
                     record++;
                 }
                 //  add record node
@@ -467,27 +524,16 @@ namespace FixMyCrypto {
 
     class Passphrase : IEnumerable<string> {
         Part root;
-        string toFuzz;
-        int depth = 1;
 
-        public Passphrase(string passphrase, int fuzzDepth = 1) {
+        public Passphrase(string passphrase) {
             if (passphrase == null) return;
 
-            if (passphrase.StartsWith("{{") && passphrase.EndsWith("}}")) {
-                toFuzz = passphrase.Substring(2, passphrase.Length - 4);
-                depth = fuzzDepth;
-            }
-            else {
-                root = new Part(passphrase);
-            }
+            root = new Part(passphrase);
         }
 
         public IEnumerator<string> GetEnumerator() {
             if (root != null) {
                 foreach (string r in root) yield return r;
-            }
-            else if (toFuzz != null) {
-                foreach (string r in Fuzz(toFuzz, depth)) yield return r;
             }
             else {
                 yield return "";
@@ -503,21 +549,12 @@ namespace FixMyCrypto {
         }
 
         public long GetCount() {
-            if (root != null) return root.GetCount();
-
-            if (depth == 1) return
-                    toFuzz.Length                                   //  Deletions
-                    + (toFuzz.Length * (0x7f - 0x20 - 1))           //  Substitutions
-                    + ((toFuzz.Length + 1) * (0x7f - 0x20))         //  Insertions
-                    + (toFuzz.Length * (toFuzz.Length - 1) / 2);    //  Transpositions
-
-            //  TODO: Better way to count permutations when depth > 1
-            //  It isn't GetCount(depth: 1) ^ 2 due to insertions/deletions changing the length
             long count = 0;
-            foreach (string r in Fuzz(toFuzz, depth)) count++;
+            foreach (string r in this) count++;
             return count;
         }   
 
+        /*
         private IEnumerable<string> Fuzz(string src, int depth) {
             if (depth == 0) {
                 yield return src;
@@ -566,6 +603,7 @@ namespace FixMyCrypto {
                 }
             }
         }
+        */
 
         public void WriteTopologyFile(string path) {
             string topology = "digraph G {\n\toverlap = false\n\tconcentrate = false\n" + GetTopology() + "}\n";
@@ -577,16 +615,7 @@ namespace FixMyCrypto {
 
             //  https://graphviz.org/doc/info/lang.html
 
-            if (root != null) {
-                return root.GetTopology(true);
-            }
-            else {
-                //  dummy topology for passphrase fuzz mode
-
-                Part p = new Part("{{" + toFuzz + "}}");
-
-                return p.GetTopology(true);
-            }
+            return root.GetTopology(true);
         }
     }
 
@@ -594,10 +623,10 @@ namespace FixMyCrypto {
 
         List<Passphrase> passphrases;
 
-        public MultiPassphrase(string[] src, int fuzzDepth = 1) {
+        public MultiPassphrase(string[] src) {
             passphrases = new();
             foreach (string p in src) {
-                passphrases.Add(new Passphrase(p, fuzzDepth));
+                passphrases.Add(new Passphrase(p));
             }
         }
 

@@ -112,8 +112,8 @@ namespace FixMyCrypto {
         [Benchmark]
         public void PassphraseFuzz() {
             string passphrase = "{{ThePassphrase!}}";
-            // Passphrase p = new Passphrase(passphrase, fuzzDepth: 2);
-            Passphrase p = new Passphrase(passphrase, fuzzDepth: 1);
+            // Passphrase p = new Passphrase(passphrase);
+            Passphrase p = new Passphrase(passphrase);
             int count = 0;
             Parallel.ForEach(p, r => {
                 byte[] salt = Cryptography.PassphraseToSalt(r);

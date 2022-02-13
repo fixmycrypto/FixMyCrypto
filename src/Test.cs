@@ -103,18 +103,18 @@ namespace FixMyCrypto {
                 throw new Exception("test failed");
             }
         }
-        public static void TestPassphrase(string pattern, string expect, long expectCount = -1, int depth = 1) {
+        public static void TestPassphrase(string pattern, string expect, long expectCount = -1) {
             string[] s = { expect };
-            TestPassphrase(pattern, s, expectCount, depth);
+            TestPassphrase(pattern, s, expectCount);
         }
 
-        public static void TestPassphrase(string pattern, string[] expect, long expectCount = - 1, int depth = 1) {
+        public static void TestPassphrase(string pattern, string[] expect, long expectCount = - 1) {
             string[] patterns = { pattern };
-            TestPassphrase(patterns, expect, expectCount, depth);
+            TestPassphrase(patterns, expect, expectCount);
         }
 
-        public static void TestPassphrase(string[] patterns, string[] expect, long expectCount = -1, int depth = 1) {
-            MultiPassphrase ph = new MultiPassphrase(patterns, depth);
+        public static void TestPassphrase(string[] patterns, string[] expect, long expectCount = -1) {
+            MultiPassphrase ph = new MultiPassphrase(patterns);
             string pattern = String.Join(" , ", patterns);
             long measuredCount = ph.GetCount();
             if (expectCount > -1 && measuredCount != expectCount) throw new Exception($"Passphrase pattern: \"{pattern}\" GetCount() returned {measuredCount} permutations; expected {expectCount}");
@@ -133,7 +133,7 @@ namespace FixMyCrypto {
 
             for (int i = 0; i < found.Length; i++) if (!found[i]) throw new Exception($"Passphrase pattern: \"{pattern}\" failed to generate: \"{expect[i]}\"");
 
-            if (expectCount == -1) Log.Debug($"Passphrase pattern: \"{pattern}\" {(depth == 1 ? "" : $"(depth = {depth}) ")}generated {count} permutations");
+            if (expectCount == -1) Log.Debug($"Passphrase pattern: \"{pattern}\" generated {count} permutations");
         }
 
         public static void FailPassphrase(string pattern, string expect) {
@@ -158,6 +158,8 @@ namespace FixMyCrypto {
                 switch (c) {
                     case '(':
                     case ')':
+                    case '{':
+                    case '}':
 
                     pattern += $"[{c}]";
 
@@ -198,9 +200,6 @@ namespace FixMyCrypto {
 
                     break;
                 }
-            }
-            if (pattern.StartsWith("{{") && pattern.EndsWith("}}")) {
-                pattern = "[{]" + pattern.Substring(1);
             }
             TestPassphrase(pattern, expect, 1);
         }
@@ -273,16 +272,17 @@ namespace FixMyCrypto {
             TestPassphrase("((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]", new string[] { "CorrectHorseBatteryStaple1!", "horseStaplebatteryCorrect42?", "batterystaplecorrectHorse99@" }, 16 * Utils.Factorial(4) * 10 * 10 * 33);
             TestPassphrase("(a&&b)?c", new string[] { "abc", "bac", "c" }, 3);
             //  fuzzing
-            TestPassphrase("{{Foo92!}}", new string[] { "Foo93!", "Foo92", "Foo9!", "Food92!", "Foo92!a" }, 1250);
-            TestPassphrase("{{Food92?}}", new string[] { "Foo92?" }, 1446);
-            TestPassphrase("{{ThePassphrase!}}", new string[] { "ThePasshprase!", "thePassphrase!" }, 2846);
-            TestPassphrase("{{CorrectHorseBatteryStaple42!}}", new string[] { "CorrectHorseBatteryStable42!", "CorectHorseBatteryStaple42!", "CorrectHoorseBatteryStaple42!" }, 5793);
+            TestPassphrase("{Foo92!}", new string[] { "Foo93!", "Foo92", "Foo9!", "Food92!", "Foo92!a" }, 1250);
+            TestPassphrase("{Food92?}", new string[] { "Foo92?" }, 1446);
+            TestPassphrase("{ThePassphrase!}", new string[] { "ThePasshprase!", "thePassphrase!" }, 2846);
+            TestPassphrase("{CorrectHorseBatteryStaple42!}", new string[] { "CorrectHorseBatteryStable42!", "CorectHorseBatteryStaple42!", "CorrectHoorseBatteryStaple42!" }, 5793);
+            TestPassphrase("{(Correct||Horse)}", new string[] { "Corect", "Corrrect", "Herse", "Hoesr" }, 2501);
             //  fuzz depth 2
-            TestPassphrase("{{Foo92!}}", new string[] { "Foo93!", "Foo92", "Foo9!", "Food92!", "Foo92!a", "Foo83!", "Fo92", "food92!", "Foo92!ab" }, depth: 2, expectCount: 1691670 );
-            TestPassphrase("{{ThePassphrase!}}", new string[] { "ThePasshprase!", "thePassphrase!", "ThePasshprase1" }, depth: 2, expectCount: 8387574);
+            TestPassphrase("{{Foo92!}}", new string[] { "Foo93!", "Foo92", "Foo9!", "Food92!", "Foo92!a", "Foo83!", "Fo92", "food92!", "Foo92!ab" }, expectCount: 1691670 );
+            TestPassphrase("{{ThePassphrase!}}", new string[] { "ThePasshprase!", "thePassphrase!", "ThePasshprase1" }, expectCount: 8387574);
             //  multi
-            TestPassphrase(new string[] { "{{MyUsualPassward}}", "{{MyOtterPassword}}", "{{4231}}" }, new string[] { "MyUsualPassword", "MyOtherPassword", "4321" }, 6961);
-            TestPassphrase(new string[] { "{{FirstPossibility}}", "{{SecondPossibility}}" }, new string[] { "SecondPossability" }, 6716);
+            TestPassphrase(new string[] { "{MyUsualPassward}", "{MyOtterPassword}", "{4231}" }, new string[] { "MyUsualPassword", "MyOtherPassword", "4321" }, 6961);
+            TestPassphrase(new string[] { "{FirstPossibility}", "{SecondPossibility}" }, new string[] { "SecondPossability" }, 6716);
 
             //  random passphrase testing
             Parallel.For(0, 1000000, i => TestRandomPassphrase());
