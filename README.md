@@ -181,7 +181,7 @@ If you think you have more than 1 typo in your passphrase, you can put double cu
 
 This will test e.g. "ThePass**hp**rase**1**" and all other single **or double** typos of "ThePassphrase!" (8,387,574 permutations).
 
-**Brute forcing more than 2 typos in a passphrase is unlikely to succeed due to the huge number of permutations**.  If you have at least some idea as to where the typo(s) were made, then try using wildcards.
+**Trying to brute force more than 2 typos in a passphrase will fail due to the huge number of permutations**.  If you have at least some idea as to where the typo(s) were made, then try using wildcards.
 
 ## Passphrase Wildcards
 
