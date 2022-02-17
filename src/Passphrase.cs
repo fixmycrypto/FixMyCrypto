@@ -554,57 +554,6 @@ namespace FixMyCrypto {
             return count;
         }   
 
-        /*
-        private IEnumerable<string> Fuzz(string src, int depth) {
-            if (depth == 0) {
-                yield return src;
-                yield break;
-            }
-
-            //  Deletions
-            for (int i = 0; i < src.Length; i++) {
-                string test = src.Substring(0, i) + src.Substring(i + 1);
-                // Log.Debug($"delete {i}: {test}");
-                foreach (string r in Fuzz(test, depth - 1)) yield return r;
-            }
-
-            //  Substitutions
-            for (int i = 0; i < src.Length; i++) {
-                for (byte c = 0x20; c < 0x7f; c++) {
-                    if (src[i] == (char)c) continue;
-
-                    string test = src.Substring(0, i) + (char)c + src.Substring(i + 1);
-                    // Log.Debug($"sub {i} with {(char)c}: {test}");
-                    foreach (string r in Fuzz(test, depth - 1)) yield return r;
-                }
-            }
-
-            //  Insertions
-            for (int i = 0; i <= src.Length; i++) {
-                for (byte c = 0x20; c < 0x7f; c++) {
-                    string test = src.Substring(0, i) + (char)c + src.Substring(i);
-                    // Log.Debug($"insert {i} with {(char)c}: {test}");
-                    foreach (string r in Fuzz(test, depth - 1)) yield return r;
-                }
-            }
-
-            //  Transpositions
-            for (int i = 0; i < src.Length - 1; i++) {
-                for (int j = i + 1; j < src.Length; j++) {
-                    char[] c = src.ToCharArray();
-
-                    char tmp = c[i];
-                    c[i] = c[j];
-                    c[j] = tmp;
-
-                    string test = new string(c);
-                    // Log.Debug($"transpose {i} {j}: {test}");
-                    foreach (string r in Fuzz(test, depth - 1)) yield return r;
-                }
-            }
-        }
-        */
-
         public void WriteTopologyFile(string path) {
             string topology = "digraph G {\n\toverlap = false\n\tconcentrate = false\n" + GetTopology() + "}\n";
 

@@ -163,6 +163,8 @@ To use passphrase fuzzing, surround the passphrase (or a part of it) with curly 
 
 This will test e.g. "ThePass**hp**rase!" and all other single typos of "ThePassphrase!" (2,846 permutations).
 
+### Fuzz Multiple Passphrases
+
 You can fuzz multiple passphrases if you're not sure which one you used:
 
     "passphrase": [
@@ -174,10 +176,17 @@ You can fuzz multiple passphrases if you're not sure which one you used:
 
 This will perform a fuzzy match of all possible typos of "FirstPossibility" and "SecondPossibility" (6,716 permutations).
 
+### Fuzz Partial Passphrase
+
+You can fuzz just one part of the passphrase, if you're **certain** that the typo is in that part and nowhere else:
+
+    "passphrase": "Perfect{Mistake}",
+
+### Fuzz Multiple Typos
+
 If you think you have more than 1 typo in your passphrase, you can put double curly braces to test for 2 typos (this increases the search time exponentially):
 
     "passphrase": "{{ThePassphrase!}}",
-
 
 This will test e.g. "ThePass**hp**rase**1**" and all other single **or double** typos of "ThePassphrase!" (8,387,574 permutations).
 
@@ -203,14 +212,16 @@ If you have a good idea of the components that make up the passphrase, but not t
     * `[!@#$%^&*()]` will match one of the listed special symbols
     * `([)`, `(])` use parenthesis to escape a square bracket in the passphrase
     * `[(]`, `[)]` use square brackets to escape a parenthesis in the passphrase
-    * `[{]` use square brackets around a curly brace to escape it
-    * `[?]` will escape a question mark (only needed if it comes immediately after a right square bracket, right parenthesis, or right curly bracket)
+    * `[{]`, `[}]` use square brackets around a curly brace to escape it
+    * `[?]` will escape a question mark (only needed if it comes immediately after a right square bracket, right parenthesis, or right curly brace)
     * `^` at the start of a square bracket expression means to exclude all the listed items, i.e. match any ASCII printable character except for those that are listed.
         * `[^a-zA-Z]` will match any non-letter character (matches one digit or symbol)
         * `[^a-zA-Z0-9]` will match any non-alphanumeric character
         * `[^^]` Two carets will escape a caret (matches "^"); `[^^$]` will match "^" or "$"
     * Nested square bracket expressions are not allowed
-* `?` after a parenthesis or bracket expression indicates that the enclosed item is optional (i.e. it occurs zero or one times)
+* `{ }` curly brace expressions will fuzz the contents by testing all possible single tyops (insertions, deletions, substitutions, and transpositions)
+    * `{{ }}` double curly braces will test all possible double typos
+* `?` after an enclosed expression indicates that the enclosed item is optional (i.e. it occurs zero or one times)
     * `(T|t)?he` will match "The", "the", or "he"
     * `Hello Dolly[!$]?` will match "Hello Dolly", "Hello Dolly!", or "Hello Dolly$"
     * `[0-9][0-9]?` will match any one or two digits 0 - 9 and 00 - 99 (including 00, 01, etc.)
