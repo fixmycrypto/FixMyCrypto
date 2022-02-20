@@ -2,7 +2,7 @@
 bin/**
 obj/**
 results.json
-checkpoint.json
+checkpoint*.json
 /secrets.json
 /settings.json
 *.bak
