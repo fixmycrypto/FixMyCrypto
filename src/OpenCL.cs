@@ -55,7 +55,7 @@ namespace FixMyCrypto {
             context = Context.CreateContext(chosenDevice);
             
             // Creates a program and then the kernel from it
-            string code = buffer_structs_template_cl + hmac512_cl + pbkdf2_cl;
+            string code = buffer_structs_template_cl + hmac512_cl + pbkdf2_cl + pbkdf2_variants;
             code = code.Replace("<hashBlockSize_bits>", "1024");
             code = code.Replace("<hashDigestSize_bits>", "512");
             code = code.Replace("<inBufferSize_bytes>", $"{inBufferSize}");
@@ -75,6 +75,9 @@ namespace FixMyCrypto {
             BinaryWriter w = new(new MemoryStream(data));
             for (int i = 0; i < phrases.Length; i++) {
                 byte[] pb = phrases[i].ToPhrase().ToUTF8Bytes();
+                if (pb.Length > inBufferSize) {
+                        throw new Exception("phrase exceeds max length");
+                }
                 w.Write((ulong)pb.Length);
                 w.Write(pb);
                 w.Write(new byte[inBufferSize - pb.Length]);
@@ -95,8 +98,7 @@ namespace FixMyCrypto {
             // Log.Debug($"data: {data.ToHexString()}");
             // Log.Debug($"saltData: {saltData.ToHexString()}");
 
-            using Kernel kernel = program.CreateKernel($"pbkdf2_{iters}_{dklen}");
-            byte[] result = RunKernel(kernel, data, saltData, phrases.Length);
+            byte[] result = RunKernel($"pbkdf2_{iters}_{dklen}", data, saltData, phrases.Length);
 
             // Console.WriteLine($"ocl: {result.ToHexString()}");
 
@@ -109,7 +111,8 @@ namespace FixMyCrypto {
             return retval;
         }
 
-        private byte[] RunKernel(Kernel kernel, byte[] data, byte[] saltData, int count) {
+        private byte[] RunKernel(string kernelName, byte[] data, byte[] saltData, int count) {
+            using Kernel kernel = program.CreateKernel(kernelName);
             byte[] result = null;
 
             try {
@@ -147,6 +150,9 @@ namespace FixMyCrypto {
             byte[] data = new byte[wordSize + pwdBufferSize];
             BinaryWriter w = new(new MemoryStream(data));
             byte[] pw = phrase.ToPhrase().ToUTF8Bytes();
+            if (pw.Length > pwdBufferSize) {
+                    throw new Exception("phrase exceeds max length");
+            }
             w.Write((ulong)pw.Length);
             w.Write(pw);
             w.Write(new byte[pwdBufferSize - pw.Length]);
@@ -168,8 +174,7 @@ namespace FixMyCrypto {
             // Log.Debug($"data: {data.ToHexString()}");
             // Log.Debug($"saltData: {saltData.ToHexString()}");
 
-            using Kernel kernel = program.CreateKernel($"pbkdf2_saltlist_{iters}_{dklen}");
-            byte[] result = RunKernel(kernel, data, saltData, passphrases.Length);
+            byte[] result = RunKernel($"pbkdf2_saltlist_{iters}_{dklen}", data, saltData, passphrases.Length);
 
             // Console.WriteLine($"ocl: {result.ToHexString()}");
 
@@ -213,7 +218,7 @@ namespace FixMyCrypto {
                 {
                     if (cpuseeds[i].seed.ToHexString() != oclseeds[i].seed.ToHexString())
                     {
-                        Console.WriteLine($"phrase {i}: {ph[i].ToPhrase()}\ncpu: {cpuseeds[i].seed.ToHexString()}\nocl: {((byte[])(oclseeds[i].seed)).ToHexString()}");
+                        // Console.WriteLine($"phrase {i}: {ph[i].ToPhrase()}\ncpu: {cpuseeds[i].seed.ToHexString()}\nocl: {((byte[])(oclseeds[i].seed)).ToHexString()}");
                         badcount++;
                     }
                 }
@@ -248,7 +253,7 @@ namespace FixMyCrypto {
                 {
                     if (cpuseeds[i].seed.ToHexString() != oclseeds[i].seed.ToHexString())
                     {
-                        Console.WriteLine($"pp {i}: {pp[i]}\ncpu: {cpuseeds[i].seed.ToHexString()}\nocl: {((byte[])(oclseeds[i].seed)).ToHexString()}");
+                        // Console.WriteLine($"pp {i}: {pp[i]}\ncpu: {cpuseeds[i].seed.ToHexString()}\nocl: {((byte[])(oclseeds[i].seed)).ToHexString()}");
                         badcount++;
                     }
                 }
@@ -412,6 +417,7 @@ static void hmac(__global word *K, const word K_len_bytes,
 
     // K' ^ ipad into the first block
     word input_1[size_1] = {0};
+    word temp_output[size_1] = {0};
     #undef size_1
     for (int j = 0; j < hashBlockSize; j++){
         input_1[j] = input_2[j]^xoredPad;
@@ -428,7 +434,10 @@ static void hmac(__global word *K, const word K_len_bytes,
     hash_private(input_1, leng, input_2 + hashBlockSize);
 
     // Hash input2 into output!
-    hash_private(input_2, hashBlockSize_bytes + hashDigestSize_bytes, output);
+    hash_private(input_2, hashBlockSize_bytes + hashDigestSize_bytes, temp_output);
+    for (int j = 0; j < hashBlockSize; j++){
+        output[j] = temp_output[j];
+    }
 }
 
 #undef sizeForHash
@@ -452,8 +461,7 @@ static void F(__global word *pwd, const word pwdLen_bytes,
 
     // Add the integer to the end of the salt
     // NOTE! Always adding callI as just a u32
-    //word overhang = saltLen_bytes % wordSize;
-    word overhang=((saltLen_bytes)-((saltLen_bytes)/(wordSize)*(wordSize)));
+    word overhang = saltLen_bytes % wordSize;
     overhang *= 8; // convert to bits
     word saltLastI = saltLen_bytes / wordSize;
 
@@ -502,9 +510,6 @@ __kernel void pbkdf2(__global inbuf *inbuffer, __global const saltbuf *saltbuffe
     __global word *pwdBuffer = inbuffer[idx].buffer;
     __global word *currOutBuffer = outbuffer[idx].buffer;
 
-    //  debug
-    //printf(""%d pwdBuffer (%lu): %s\n"", idx, pwdLen_bytes, (__global unsigned char*)pwdBuffer);
-
     // Copy salt so that we can write our integer into the last 4 bytes
     word saltLen_bytes = saltbuffer[0].length;
     int saltLen = ceilDiv(saltLen_bytes, wordSize);
@@ -514,15 +519,8 @@ __kernel void pbkdf2(__global inbuf *inbuffer, __global const saltbuf *saltbuffe
         personal_salt[j] = saltbuffer[0].buffer[j];
     }
 
-    //  debug
-    printf(""%d personal_salt (%lu): %s\n"", idx, saltLen_bytes, (unsigned char*)personal_salt);
-
     // Determine the number of calls to F that we need to make
     unsigned int nBlocks = ceilDiv(dkLen_bytes, PRF_output_bytes);
-
-    //debug
-    printf(""nBlocks=%d dkLen_bytes=%d iters=%d\n"", nBlocks, dkLen_bytes, iters);
-
     for (unsigned int j = 1; j <= nBlocks; j++)
     {
         F(pwdBuffer, pwdLen_bytes, personal_salt, saltbuffer[0].length, iters, j, currOutBuffer);
@@ -530,11 +528,6 @@ __kernel void pbkdf2(__global inbuf *inbuffer, __global const saltbuf *saltbuffe
     }
 }
 
-__kernel void pbkdf2_2048_64(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
-{
-    printf(""pbkdf2_2048_64\n"");
-    pbkdf2(inbuffer, saltbuffer, outbuffer, 2048, 64);
-}
 
 // Exposing HMAC in the same way. Useful for testing atleast.
 __kernel void hmac_main(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
@@ -577,37 +570,34 @@ __kernel void pbkdf2_saltlist(__global const pwdbuf *pwdbuffer_arg, __global inb
     __global word *pwdBuffer = pwdbuffer_arg[0].buffer;
     __global word *currOutBuffer = outbuffer[idx].buffer;
 
-    //  debug
-    printf(""%d pwdBuffer (%lu): %s\n"", idx, pwdLen_bytes, (__global unsigned char*)pwdBuffer);
-
     // Copy salt so that we can write our integer into the last 4 bytes
     word saltLen_bytes = inbuffer[idx].length;
     int saltLen = ceilDiv(saltLen_bytes, wordSize);
     word personal_salt[saltBufferSize+2] = {0};
 
+
     for (int j = 0; j < saltLen; j++){
         personal_salt[j] = inbuffer[idx].buffer[j];
     }
 
-    //  debug
-    printf(""%d personal_salt (%lu): %s\n"", idx, saltLen_bytes, (unsigned char*)personal_salt);
-
     // Determine the number of calls to F that we need to make
     unsigned int nBlocks = ceilDiv(dkLen_bytes, PRF_output_bytes);
-
-    //debug
-    printf(""nBlocks=%d dkLen_bytes=%d iters=%d\n"", nBlocks, dkLen_bytes, iters);
-
     for (unsigned int j = 1; j <= nBlocks; j++)
     {
         F(pwdBuffer, pwdLen_bytes, personal_salt, saltLen_bytes, iters, j, currOutBuffer);
         currOutBuffer += PRF_output_size;
     }
 }
+";
+
+static string pbkdf2_variants = @"
+__kernel void pbkdf2_2048_64(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
+{
+    pbkdf2(inbuffer, saltbuffer, outbuffer, 2048, 64);
+}
 
 __kernel void pbkdf2_saltlist_2048_64(__global const pwdbuf *pwdbuffer_arg, __global inbuf *inbuffer, __global outbuf *outbuffer)
 {
-    printf(""pbkdf2_saltlist_2048_64\n"");
     pbkdf2_saltlist(pwdbuffer_arg, inbuffer, outbuffer, 2048, 64);
 }
 ";
@@ -903,7 +893,7 @@ private static string buffer_structs_template_cl = @"
     Originally adapted from Bjorn Kerler's sha256.cl
     MIT License
 */
-//#define DEBUG 1
+#define DEBUG 1
 
 // All macros left defined for usage in the program
 #define ceilDiv(n,d) (((n) + (d) - 1) / (d))
@@ -1006,7 +996,7 @@ typedef struct {
     {                                           \
         for (int j = 0; j < len_bytes; j++){    \
             word v = arr[j / wordSize];                 \
-            word r = mod(j,wordSize) * 8;                \
+            word r = (j % wordSize) * 8;                \
             /* Prints little endian, since that's what we use */   \
             v = (v >> r) & 0xFF;                \
             if (hex) {                          \
