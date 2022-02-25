@@ -1,49 +1,17 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-/*
-using OpenCl.DotNetCore.Platforms;
-using OpenCl.DotNetCore.Devices;
-*/
-using ConsoleTables;
+
 
 namespace FixMyCrypto {
     class FixMyCrypto {
         static bool interactive = true;
 
-        /*
-        static void LogOpenCLInfo() {
-            IEnumerable<Platform> platforms = Platform.GetPlatforms();
-            ConsoleTable consoleTable = new ConsoleTable("Platform", "OpenCL Version", "Vendor", "Device", "Driver Version", "Bits", "Memory", "Clock Speed", "Available");
-            foreach (Platform platform in platforms)
-            {
-                foreach (Device device in platform.GetDevices(DeviceType.All))
-                {
-                    consoleTable.AddRow(
-                        platform.Name,
-                        $"{platform.Version.MajorVersion}.{platform.Version.MinorVersion}",
-                        platform.Vendor,
-                        device.Name,
-                        device.DriverVersion,
-                        $"{device.AddressBits} Bit",
-                        $"{Math.Round(device.GlobalMemorySize / 1024.0f / 1024.0f / 1024.0f, 2)} GiB",
-                        $"{device.MaximumClockFrequency} MHz",
-                        device.IsAvailable ? "✔" : "✖");
-                }
-            }
-            Log.Info("Supported Platforms & Devices:");
-            Log.Info(consoleTable.ToStringAlternative());
-
-            // Gets the first available platform and selects the first device offered by the platform and prints out the chosen device
-            Device chosenDevice = platforms.FirstOrDefault().GetDevices(DeviceType.All).FirstOrDefault();
-            Log.Info($"OpenCL Using: {chosenDevice.Name} ({chosenDevice.Vendor})");
-        }
-        */
-        
         public static void PauseAndExit(int code) {
             if (interactive) {
                 Log.All("Press 'E' to exit...");
@@ -72,8 +40,10 @@ namespace FixMyCrypto {
                 PauseAndExit(1);
             }
 
-            // LogOpenCLInfo();
+            // OpenCL.LogOpenCLInfo();
 
+            // OpenCL.Benchmark(1024);
+ 
             WebClient.client.Timeout = new System.TimeSpan(0, 0, 60);
 
             if (test) {

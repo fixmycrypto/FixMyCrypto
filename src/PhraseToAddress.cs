@@ -79,29 +79,7 @@ namespace FixMyCrypto {
                 return (this.lastPhrase, this.lastPassphrase, this.passphraseDone);
             }
         }
-        /*
-        private MasterKey[] DeriveMasterKeys(Phrase phrase, string[] passphrases) {
-            MasterKey[] keys = new MasterKey[passphrases.Length];
-            int i = 0;
-            foreach (string passphrase in passphrases) {
-                keys[i++] = new MasterKey(DeriveMasterKey(phrase, passphrase), phrase, passphrase);
-            }
-            return keys;
-        }
-        private class MasterKey {
-            public object key { get; }
 
-            public Phrase phrase { get; }
-
-            public string passphrase { get; }
-
-            public MasterKey(object key, Phrase phrase, string passphrase) {
-                this.key = key;
-                this.phrase = phrase;
-                this.passphrase = passphrase;
-            }
-        }
-        */
         public abstract Object DeriveMasterKey(Phrase phrase, string passphrase);
         protected abstract Object DeriveChildKey(Object parentKey, uint index);
         protected abstract Address DeriveAddress(PathNode node);
@@ -231,18 +209,28 @@ namespace FixMyCrypto {
 
         public delegate void ProduceAddress(List<Address> addresses);
 
+        public RootKey[] DeriveRootKeyBatchPassphrases(Phrase phrase, string[] passphrases) {
+            RootKey[] keys = new RootKey[passphrases.Length];
+            Parallel.For(0, passphrases.Length, i => {
+                keys[i] = new RootKey(DeriveMasterKey(phrase, passphrases[i]), phrase, passphrases[i]);
+            });
+            return keys;
+        }
+
         public int GetAddressesBatchPassphrases(Phrase phrase, string[] passphrases, PathTree tree, ProduceAddress Produce) {
 
             int count = 0;
 
+            RootKey[] keys = DeriveRootKeyBatchPassphrases(phrase, passphrases);
+
             //  Derive path keys
 
-            Parallel.ForEach (passphrases, passphrase => {
+            Parallel.For(0, passphrases.Length, i => {
                 if (Global.Done) return;
 
                 PathTree t = new PathTree(tree);
 
-                t.Root.Key = DeriveMasterKey(phrase, passphrase);
+                t.Root.Key = keys[i].key;
 
                 foreach (PathNode child in t.Root.Children) {
                     DeriveChildKeys(child);
@@ -250,7 +238,7 @@ namespace FixMyCrypto {
 
                 List<Address> addrs = new();
 
-                DeriveAddresses(t.Root, phrase, passphrase, addrs);
+                DeriveAddresses(t.Root, phrase, passphrases[i], addrs);
 
                 if (Produce != null) Produce(addrs);
 
@@ -269,19 +257,27 @@ namespace FixMyCrypto {
             return count;
         }
 
+        public RootKey[] DeriveRootKeyBatchPhrases(Phrase[] phrases, string passphrase) {
+            RootKey[] keys = new RootKey[phrases.Length];
+            Parallel.For(0, phrases.Length, i => {
+                keys[i] = new RootKey(DeriveMasterKey(phrases[i], passphrase), phrases[i], passphrase);
+            });
+            return keys;
+        }
+
         public int GetAddressesBatchPhrases(Phrase[] phrases, string passphrase, PathTree tree, ProduceAddress Produce = null) {
 
             int count = 0;
-            object mutex = new();
+            RootKey[] keys = DeriveRootKeyBatchPhrases(phrases, passphrase);
 
             //  Derive path keys
 
-            Parallel.ForEach (phrases, phrase => {
+            Parallel.For(0, phrases.Length, i => {
                 if (Global.Done) return;
 
                 PathTree t = new PathTree(tree);
 
-                t.Root.Key = DeriveMasterKey(phrase, passphrase);
+                t.Root.Key = keys[i].key;
 
                 foreach (PathNode child in t.Root.Children) {
                     DeriveChildKeys(child);
@@ -289,7 +285,7 @@ namespace FixMyCrypto {
 
                 List<Address> addrs = new();
 
-                DeriveAddresses(t.Root, phrase, passphrase, addrs);
+                DeriveAddresses(t.Root, phrases[i], passphrase, addrs);
 
                 if (Produce != null) Produce(addrs);
 
