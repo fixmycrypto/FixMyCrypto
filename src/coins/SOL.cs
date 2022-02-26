@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Text;
+using System.Threading.Tasks;
 using System.Security.Cryptography;
 using Cryptography.ECDSA;
 
@@ -26,6 +27,9 @@ namespace FixMyCrypto {
             string password = phrase.ToPhrase();
             var seed = Cryptography.Pbkdf2_HMAC512(password, salt, 2048, 64);
 
+            return SeedToKey(seed);
+        }
+        private Cryptography.Key SeedToKey(byte[] seed) {
             //  expand_seed_slip10
 
             var hash = Cryptography.HMAC512_Ed25519(seed);
@@ -34,6 +38,34 @@ namespace FixMyCrypto {
             var iR = hash.Slice(32);
 
             return new Cryptography.Key(iL, iR);
+        }
+        public override Object[] DeriveMasterKey_BatchPhrases(Phrase[] phrases, string passphrase) {
+            if (ocl == null) {
+                return base.DeriveMasterKey_BatchPhrases(phrases, passphrase);
+            }
+            else {
+                Seed[] seeds = ocl.Pbkdf2_MultiPhrase(phrases, passphrase);
+                Object[] keys = new object[phrases.Length];
+                Parallel.For(0, phrases.Length, i => {
+                    if (Global.Done) return;
+                    keys[i] = SeedToKey(seeds[i].seed);
+                });
+                return keys;
+            }
+        }
+        public override Object[] DeriveMasterKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
+            if (ocl == null) {
+                return base.DeriveMasterKey_BatchPassphrases(phrase, passphrases);
+            }
+            else {
+                Seed[] seeds = ocl.Pbkdf2_MultiPassphrase(phrase, passphrases);
+                Object[] keys = new object[passphrases.Length];
+                Parallel.For(0, passphrases.Length, i => {
+                    if (Global.Done) return;
+                    keys[i] = SeedToKey(seeds[i].seed);
+                });
+                return keys;
+            }
         }
         protected override Object DeriveChildKey(Object parentKey, uint index) {
             //  https://github.com/LedgerHQ/speculos/blob/c0311aef48412e40741a55f113939469da78e8e5/src/bolos/os_bip32.c#L342
