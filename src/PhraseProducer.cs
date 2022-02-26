@@ -37,9 +37,12 @@ namespace FixMyCrypto {
             this.checkpoint = c;
         }
         private static ConcurrentDictionary<Phrase, byte> testedPhrases = new();
+
+        private long logTotal = 0;
         public void PhraseLog() {
-            if (sw1.ElapsedMilliseconds == 0 || valid == 0) return;
+            if (sw1.ElapsedMilliseconds == 0 || valid == 0 || phraseTotal <= logTotal) return;
             Log.Info($"Phrases Tested total: {phraseTotal}, valid: {valid}, Total phrases/s: {1000*(valid+invalid)/sw1.ElapsedMilliseconds}, Valid phrases/s: {1000*valid/sw1.ElapsedMilliseconds}");
+            logTotal = phraseTotal;
         }
         private void TestPhrase(short[] phraseArray) {
             phraseTotal++;
