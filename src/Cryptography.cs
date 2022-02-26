@@ -77,9 +77,9 @@ namespace FixMyCrypto {
             // * clear the lowest 3 bits
             // * clear the highest bit
             // * set the highest 2nd bit
-            data[0]  &= 0b1111_1000;
-            data[31] &= 0b0111_1111;
-            data[31] |= 0b0100_0000;
+            data[0]  &= 248;
+            data[31] &= 31;
+            data[31] |= 64;
 
             return data;         
         }

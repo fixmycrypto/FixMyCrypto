@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using CardanoSharp.Wallet;
 using CardanoSharp.Wallet.Extensions.Models;
 using CardanoSharp.Wallet.Enums;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 
 namespace FixMyCrypto {
     class PhraseToAddressCardano : PhraseToAddress {
@@ -19,10 +20,10 @@ namespace FixMyCrypto {
             return "m/1852'/1815'/{account}'/2/0";
         }
         public override Object DeriveRootKey(Phrase phrase, string passphrase) {
-            var m = this.Restore(phrase);
-            var masterKey = m.GetRootKey(passphrase);
-
-            return masterKey;
+            byte[] entropy = phrase.Indices.ElevenToEight();
+            var rootKey = Cryptography.Pbkdf2_HMAC512(passphrase, entropy, 4096, 96);
+            rootKey = Cryptography.TweakBits(rootKey);
+            return new CardanoSharp.Wallet.Models.Keys.PrivateKey(rootKey.Slice(0, 64), rootKey.Slice(64));
         }
         protected override Object DeriveChildKey(Object parentKey, uint index) {
             var key = (CardanoSharp.Wallet.Models.Keys.PrivateKey)parentKey;
@@ -96,21 +97,9 @@ namespace FixMyCrypto {
         public override CoinType GetCoinType() { return CoinType.ADATrezor; }
 
         public override Object DeriveRootKey(Phrase phrase, string passphrase) {
-            CardanoSharp.Wallet.Models.Keys.Mnemonic l;
-
-            //  For 24 words, Trezor includes the checksum in the entropy
-
-            if (phrase.Length == 24) {
-                //  See: https://github.com/trezor/trezor-firmware/issues/1387
-                l = Restore(phrase, true);
-            }
-            else {
-                l = Restore(phrase);
-            }
-
-            var rootKey = Cryptography.Pbkdf2_HMAC512(passphrase, l.Entropy, 4096, 96);
+            byte[] entropy = phrase.Indices.ElevenToEight(phrase.Length == 24);
+            var rootKey = Cryptography.Pbkdf2_HMAC512(passphrase, entropy, 4096, 96);
             rootKey = Cryptography.TweakBits(rootKey);
-
             return new CardanoSharp.Wallet.Models.Keys.PrivateKey(rootKey.Slice(0, 64), rootKey.Slice(64));
         }
     }
