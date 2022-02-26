@@ -40,9 +40,8 @@ namespace FixMyCrypto {
                 PauseAndExit(1);
             }
 
-            // OpenCL.LogOpenCLInfo();
-
-            // OpenCL.Benchmark(1024);
+            OpenCL ocl = new OpenCL();
+            ocl.Benchmark(20480);
  
             WebClient.client.Timeout = new System.TimeSpan(0, 0, 60);
 

@@ -41,7 +41,9 @@ namespace FixMyCrypto {
 
         // private CommandQueue commandQueue;
 
-        public void Init_Pbkdf2_Sha512(int maxPassphraseLength = 32, int iters = 2048, int dklen = 64) {
+        public OpenCL(int platformId = 0, int deviceId = 0, int maxPassphraseLength = 32, int iters = 2048, int dklen = 64) {
+            LogOpenCLInfo();
+
             outBufferSize = 64;
             saltBufferSize = maxPassphraseLength;
             wordSize = 8;
@@ -50,8 +52,8 @@ namespace FixMyCrypto {
             this.dklen = dklen;
 
             IEnumerable<Platform> platforms = Platform.GetPlatforms();
-            chosenDevice = platforms.FirstOrDefault().GetDevices(DeviceType.All).FirstOrDefault();
-            Log.Info($"OpenCL device: {chosenDevice.Name} ({chosenDevice.Vendor})");
+            chosenDevice = platforms.ToList()[platformId].GetDevices(DeviceType.All).ToList()[deviceId];
+            Log.Info($"Selected device: {chosenDevice.Name} ({chosenDevice.Vendor})");
             context = Context.CreateContext(chosenDevice);
             
             // Creates a program and then the kernel from it
@@ -187,11 +189,9 @@ namespace FixMyCrypto {
             return retval;
         }
 
-        public static void Benchmark(int tcount = 20480)
+        public void Benchmark(int tcount = 20480)
         {
             Wordlists.Initialize();
-            OpenCL ocl = new OpenCL();
-            ocl.Init_Pbkdf2_Sha512();
 
             {
                 Log.Debug("Benchmark OpenCL phrases...");
@@ -200,7 +200,7 @@ namespace FixMyCrypto {
                 string pp = "";
                 Stopwatch oclsw = new Stopwatch();
                 oclsw.Start();
-                Seed[] oclseeds = ocl.Pbkdf2_MultiPhrase(ph, pp);
+                Seed[] oclseeds = Pbkdf2_MultiPhrase(ph, pp);
                 oclsw.Stop();
                 long ocltime = oclsw.ElapsedMilliseconds;
                 byte[] salt = Cryptography.PassphraseToSalt(pp);
@@ -235,7 +235,7 @@ namespace FixMyCrypto {
                 }
                 Stopwatch oclsw = new Stopwatch();
                 oclsw.Start();
-                Seed[] oclseeds = ocl.Pbkdf2_MultiPassphrase(ph, pp);
+                Seed[] oclseeds = Pbkdf2_MultiPassphrase(ph, pp);
                 oclsw.Stop();
                 long ocltime = oclsw.ElapsedMilliseconds;
                 int badcount = 0;
@@ -281,7 +281,7 @@ namespace FixMyCrypto {
                         device.IsAvailable ? "✔" : "✖");
                 }
             }
-            Log.Info("Supported Platforms & Devices:");
+            Log.Info("OpenCL Supported Platforms & Devices:");
             Log.Info(consoleTable.ToStringAlternative());
         }
         
