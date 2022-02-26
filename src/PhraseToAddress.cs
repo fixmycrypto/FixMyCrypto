@@ -123,24 +123,24 @@ namespace FixMyCrypto {
             }
         }
 
-        public abstract Object DeriveMasterKey(Phrase phrase, string passphrase);
+        public abstract Object DeriveRootKey(Phrase phrase, string passphrase);
 
-        public virtual Object[] DeriveMasterKey_BatchPhrases(Phrase[] phrases, string passphrase)
+        public virtual Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase)
         {
             Object[] keys = new object[phrases.Length];
             Parallel.For(0, phrases.Length, i => {
                 if (Global.Done) return;
-                keys[i] = DeriveMasterKey(phrases[i], passphrase);
+                keys[i] = DeriveRootKey(phrases[i], passphrase);
             });
             return keys;
         }
 
-        public virtual Object[] DeriveMasterKey_BatchPassphrases(Phrase phrase, string[] passphrases)
+        public virtual Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases)
         {
             Object[] keys = new object[passphrases.Length];
             Parallel.For(0, passphrases.Length, i => {
                 if (Global.Done) return;
-                keys[i] = DeriveMasterKey(phrase, passphrases[i]);
+                keys[i] = DeriveRootKey(phrase, passphrases[i]);
             });
             return keys;
         }
@@ -240,7 +240,7 @@ namespace FixMyCrypto {
                 if (Global.Done) break;
 
                 // tree.Root.Key = key.key;
-                tree.Root.Key = DeriveMasterKey(phrase, passphrase);
+                tree.Root.Key = DeriveRootKey(phrase, passphrase);
 
                 foreach (PathNode child in tree.Root.Children) {
                     DeriveChildKeys(child);
@@ -351,7 +351,7 @@ namespace FixMyCrypto {
 
             if (Global.Done) return;
 
-            Object[] keys = DeriveMasterKey_BatchPassphrases(phrase, passphrases);
+            Object[] keys = DeriveRootKey_BatchPassphrases(phrase, passphrases);
 
             //  Enqueue batch
 
@@ -369,7 +369,7 @@ namespace FixMyCrypto {
 
             if (Global.Done) return;
 
-            Object[] keys = DeriveMasterKey_BatchPhrases(phrases, passphrase);
+            Object[] keys = DeriveRootKey_BatchPhrases(phrases, passphrase);
 
             PhraseBatch pb = new PhraseBatch(phrases, passphrase, keys, tree, Produce);
             

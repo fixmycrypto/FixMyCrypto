@@ -176,7 +176,13 @@ namespace FixMyCrypto {
             //  OpenCL
             OpenCL ocl = null;
             if (Settings.OpenCLPlatform >= 0 && Settings.OpenCLDevice >= 0) {
-                ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevice, maxPassphraseLength);
+                try {
+                    ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevice, maxPassphraseLength);
+                }
+                catch (Exception e) {
+                    Log.Error(e.ToString());
+                    PauseAndExit(1);
+                }
             }
 
             System.Timers.Timer timer = new System.Timers.Timer(30 * 1000);

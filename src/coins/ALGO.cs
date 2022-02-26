@@ -45,7 +45,7 @@ namespace FixMyCrypto {
 
             return new Cryptography.Key(entropy.Slice(0, 32), null);
         }
-        public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
+        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
             if (phrase.Length == 25) return this.Restore25(phrase);
 
             //  Ledger: https://github.com/algorand/ledger-app-algorand/blob/master/src/algo_keys.c

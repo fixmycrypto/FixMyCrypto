@@ -30,7 +30,7 @@ namespace FixMyCrypto {
             return paths.ToArray();
         }
  
-        public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
+        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
             //  https://github.com/paritytech/substrate-bip39/blob/c56994c06fe29693cfed445400ddc53bb12e472b/src/lib.rs#L45
             byte[] entropy = phrase.Indices.ElevenToEight();
             byte[] salt = Cryptography.PassphraseToSalt(passphrase);
@@ -102,7 +102,7 @@ namespace FixMyCrypto {
  
         public override CoinType GetCoinType() { return CoinType.DOTLedger; }
 
-        public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
+        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
 
             //  Ledger: https://github.com/algorand/ledger-app-algorand/blob/master/src/algo_keys.c
             return Cryptography.Ledger_expand_seed_ed25519_bip32(phrase, passphrase);

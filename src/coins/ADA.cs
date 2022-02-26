@@ -18,7 +18,7 @@ namespace FixMyCrypto {
         protected override string GetStakePath() {
             return "m/1852'/1815'/{account}'/2/0";
         }
-        public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
+        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
             var m = this.Restore(phrase);
             var masterKey = m.GetRootKey(passphrase);
 
@@ -83,7 +83,7 @@ namespace FixMyCrypto {
         public PhraseToAddressCardanoLedger(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses) {
         }
         public override CoinType GetCoinType() { return CoinType.ADALedger; }
-        public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
+        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
             var key = Cryptography.Ledger_expand_seed_ed25519_bip32(phrase, passphrase);
 
             return new CardanoSharp.Wallet.Models.Keys.PrivateKey(key.data, key.cc);
@@ -95,7 +95,7 @@ namespace FixMyCrypto {
 
         public override CoinType GetCoinType() { return CoinType.ADATrezor; }
 
-        public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
+        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
             CardanoSharp.Wallet.Models.Keys.Mnemonic l;
 
             //  For 24 words, Trezor includes the checksum in the entropy

@@ -20,7 +20,7 @@ namespace FixMyCrypto {
                 };
             return p;
         }
-        public override Object DeriveMasterKey(Phrase phrase, string passphrase) {
+        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
             //  https://github.com/LedgerHQ/speculos/blob/c0311aef48412e40741a55f113939469da78e8e5/src/bolos/os_bip32.c#L112
 
             byte[] salt = Cryptography.PassphraseToSalt(passphrase);
@@ -39,12 +39,12 @@ namespace FixMyCrypto {
 
             return new Cryptography.Key(iL, iR);
         }
-        public override Object[] DeriveMasterKey_BatchPhrases(Phrase[] phrases, string passphrase) {
+        public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
             if (ocl == null) {
-                return base.DeriveMasterKey_BatchPhrases(phrases, passphrase);
+                return base.DeriveRootKey_BatchPhrases(phrases, passphrase);
             }
             else {
-                Seed[] seeds = ocl.Pbkdf2_MultiPhrase(phrases, passphrase);
+                Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPhrase(phrases, passphrase);
                 Object[] keys = new object[phrases.Length];
                 Parallel.For(0, phrases.Length, i => {
                     if (Global.Done) return;
@@ -53,12 +53,12 @@ namespace FixMyCrypto {
                 return keys;
             }
         }
-        public override Object[] DeriveMasterKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
+        public override Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
             if (ocl == null) {
-                return base.DeriveMasterKey_BatchPassphrases(phrase, passphrases);
+                return base.DeriveRootKey_BatchPassphrases(phrase, passphrases);
             }
             else {
-                Seed[] seeds = ocl.Pbkdf2_MultiPassphrase(phrase, passphrases);
+                Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPassphrase(phrase, passphrases);
                 Object[] keys = new object[passphrases.Length];
                 Parallel.For(0, passphrases.Length, i => {
                     if (Global.Done) return;

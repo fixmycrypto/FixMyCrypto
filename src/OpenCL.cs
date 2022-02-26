@@ -62,17 +62,17 @@ namespace FixMyCrypto {
             code = code.Replace("<ctBufferSize_bytes>", $"{saltBufferSize}");
             code = code.Replace("<word_size>", $"{wordSize}");
 
-            Log.Info("Compiling OpenCL script...");
+            Log.Info("Compiling OpenCL scripts...");
             program = context.CreateAndBuildProgramFromString(code);
             Log.Info("OpenCL Compiled");
         }
 
         public int GetBatchSize() {
             //  TODO
-            return 20480;
+            return 16384;
         }
 
-        public Seed[] Pbkdf2_MultiPhrase(Phrase[] phrases, string passphrase, int iters = 2048, int dklen = 64) {
+        public Seed[] Pbkdf2_Sha512_MultiPhrase(Phrase[] phrases, string passphrase, int iters = 2048, int dklen = 64) {
             byte[] data = new byte[phrases.Length * (wordSize + inBufferSize)];
             BinaryWriter w = new(new MemoryStream(data));
             for (int i = 0; i < phrases.Length; i++) {
@@ -143,7 +143,7 @@ namespace FixMyCrypto {
             return result;
         }
 
-        public Seed[] Pbkdf2_MultiPassphrase(Phrase phrase, string[] passphrases, int iters = 2048, int dklen = 64) {
+        public Seed[] Pbkdf2_Sha512_MultiPassphrase(Phrase phrase, string[] passphrases, int iters = 2048, int dklen = 64) {
             byte[] data = new byte[wordSize + pwdBufferSize];
             BinaryWriter w = new(new MemoryStream(data));
             byte[] pw = phrase.ToPhrase().ToUTF8Bytes();
@@ -195,7 +195,7 @@ namespace FixMyCrypto {
                 string pp = "";
                 Stopwatch oclsw = new Stopwatch();
                 oclsw.Start();
-                Seed[] oclseeds = Pbkdf2_MultiPhrase(ph, pp);
+                Seed[] oclseeds = Pbkdf2_Sha512_MultiPhrase(ph, pp);
                 oclsw.Stop();
                 long ocltime = oclsw.ElapsedMilliseconds;
                 byte[] salt = Cryptography.PassphraseToSalt(pp);
@@ -230,7 +230,7 @@ namespace FixMyCrypto {
                 }
                 Stopwatch oclsw = new Stopwatch();
                 oclsw.Start();
-                Seed[] oclseeds = Pbkdf2_MultiPassphrase(ph, pp);
+                Seed[] oclseeds = Pbkdf2_Sha512_MultiPassphrase(ph, pp);
                 oclsw.Stop();
                 long ocltime = oclsw.ElapsedMilliseconds;
                 int badcount = 0;
