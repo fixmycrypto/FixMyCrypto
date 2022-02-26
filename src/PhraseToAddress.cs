@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace FixMyCrypto {
@@ -69,6 +70,38 @@ namespace FixMyCrypto {
         protected OpenCL ocl = null;
         protected MultiPassphrase mp = null;
         protected long mpCount = 0;
+
+        private class Batch {
+            public Object[] keys;
+
+            public PathTree tree;
+
+            public ProduceAddress produceAddress;
+            
+            public Batch (Object[] keys, PathTree tree, ProduceAddress produceAddress) {
+                this.keys = keys;
+                this.tree = tree;
+                this.produceAddress = produceAddress;
+            }
+        }
+        private class PhraseBatch : Batch {
+            public Phrase[] phrases;
+            public string passphrase;
+
+            public PhraseBatch(Phrase[] phrases, string passphrase, Object[] keys, PathTree tree, ProduceAddress produceAddress) : base(keys, tree, produceAddress) {
+                this.phrases = phrases;
+                this.passphrase = passphrase;
+            }
+        }
+        private class PassphraseBatch : Batch {
+            public Phrase phrase;
+            public string[] passphrases;
+            public PassphraseBatch(Phrase phrase, string[] passphrases, Object[] keys, PathTree tree, ProduceAddress produceAddress) : base(keys, tree, produceAddress) {
+                this.phrase = phrase;
+                this.passphrases = passphrases;
+            }
+        }
+        private BlockingCollection<Batch> batchQueue = new BlockingCollection<Batch>(Settings.Threads);
 
         protected PhraseToAddress(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) {
             this.phraseQueue = phrases;
@@ -241,86 +274,111 @@ namespace FixMyCrypto {
 
         public delegate void ProduceAddress(List<Address> addresses);
 
-        public int GetAddressesBatchPassphrases(Phrase phrase, string[] passphrases, PathTree tree, ProduceAddress Produce) {
+        public void ProcessBatch() {
+            while (!Global.Done) {
+                Batch batch = null;
 
-            if (Global.Done) return 0;
+                batchQueue.TryTake(out batch, 10);
 
-            int count = 0;
+                if (batch == null) continue;
+
+                if (batch is PhraseBatch) {
+                    PhraseBatch pb = batch as PhraseBatch;
+
+                    Parallel.For(0, pb.phrases.Length, i => {
+                        if (Global.Done) return;
+
+                        PathTree t = new PathTree(pb.tree);
+
+                        t.Root.Key = pb.keys[i];
+
+                        foreach (PathNode child in t.Root.Children) {
+                            DeriveChildKeys(child);
+                        }
+
+                        List<Address> addrs = new();
+
+                        DeriveAddresses(t.Root, pb.phrases[i], pb.passphrase, addrs);
+
+                        if (Produce != null) Produce(addrs);
+
+                        lock(mutex) { 
+                            count += addrs.Count; 
+                        }
+                    });
+
+                    lock(mutex) {
+                        lastPhrase = pb.phrases[pb.phrases.Length - 1];
+                        lastPassphrase = pb.passphrase;
+                    }
+                }
+                else if (batch is PassphraseBatch) {
+                    PassphraseBatch pb = batch as PassphraseBatch;
+
+                    Parallel.For(0, pb.passphrases.Length, i => {
+                        if (Global.Done) return;
+
+                        PathTree t = new PathTree(pb.tree);
+
+                        t.Root.Key = pb.keys[i];
+
+                        foreach (PathNode child in t.Root.Children) {
+                            DeriveChildKeys(child);
+                        }
+
+                        List<Address> addrs = new();
+
+                        DeriveAddresses(t.Root, pb.phrase, pb.passphrases[i], addrs);
+
+                        if (pb.produceAddress != null) pb.produceAddress(addrs);
+
+                        lock(mutex) {
+                            count += addrs.Count;
+                            passphraseTested++;
+                        }
+                    });
+
+                    lock(mutex) {
+                        lastPhrase = pb.phrase;
+                        lastPassphrase = pb.passphrases[pb.passphrases.Length - 1];
+                        passphraseDone = passphraseTested;
+                    }
+                }
+            }
+        }
+
+        public void GetAddressesBatchPassphrases(Phrase phrase, string[] passphrases, PathTree tree, ProduceAddress Produce) {
+
+            if (Global.Done) return;
 
             Object[] keys = DeriveMasterKey_BatchPassphrases(phrase, passphrases);
 
-            //  Derive path keys
+            //  Enqueue batch
 
-            Parallel.For(0, passphrases.Length, i => {
-                if (Global.Done) return;
-
-                PathTree t = new PathTree(tree);
-
-                t.Root.Key = keys[i];
-
-                foreach (PathNode child in t.Root.Children) {
-                    DeriveChildKeys(child);
-                }
-
-                List<Address> addrs = new();
-
-                DeriveAddresses(t.Root, phrase, passphrases[i], addrs);
-
-                if (Produce != null) Produce(addrs);
-
-                lock(mutex) {
-                    count += addrs.Count;
-                    passphraseTested++;
-                }
-            });
-
-            lock(mutex) {
-                lastPhrase = phrase;
-                lastPassphrase = passphrases[passphrases.Length - 1];
-                passphraseDone = passphraseTested;
+            PassphraseBatch pb = new PassphraseBatch(phrase, passphrases, keys, tree, Produce);
+            
+            try {
+                batchQueue.Add(pb);
             }
-
-            return count;
+            catch (InvalidOperationException) {
+                return;
+            }
         }
 
-        public int GetAddressesBatchPhrases(Phrase[] phrases, string passphrase, PathTree tree, ProduceAddress Produce = null) {
+        public void GetAddressesBatchPhrases(Phrase[] phrases, string passphrase, PathTree tree, ProduceAddress Produce = null) {
 
-            if (Global.Done) return 0;
-
-            int count = 0;
+            if (Global.Done) return;
 
             Object[] keys = DeriveMasterKey_BatchPhrases(phrases, passphrase);
 
-            //  Derive path keys
-
-            Parallel.For(0, phrases.Length, i => {
-                if (Global.Done) return;
-
-                PathTree t = new PathTree(tree);
-
-                t.Root.Key = keys[i];
-
-                foreach (PathNode child in t.Root.Children) {
-                    DeriveChildKeys(child);
-                }
-
-                List<Address> addrs = new();
-
-                DeriveAddresses(t.Root, phrases[i], passphrase, addrs);
-
-                if (Produce != null) Produce(addrs);
-
-                lock(mutex) { 
-                    count += addrs.Count; 
-                }
-            });
-
-            lock(mutex) {
-                lastPhrase = phrases[phrases.Length - 1];
-                lastPassphrase = passphrase;
+            PhraseBatch pb = new PhraseBatch(phrases, passphrase, keys, tree, Produce);
+            
+            try {
+                batchQueue.Add(pb);
             }
-
-            return count;
+            catch (InvalidOperationException) {
+                return;
+            }
         }
         public abstract string[] GetDefaultPaths(string[] knownAddresses);
         public List<Address> GetAddressList(string phrase, string passphrase, int account, int index, string path = null) {
@@ -337,9 +395,11 @@ namespace FixMyCrypto {
             if (count > 0) Log.Info("P2A done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, keys/s: {1000*count/stopWatch.ElapsedMilliseconds}, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
             count = 0;
         }
+        private long logTotal = 0;
         public void PassphraseLog() {
-            if (stopWatch.ElapsedMilliseconds == 0 || (passphraseTested - passphraseStart) == 0 || passphraseTotal == 0) return;
+            if (stopWatch.ElapsedMilliseconds == 0 || (passphraseTested - passphraseStart) == 0 || passphraseTotal == 0 || passphraseTested <= logTotal) return;
             Log.Info($"Passphrases tested {passphraseTested}/{passphraseTotal} ({100.0*passphraseTested/passphraseTotal:F2}%), passphrases/s: {1000*(passphraseTested - passphraseStart)/stopWatch.ElapsedMilliseconds}");
+            logTotal = passphraseTested;
         }
         public void Consume() {
             Log.Debug("P2A start");
@@ -371,6 +431,10 @@ namespace FixMyCrypto {
             if (ocl != null) batchSize = ocl.GetBatchSize();
             Queue<Phrase> phraseBatch = new(batchSize);
             Queue<string> passphraseBatch = new(batchSize);
+
+            //  Start batch thread
+            Thread t = new Thread(ProcessBatch);
+            t.Start();
 
             stopWatch.Start();
 
@@ -432,7 +496,7 @@ namespace FixMyCrypto {
                                 if (passphraseBatch.Count >= batchSize) {
                                     string[] passphrases = passphraseBatch.ToArray();
                                     passphraseBatch.Clear();
-                                    count += GetAddressesBatchPassphrases(w.phrase, passphrases, tree, Produce);
+                                    GetAddressesBatchPassphrases(w.phrase, passphrases, tree, Produce);
                                 }
                             }
 
@@ -440,7 +504,7 @@ namespace FixMyCrypto {
                             if (passphraseBatch.Count > 0 && !Global.Done) {
                                 string[] passphrases = passphraseBatch.ToArray();
                                 passphraseBatch.Clear();
-                                count += GetAddressesBatchPassphrases(w.phrase, passphrases, tree, Produce);
+                                GetAddressesBatchPassphrases(w.phrase, passphrases, tree, Produce);
                             }
 
                             passphraseLogger.Stop();
@@ -450,7 +514,7 @@ namespace FixMyCrypto {
                             if (phraseBatch.Count >= batchSize) {
                                 Phrase[] phrases = phraseBatch.ToArray();
                                 phraseBatch.Clear();
-                                count += GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
+                                GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
                             }
                         }
                     }
@@ -466,7 +530,7 @@ namespace FixMyCrypto {
 
                     Phrase[] phrases = phraseBatch.ToArray();
                     phraseBatch.Clear();
-                    count += GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
+                    GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
                 }
             }
 
@@ -475,11 +539,14 @@ namespace FixMyCrypto {
             if (phraseBatch.Count > 0) {
                 Phrase[] phrases = phraseBatch.ToArray();
                 phraseBatch.Clear();
-                count += GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
+                GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
             }
+
+            batchQueue.CompleteAdding();
 
             passphraseLogger.Stop();
             Finish();
+            t.Join();
             stopWatch.Stop();
         }
 

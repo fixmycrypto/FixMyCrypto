@@ -124,16 +124,11 @@ namespace FixMyCrypto {
                 MemoryBuffer outBuffer = context.CreateBuffer<byte>(MemoryFlag.WriteOnly, outSize);
 
                 using (CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevice)) {
-                    // result = Task.Run(async() => {
-                        // Sets the arguments of the kernel
-                        kernel.SetKernelArgument(0, inBuffer);
-                        kernel.SetKernelArgument(1, saltBuffer);
-                        kernel.SetKernelArgument(2, outBuffer);
-                        // await commandQueue.EnqueueNDRangeKernelAsync(kernel, 1, phrases.Length);
-                        // return await commandQueue.EnqueueReadBufferAsync<byte>(outBuffer, outSize);
-                        commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
-                        result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
-                    // }).Result;
+                    kernel.SetKernelArgument(0, inBuffer);
+                    kernel.SetKernelArgument(1, saltBuffer);
+                    kernel.SetKernelArgument(2, outBuffer);
+                    commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
+                    result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
                 }
 
                 inBuffer.Dispose();
@@ -285,68 +280,7 @@ namespace FixMyCrypto {
             Log.Info(consoleTable.ToStringAlternative());
         }
         
-        public static void Test() {
-            IEnumerable<Platform> platforms = Platform.GetPlatforms();
-            Device chosenDevice = platforms.FirstOrDefault().GetDevices(DeviceType.All).FirstOrDefault();
-            Console.WriteLine($"Using: {chosenDevice.Name} ({chosenDevice.Vendor})");
-            using (Context context = Context.CreateContext(chosenDevice))
-            {
-                string code = @"
-                    __kernel void matvec_mult(__global float4* matrix,
-                                              __global float4* vector,
-                                              __global float* result) {
-                        int i = get_global_id(0);
-                        result[i] = dot(matrix[i], vector[0]);
-                    }";
-
-                // Creates a program and then the kernel from it
-                using (Program program = context.CreateAndBuildProgramFromString(code))
-                {
-                    using (Kernel kernel = program.CreateKernel("matvec_mult"))
-                    {
-                        // Creates the memory objects for the input arguments of the kernel
-                        MemoryBuffer matrixBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, new float[]
-                        {
-                             0f,  2f,  4f,  6f,
-                             8f, 10f, 12f, 14f,
-                            16f, 18f, 20f, 22f,
-                            24f, 26f, 28f, 30f
-                        });
-                        MemoryBuffer vectorBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, new float[] { 0f, 3f, 6f, 9f });
-                        MemoryBuffer resultBuffer = context.CreateBuffer<float>(MemoryFlag.WriteOnly, 4);
-
-                        // Tries to execute the kernel
-                        try
-                        {
-                            // Sets the arguments of the kernel
-                            kernel.SetKernelArgument(0, matrixBuffer);
-                            kernel.SetKernelArgument(1, vectorBuffer);
-                            kernel.SetKernelArgument(2, resultBuffer);
-                            
-                            // Creates a command queue, executes the kernel, and retrieves the result
-                            using (CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevice))
-                            {
-                                commandQueue.EnqueueNDRangeKernel(kernel, 1, 4);
-                                float[] resultArray = commandQueue.EnqueueReadBuffer<float>(resultBuffer, 4);
-                                Console.WriteLine($"Result: ({string.Join(", ", resultArray)})");
-                            }
-                        }
-                        catch (OpenClException exception)
-                        {
-                            Console.WriteLine(exception.Message);
-                        }
-
-                        // Disposes of the memory objects
-                        matrixBuffer.Dispose();
-                        vectorBuffer.Dispose();
-                        resultBuffer.Dispose();
-                    }
-                }
-            }
-            
-        }
-
-
+        //  https://github.com/bkerler/opencl_brute
         private static string pbkdf2_cl = @"
 /*
     pbkdf2 and HMAC implementation
