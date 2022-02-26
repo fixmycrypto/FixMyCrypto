@@ -67,10 +67,19 @@ namespace FixMyCrypto {
         long passphraseTested = 0, passphraseTotal = 0, passphraseDone = 0, passphraseStart = 0;
         object mutex = new();
         protected OpenCL ocl = null;
+        protected MultiPassphrase mp = null;
+        protected long mpCount = 0;
 
         protected PhraseToAddress(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) {
             this.phraseQueue = phrases;
             this.addressQueue = addresses;
+        }
+        public void SetOpenCL(OpenCL ocl) {
+            this.ocl = ocl;
+        }
+        public void SetPassphrase(MultiPassphrase mp, long mpCount) {
+            this.mp = mp;
+            this.mpCount = mpCount;
         }
         public void SetCheckpoint(Checkpoint c) {
             checkpoint = c;
@@ -234,6 +243,8 @@ namespace FixMyCrypto {
 
         public int GetAddressesBatchPassphrases(Phrase phrase, string[] passphrases, PathTree tree, ProduceAddress Produce) {
 
+            if (Global.Done) return 0;
+
             int count = 0;
 
             Object[] keys = DeriveMasterKey_BatchPassphrases(phrase, passphrases);
@@ -273,6 +284,8 @@ namespace FixMyCrypto {
         }
 
         public int GetAddressesBatchPhrases(Phrase[] phrases, string passphrase, PathTree tree, ProduceAddress Produce = null) {
+
+            if (Global.Done) return 0;
 
             int count = 0;
 
@@ -333,10 +346,20 @@ namespace FixMyCrypto {
 
             PathTree tree = CreateTree(Settings.Paths, Settings.Accounts, Settings.Indices);
 
-            //  Generate passphrase list
-            MultiPassphrase p = new MultiPassphrase(Settings.Passphrases);
+            MultiPassphrase p;
+            long passphraseCount;
             string passphrase = null;
-            long passphraseCount = p.GetCount();
+
+            //  Generate passphrase list
+            if (this.mp != null && this.mpCount > 0) {
+                p = this.mp;
+                passphraseCount = this.mpCount;
+            }
+            else {
+                p = new MultiPassphrase(Settings.Passphrases);
+                passphraseCount = p.GetCount();
+            }
+
             if (passphraseCount == 1) {
                 foreach (string s in p) {
                     passphrase = s;
@@ -345,6 +368,7 @@ namespace FixMyCrypto {
             }
 
             int batchSize = 1024;
+            if (ocl != null) batchSize = ocl.GetBatchSize();
             Queue<Phrase> phraseBatch = new(batchSize);
             Queue<string> passphraseBatch = new(batchSize);
 
@@ -377,7 +401,7 @@ namespace FixMyCrypto {
                             passphraseTotal = passphraseCount;
                             passphraseLogger.Start();
                             IEnumerator<string> e = p.GetEnumerator();
-                            while (e.MoveNext()) {
+                            while (e.MoveNext() && !Global.Done) {
                                 string current = e.Current;
 
                                 //  If checkpoint is set, skip passphrases until we reach the checkpoint
@@ -413,7 +437,7 @@ namespace FixMyCrypto {
                             }
 
                             //  Finish remaining in batch
-                            if (passphraseBatch.Count > 0) {
+                            if (passphraseBatch.Count > 0 && !Global.Done) {
                                 string[] passphrases = passphraseBatch.ToArray();
                                 passphraseBatch.Clear();
                                 count += GetAddressesBatchPassphrases(w.phrase, passphrases, tree, Produce);

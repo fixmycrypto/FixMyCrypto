@@ -67,6 +67,9 @@ namespace FixMyCrypto {
 
         public static string TopologyFile { get { if (result != null) return result.topologyFile; else return null; } }
 
+        public static int OpenCLPlatform {get { if (result != null && result.platform != null) return (int)result.platform.Value; else return -1; } }
+        public static int OpenCLDevice {get { if (result != null && result.device != null) return (int)result.device.Value; else return -1; } }
+
         public static string GetApiPath(CoinType coin) {
             switch (coin) {
                 case CoinType.ADA:

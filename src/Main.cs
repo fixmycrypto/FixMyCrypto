@@ -40,8 +40,8 @@ namespace FixMyCrypto {
                 PauseAndExit(1);
             }
 
-            OpenCL ocl = new OpenCL();
-            ocl.Benchmark(20480);
+            // OpenCL ocl = new OpenCL();
+            // ocl.Benchmark(20480);
  
             WebClient.client.Timeout = new System.TimeSpan(0, 0, 60);
 
@@ -132,13 +132,19 @@ namespace FixMyCrypto {
             Log.All($"Coin type: {Settings.CoinType}");
             Log.All($"Phrase to test: \"{Settings.Phrase}\"");
 
+            int maxPassphraseLength = 0;
+            long passphraseCount = 0;
+            MultiPassphrase p = null;
+
             if (Settings.Passphrases != null) {
                 foreach (string passphrase in Settings.Passphrases) {
                     Log.All($"passphrase: \"{passphrase}\"");
                 }
 
-                MultiPassphrase p = new MultiPassphrase(Settings.Passphrases);
-                Log.All($"passphrase permutations: {p.GetCount()}");
+                Log.All("Enumerating passphrase...");
+                p = new MultiPassphrase(Settings.Passphrases);
+                (passphraseCount, maxPassphraseLength) = p.GetCountAndMaxLength();
+                Log.All($"passphrase permutations: {passphraseCount}, max length: {maxPassphraseLength}");
 
                 if (!String.IsNullOrEmpty(Settings.TopologyFile)) {
                     p.WriteTopologyFile(Settings.TopologyFile);
@@ -167,6 +173,12 @@ namespace FixMyCrypto {
             
             Log.All($"difficulty: {Settings.Difficulty}, wordDistance: {Settings.WordDistance}");
 
+            //  OpenCL
+            OpenCL ocl = null;
+            if (Settings.OpenCLPlatform >= 0 && Settings.OpenCLDevice >= 0) {
+                ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevice, maxPassphraseLength);
+            }
+
             System.Timers.Timer timer = new System.Timers.Timer(30 * 1000);
             timer.Elapsed += (StringReader, args) => { 
                 if (phraseQueue.Count > 0 || addressQueue.Count > 0) Log.Debug($"Queue status: phrases {phraseQueue.Count} addresses {addressQueue.Count}");
@@ -190,6 +202,10 @@ namespace FixMyCrypto {
                 p2a[i] = PhraseToAddress.Create(Settings.CoinType, phraseQueue, addressQueue);
 
                 if (i == 0) checkpoint.SetPhraseToAddress(p2a[i]);
+
+                if (p != null) p2a[i].SetPassphrase(p, passphraseCount);
+
+                p2a[i].SetOpenCL(ocl);
 
                 if (i == 0 && Settings.KnownAddresses != null) {
                     //  Validate addresses

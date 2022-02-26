@@ -35,25 +35,20 @@ namespace FixMyCrypto {
 
         private Device chosenDevice;
 
-        private int iters;
-
-        private int dklen;
-
         // private CommandQueue commandQueue;
 
-        public OpenCL(int platformId = 0, int deviceId = 0, int maxPassphraseLength = 32, int iters = 2048, int dklen = 64) {
+        public OpenCL(int platformId = 0, int deviceId = 0, int maxPassphraseLength = 32) {
             LogOpenCLInfo();
+            if (platformId < 0 || deviceId < 0) throw new ArgumentException();
 
             outBufferSize = 64;
-            saltBufferSize = maxPassphraseLength;
+            saltBufferSize = 8 + maxPassphraseLength;   //  "mnemonic" + passphrase
             wordSize = 8;
             pwdBufferSize = inBufferSize;
-            this.iters = iters;
-            this.dklen = dklen;
 
             IEnumerable<Platform> platforms = Platform.GetPlatforms();
             chosenDevice = platforms.ToList()[platformId].GetDevices(DeviceType.All).ToList()[deviceId];
-            Log.Info($"Selected device: {chosenDevice.Name} ({chosenDevice.Vendor})");
+            Log.Info($"Selected device ({platformId}, {deviceId}): {chosenDevice.Name} ({chosenDevice.Vendor})");
             context = Context.CreateContext(chosenDevice);
             
             // Creates a program and then the kernel from it
@@ -72,7 +67,12 @@ namespace FixMyCrypto {
             Log.Info("OpenCL Compiled");
         }
 
-        public Seed[] Pbkdf2_MultiPhrase(Phrase[] phrases, string passphrase) {
+        public int GetBatchSize() {
+            //  TODO
+            return 20480;
+        }
+
+        public Seed[] Pbkdf2_MultiPhrase(Phrase[] phrases, string passphrase, int iters = 2048, int dklen = 64) {
             byte[] data = new byte[phrases.Length * (wordSize + inBufferSize)];
             BinaryWriter w = new(new MemoryStream(data));
             for (int i = 0; i < phrases.Length; i++) {
@@ -148,7 +148,7 @@ namespace FixMyCrypto {
             return result;
         }
 
-        public Seed[] Pbkdf2_MultiPassphrase(Phrase phrase, string[] passphrases) {
+        public Seed[] Pbkdf2_MultiPassphrase(Phrase phrase, string[] passphrases, int iters = 2048, int dklen = 64) {
             byte[] data = new byte[wordSize + pwdBufferSize];
             BinaryWriter w = new(new MemoryStream(data));
             byte[] pw = phrase.ToPhrase().ToUTF8Bytes();

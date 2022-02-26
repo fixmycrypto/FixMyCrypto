@@ -554,6 +554,16 @@ namespace FixMyCrypto {
             return count;
         }   
 
+        public (long, int) GetCountAndMaxLength() {
+            long count = 0;
+            int maxLength = 0;
+            foreach (string r in this) {
+                count++;
+                maxLength = Math.Max(r.Length, maxLength);
+            }
+            return (count, maxLength);
+        }
+
         public void WriteTopologyFile(string path) {
             string topology = "digraph G {\n\toverlap = false\n\tconcentrate = false\n" + GetTopology() + "}\n";
 
@@ -585,6 +595,17 @@ namespace FixMyCrypto {
                 count += p.GetCount();
             }
             return count;
+        }
+
+        public (long, int) GetCountAndMaxLength() {
+            long count = 0;
+            int maxLength = 0;
+            foreach (Passphrase p in passphrases) {
+                (long c, int m) = p.GetCountAndMaxLength();
+                count += c;
+                maxLength = Math.Max(m, maxLength);
+            }
+            return (count, maxLength);
         }
 
         public IEnumerator<string> GetEnumerator() {
