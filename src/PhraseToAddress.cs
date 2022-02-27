@@ -65,7 +65,7 @@ namespace FixMyCrypto {
         string lastPassphrase = null;
         Phrase lastPhrase = null;
         Checkpoint checkpoint = null;
-        long passphraseTested = 0, passphraseTotal = 0, passphraseDone = 0, passphraseStart = 0;
+        long passphraseTested = 0, passphraseTotal = 0, passphraseDone = 0, passphraseStart = 0, phraseTested = 0;
         object mutex = new();
         protected OpenCL ocl = null;
         protected MultiPassphrase mp = null;
@@ -287,7 +287,7 @@ namespace FixMyCrypto {
 
                 if (batch is PhraseBatch) {
                     PhraseBatch pb = batch as PhraseBatch;
-                    Log.Debug($"PhraseBatch {pb.phrases.Length}");
+                    // Log.Debug($"PhraseBatch {pb.phrases.Length}");
 
                     Parallel.For(0, pb.phrases.Length, i => {
                         if (Global.Done) return;
@@ -307,18 +307,19 @@ namespace FixMyCrypto {
                         if (Produce != null) Produce(addrs);
 
                         lock(mutex) { 
-                            count += addrs.Count; 
+                            count += addrs.Count;
                         }
                     });
 
                     lock(mutex) {
                         lastPhrase = pb.phrases[pb.phrases.Length - 1];
                         lastPassphrase = pb.passphrase;
+                        phraseTested += pb.phrases.Length;
                     }
                 }
                 else if (batch is PassphraseBatch) {
                     PassphraseBatch pb = batch as PassphraseBatch;
-                    Log.Debug($"PassphraseBatch {pb.passphrases.Length}");
+                    // Log.Debug($"PassphraseBatch {pb.passphrases.Length}");
 
                     Parallel.For(0, pb.passphrases.Length, i => {
                         if (Global.Done) return;
@@ -400,11 +401,16 @@ namespace FixMyCrypto {
             if (count > 0) Log.Info("P2A done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, keys/s: {1000*count/stopWatch.ElapsedMilliseconds}, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
             count = 0;
         }
-        private long logTotal = 0;
+        private long ppLogTotal = 0, p2aLogTotal = 0;
         public void PassphraseLog() {
-            if (stopWatch.ElapsedMilliseconds == 0 || (passphraseTested - passphraseStart) == 0 || passphraseTotal == 0 || passphraseTested <= logTotal) return;
-            Log.Info($"Passphrases tested {passphraseTested}/{passphraseTotal} ({100.0*passphraseTested/passphraseTotal:F2}%), passphrases/s: {1000*(passphraseTested - passphraseStart)/stopWatch.ElapsedMilliseconds}");
-            logTotal = passphraseTested;
+            if (stopWatch.ElapsedMilliseconds != 0 && phraseTested > p2aLogTotal) {
+                Log.Info($"Phrases Tested total: {phraseTested}, phrases/s: {1000*phraseTested/stopWatch.ElapsedMilliseconds}");
+                ppLogTotal = phraseTested;
+            }
+            if (stopWatch.ElapsedMilliseconds != 0 && (passphraseTested - passphraseStart) != 0 && passphraseTotal != 0 && passphraseTested > p2aLogTotal) {
+                Log.Info($"Passphrases tested {passphraseTested}/{passphraseTotal} ({100.0*passphraseTested/passphraseTotal:F2}%), passphrases/s: {1000*(passphraseTested - passphraseStart)/stopWatch.ElapsedMilliseconds}");
+                p2aLogTotal = passphraseTested;
+            }
         }
         public void Consume() {
             Log.Debug("P2A start");
@@ -513,6 +519,7 @@ namespace FixMyCrypto {
                                 GetAddressesBatchPassphrases(w.phrase, passphrases, tree, Produce);
                             }
 
+                            phraseTested++;
                             passphraseLogger.Stop();
                         }
                         else {

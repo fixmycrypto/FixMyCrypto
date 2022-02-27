@@ -37,12 +37,6 @@ namespace FixMyCrypto {
         }
         private static ConcurrentDictionary<Phrase, byte> testedPhrases = new();
 
-        private long logTotal = 0;
-        public void PhraseLog() {
-            if (sw1.ElapsedMilliseconds == 0 || valid == 0 || phraseTotal <= logTotal) return;
-            Log.Info($"Phrases Tested total: {phraseTotal}, valid: {valid}, Total phrases/s: {1000*(valid+invalid)/sw1.ElapsedMilliseconds}, Valid phrases/s: {1000*valid/sw1.ElapsedMilliseconds}");
-            logTotal = phraseTotal;
-        }
         private void TestPhrase(short[] phraseArray) {
             phraseTotal++;
 
@@ -641,12 +635,6 @@ namespace FixMyCrypto {
         public void ProduceWork() {
             Log.Debug("PP start");
 
-            System.Timers.Timer phraseLogger = new System.Timers.Timer(15 * 1000);
-            phraseLogger.Elapsed += (StringReader, args) => {
-                PhraseLog();
-            };
-            phraseLogger.Start();
-
             int wrongWords = 0, missingWords = 0;
             foreach (string word in this.phrase) {
                 if (word == "?") {
@@ -705,7 +693,6 @@ namespace FixMyCrypto {
                 }
             }
 
-            phraseLogger.Stop();
             sw1.Stop();
             Finish();
         }

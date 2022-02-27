@@ -82,7 +82,7 @@ namespace FixMyCrypto {
         public Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, int iters = 2048, int dklen = 64) {
             if (!programReady) Init(dklen);
 
-            Log.Debug($"password batch size={passwords.Length}");
+            // Log.Debug($"password batch size={passwords.Length}");
 
             byte[] data = new byte[passwords.Length * (wordSize + inBufferSize)];
             BinaryWriter w = new(new MemoryStream(data));
@@ -160,7 +160,7 @@ namespace FixMyCrypto {
 
         public Seed[] Pbkdf2_Sha512_MultiSalt(Phrase[] phrases, string[] passphrases, byte[] password, byte[][] salts, int iters = 2048, int dklen = 64) {
             if (!programReady) Init(dklen);
-            Log.Debug($"salt batch size={salts.Length}");
+            // Log.Debug($"salt batch size={salts.Length}");
 
             byte[] data = new byte[wordSize + pwdBufferSize];
             BinaryWriter w = new(new MemoryStream(data));
