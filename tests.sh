@@ -8,6 +8,8 @@ fi
 
 pushd tests > /dev/null 2>&1
 
+export DYLD_LIBRARY_PATH=/System/Library/Frameworks/OpenCL.framework
+
 for d in */ ; do
     echo Run test $d
 

@@ -23,6 +23,8 @@ namespace FixMyCrypto {
         private Context context;
         private Program program;
 
+        private bool programReady = false;
+
         private int saltBufferSize;     //  max char length of a passphrase
 
         private int inBufferSize = 256; //  max char length of a phrase
@@ -35,22 +37,26 @@ namespace FixMyCrypto {
 
         private Device chosenDevice;
 
+
         // private CommandQueue commandQueue;
 
         public OpenCL(int platformId = 0, int deviceId = 0, int maxPassphraseLength = 32) {
             LogOpenCLInfo();
             if (platformId < 0 || deviceId < 0) throw new ArgumentException();
 
-            outBufferSize = 64;
-            saltBufferSize = 8 + maxPassphraseLength;   //  "mnemonic" + passphrase
-            wordSize = 8;
-            pwdBufferSize = inBufferSize;
-
             IEnumerable<Platform> platforms = Platform.GetPlatforms();
             chosenDevice = platforms.ToList()[platformId].GetDevices(DeviceType.All).ToList()[deviceId];
             Log.Info($"Selected device ({platformId}, {deviceId}): {chosenDevice.Name} ({chosenDevice.Vendor})");
-            context = Context.CreateContext(chosenDevice);
-            
+            context = Context.CreateContext(chosenDevice);            
+
+            saltBufferSize = 8 + maxPassphraseLength;   //  "mnemonic" + passphrase
+        }
+
+        public void Init(int dklen = 64) {
+            outBufferSize = dklen;
+            wordSize = (dklen > 32) ? 8 : 4;
+            pwdBufferSize = inBufferSize;
+
             // Creates a program and then the kernel from it
             string code = buffer_structs_template_cl + hmac512_cl + pbkdf2_cl + pbkdf2_variants;
             code = code.Replace("<hashBlockSize_bits>", "1024");
@@ -65,6 +71,7 @@ namespace FixMyCrypto {
             Log.Info("Compiling OpenCL scripts...");
             program = context.CreateAndBuildProgramFromString(code);
             Log.Info("OpenCL Compiled");
+            programReady = true;
         }
 
         public int GetBatchSize() {
@@ -72,11 +79,15 @@ namespace FixMyCrypto {
             return 16384;
         }
 
-        public Seed[] Pbkdf2_Sha512_MultiPhrase(Phrase[] phrases, string passphrase, int iters = 2048, int dklen = 64) {
-            byte[] data = new byte[phrases.Length * (wordSize + inBufferSize)];
+        public Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, int iters = 2048, int dklen = 64) {
+            if (!programReady) Init(dklen);
+
+            Log.Debug($"password batch size={passwords.Length}");
+
+            byte[] data = new byte[passwords.Length * (wordSize + inBufferSize)];
             BinaryWriter w = new(new MemoryStream(data));
-            for (int i = 0; i < phrases.Length; i++) {
-                byte[] pb = phrases[i].ToPhrase().ToUTF8Bytes();
+            for (int i = 0; i < passwords.Length; i++) {
+                byte[] pb = passwords[i];
                 if (pb.Length > inBufferSize) {
                         throw new Exception("phrase exceeds max length");
                 }
@@ -86,7 +97,6 @@ namespace FixMyCrypto {
             }
             w.Close();
 
-            byte[] salt = Cryptography.PassphraseToSalt(passphrase);
             if (salt.Length > saltBufferSize) {
                 throw new Exception("passphrase max length set incorrectly");
             }
@@ -100,15 +110,20 @@ namespace FixMyCrypto {
             // Log.Debug($"data: {data.ToHexString()}");
             // Log.Debug($"saltData: {saltData.ToHexString()}");
 
-            byte[] result = RunKernel($"pbkdf2_{iters}_{dklen}", data, saltData, phrases.Length);
+            byte[] result = RunKernel($"pbkdf2_{iters}_{dklen}", data, saltData, passwords.Length);
 
             // Console.WriteLine($"ocl: {result.ToHexString()}");
 
-            Seed[] retval = new Seed[phrases.Length];
+            Seed[] retval = new Seed[passwords.Length];
             BinaryReader r = new BinaryReader(new MemoryStream(result));
-            for (int i = 0; i < phrases.Length; i++) {
+            for (int i = 0; i < passwords.Length; i++) {
                 byte[] seed = r.ReadBytes(outBufferSize);
-                retval[i] = new Seed(seed, phrases[i], passphrase);
+                if (phrases.Length == passwords.Length) {
+                    retval[i] = new Seed(seed, phrases[i], passphrases[0]);
+                }
+                else {
+                    retval[i] = new Seed(seed, phrases[0], passphrases[i]);
+                }
             }
             return retval;
         }
@@ -143,43 +158,49 @@ namespace FixMyCrypto {
             return result;
         }
 
-        public Seed[] Pbkdf2_Sha512_MultiPassphrase(Phrase phrase, string[] passphrases, int iters = 2048, int dklen = 64) {
+        public Seed[] Pbkdf2_Sha512_MultiSalt(Phrase[] phrases, string[] passphrases, byte[] password, byte[][] salts, int iters = 2048, int dklen = 64) {
+            if (!programReady) Init(dklen);
+            Log.Debug($"salt batch size={salts.Length}");
+
             byte[] data = new byte[wordSize + pwdBufferSize];
             BinaryWriter w = new(new MemoryStream(data));
-            byte[] pw = phrase.ToPhrase().ToUTF8Bytes();
-            if (pw.Length > pwdBufferSize) {
+            if (password.Length > pwdBufferSize) {
                     throw new Exception("phrase exceeds max length");
             }
-            w.Write((ulong)pw.Length);
-            w.Write(pw);
-            w.Write(new byte[pwdBufferSize - pw.Length]);
+            w.Write((ulong)password.Length);
+            w.Write(password);
+            w.Write(new byte[pwdBufferSize - password.Length]);
             w.Close();
 
-            byte[] saltData = new byte[passphrases.Length * (wordSize + inBufferSize)];
+            byte[] saltData = new byte[salts.Length * (wordSize + inBufferSize)];
             BinaryWriter w2 = new(new MemoryStream(saltData));
-            for (int i = 0; i < passphrases.Length; i++) {
-                byte[] salt = Cryptography.PassphraseToSalt(passphrases[i]);
-                if (salt.Length > inBufferSize) {
+            for (int i = 0; i < salts.Length; i++) {
+                if (salts[i].Length > inBufferSize) {
                     throw new Exception("passphrase max length set incorrectly");
                 }
-                w2.Write((ulong)salt.Length);
-                w2.Write(salt);
-                w2.Write(new byte[inBufferSize - salt.Length]);
+                w2.Write((ulong)salts[i].Length);
+                w2.Write(salts[i]);
+                w2.Write(new byte[inBufferSize - salts[i].Length]);
             }
             w2.Close();
 
             // Log.Debug($"data: {data.ToHexString()}");
             // Log.Debug($"saltData: {saltData.ToHexString()}");
 
-            byte[] result = RunKernel($"pbkdf2_saltlist_{iters}_{dklen}", data, saltData, passphrases.Length);
+            byte[] result = RunKernel($"pbkdf2_saltlist_{iters}_{dklen}", data, saltData, salts.Length);
 
             // Console.WriteLine($"ocl: {result.ToHexString()}");
 
-            Seed[] retval = new Seed[passphrases.Length];
+            Seed[] retval = new Seed[salts.Length];
             BinaryReader r = new BinaryReader(new MemoryStream(result));
-            for (int i = 0; i < passphrases.Length; i++) {
+            for (int i = 0; i < salts.Length; i++) {
                 byte[] seed = r.ReadBytes(outBufferSize);
-                retval[i] = new Seed(seed, phrase, passphrases[i]);
+                if (phrases.Length == salts.Length) {
+                    retval[i] = new Seed(seed, phrases[i], passphrases[0]);
+                }
+                else {
+                    retval[i] = new Seed(seed, phrases[0], passphrases[i]);
+                }
             }
             return retval;
         }
@@ -191,14 +212,16 @@ namespace FixMyCrypto {
             {
                 Log.Debug("Benchmark OpenCL phrases...");
                 Phrase[] ph = new Phrase[tcount];
+                byte[][] passwords = new byte[tcount][];
                 for (int i = 0; i < tcount; i++) ph[i] = new Phrase();
+                for (int i = 0; i < tcount; i++) passwords[i] = ph[i].ToPhrase().ToUTF8Bytes();
                 string pp = "";
+                byte[] salt = Cryptography.PassphraseToSalt(pp);
                 Stopwatch oclsw = new Stopwatch();
                 oclsw.Start();
-                Seed[] oclseeds = Pbkdf2_Sha512_MultiPhrase(ph, pp);
+                Seed[] oclseeds = Pbkdf2_Sha512_MultiPassword(ph, new string[] { pp }, passwords, salt);
                 oclsw.Stop();
                 long ocltime = oclsw.ElapsedMilliseconds;
-                byte[] salt = Cryptography.PassphraseToSalt(pp);
                 int badcount = 0;
                 Seed[] cpuseeds = new Seed[tcount];
                 oclsw.Restart();
@@ -224,13 +247,16 @@ namespace FixMyCrypto {
                 Log.Debug("Benchmark OpenCL passphrases...");
                 Phrase ph = new Phrase();
                 string phrase = ph.ToPhrase();
+                byte[] password = phrase.ToUTF8Bytes();
                 string[] pp = new string[tcount];
                 for (int i = 0; i < tcount; i++) {
                     pp[i] = $"{i}";
                 }
+                byte[][] salts = new byte[tcount][];
+                for (int i = 0; i < tcount; i++) salts[i] = Cryptography.PassphraseToSalt(pp[i]);
                 Stopwatch oclsw = new Stopwatch();
                 oclsw.Start();
-                Seed[] oclseeds = Pbkdf2_Sha512_MultiPassphrase(ph, pp);
+                Seed[] oclseeds = Pbkdf2_Sha512_MultiSalt(new Phrase[] { ph }, pp, password, salts);
                 oclsw.Stop();
                 long ocltime = oclsw.ElapsedMilliseconds;
                 int badcount = 0;
@@ -533,6 +559,16 @@ __kernel void pbkdf2_2048_64(__global inbuf *inbuffer, __global const saltbuf *s
 __kernel void pbkdf2_saltlist_2048_64(__global const pwdbuf *pwdbuffer_arg, __global inbuf *inbuffer, __global outbuf *outbuffer)
 {
     pbkdf2_saltlist(pwdbuffer_arg, inbuffer, outbuffer, 2048, 64);
+}
+
+__kernel void pbkdf2_4096_96(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
+{
+    pbkdf2(inbuffer, saltbuffer, outbuffer, 4096, 96);
+}
+
+__kernel void pbkdf2_saltlist_4096_96(__global const pwdbuf *pwdbuffer_arg, __global inbuf *inbuffer, __global outbuf *outbuffer)
+{
+    pbkdf2_saltlist(pwdbuffer_arg, inbuffer, outbuffer, 4096, 96);
 }
 ";
 

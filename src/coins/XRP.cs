@@ -30,7 +30,10 @@ namespace FixMyCrypto {
                 return base.DeriveRootKey_BatchPhrases(phrases, passphrase);
             }
             else {
-                Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPhrase(phrases, passphrase);
+                byte[][] passwords = new byte[phrases.Length][];
+                for (int i = 0; i < phrases.Length; i++) passwords[i] = phrases[i].ToPhrase().ToUTF8Bytes();
+                byte[] salt = Cryptography.PassphraseToSalt(passphrase);
+                Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPassword(phrases, new string[] { passphrase }, passwords, salt);
                 Object[] keys = new object[phrases.Length];
                 Parallel.For(0, phrases.Length, i => {
                     if (Global.Done) return;
@@ -44,7 +47,10 @@ namespace FixMyCrypto {
                 return base.DeriveRootKey_BatchPassphrases(phrase, passphrases);
             }
             else {
-                Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPassphrase(phrase, passphrases);
+                byte[] password = phrase.ToPhrase().ToUTF8Bytes();
+                byte[][] salts = new byte[passphrases.Length][];
+                for (int i = 0; i < passphrases.Length; i++) salts[i] = Cryptography.PassphraseToSalt(passphrases[i]);
+                Seed[] seeds = ocl.Pbkdf2_Sha512_MultiSalt(new Phrase[] { phrase }, passphrases, password, salts);
                 Object[] keys = new object[passphrases.Length];
                 Parallel.For(0, passphrases.Length, i => {
                     if (Global.Done) return;

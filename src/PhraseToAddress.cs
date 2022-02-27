@@ -284,6 +284,7 @@ namespace FixMyCrypto {
 
                 if (batch is PhraseBatch) {
                     PhraseBatch pb = batch as PhraseBatch;
+                    Log.Debug($"PhraseBatch {pb.phrases.Length}");
 
                     Parallel.For(0, pb.phrases.Length, i => {
                         if (Global.Done) return;
@@ -314,6 +315,7 @@ namespace FixMyCrypto {
                 }
                 else if (batch is PassphraseBatch) {
                     PassphraseBatch pb = batch as PassphraseBatch;
+                    Log.Debug($"PassphraseBatch {pb.passphrases.Length}");
 
                     Parallel.For(0, pb.passphrases.Length, i => {
                         if (Global.Done) return;
@@ -392,6 +394,7 @@ namespace FixMyCrypto {
             Global.Done = true;
             phraseQueue.CompleteAdding();
             addressQueue.CompleteAdding();
+            batchQueue.CompleteAdding();
             if (count > 0) Log.Info("P2A done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, keys/s: {1000*count/stopWatch.ElapsedMilliseconds}, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
             count = 0;
         }
@@ -434,6 +437,7 @@ namespace FixMyCrypto {
 
             //  Start batch thread
             Thread t = new Thread(ProcessBatch);
+            t.Name = "ProcessBatch";
             t.Start();
 
             stopWatch.Start();
@@ -449,7 +453,7 @@ namespace FixMyCrypto {
                 Work w = null;
 
                 queueWaitTime.Start();
-                phraseQueue.TryTake(out w, 10);
+                phraseQueue.TryTake(out w, 100);
                 queueWaitTime.Stop();
 
                 if (w != null) {
@@ -520,13 +524,14 @@ namespace FixMyCrypto {
                     }
                     catch (Exception ex) {
                         Log.Error("P2A error: " + ex.Message);
+                        break;
                     }
                     finally {
                         stopWatch.Stop();
                     }
                 }
-                else if (phraseBatch.Count > 0) {
-                    //  Run a partial batch
+                else if (ocl == null && phraseBatch.Count > 0) {
+                    //  Run a partial cpu batch
 
                     Phrase[] phrases = phraseBatch.ToArray();
                     phraseBatch.Clear();
@@ -542,11 +547,9 @@ namespace FixMyCrypto {
                 GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
             }
 
-            batchQueue.CompleteAdding();
-
+            t.Join();
             passphraseLogger.Stop();
             Finish();
-            t.Join();
             stopWatch.Stop();
         }
 

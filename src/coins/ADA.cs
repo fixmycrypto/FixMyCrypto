@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using CardanoSharp.Wallet;
 using CardanoSharp.Wallet.Extensions.Models;
 using CardanoSharp.Wallet.Enums;
@@ -25,6 +26,44 @@ namespace FixMyCrypto {
             rootKey = Cryptography.TweakBits(rootKey);
             return new CardanoSharp.Wallet.Models.Keys.PrivateKey(rootKey.Slice(0, 64), rootKey.Slice(64));
         }
+        /*
+        public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
+            if (ocl == null) {
+                return base.DeriveRootKey_BatchPhrases(phrases, passphrase);
+            }
+            else {
+                //  ADA reverses password/salt
+                byte[][] salts = new byte[phrases.Length][];
+                for (int i = 0; i < phrases.Length; i++) salts[i] = phrases[i].Indices.ElevenToEight();
+                byte[] password = passphrase.ToUTF8Bytes();
+                Seed[] seeds = ocl.Pbkdf2_Sha512_MultiSalt(phrases, new string[] { passphrase }, password, salts, 4096, 96);
+                Object[] keys = new object[phrases.Length];
+                Parallel.For(0, phrases.Length, i => {
+                    if (Global.Done) return;
+                    keys[i] = new CardanoSharp.Wallet.Models.Keys.PrivateKey(seeds[i].seed.Slice(0, 64), seeds[i].seed.Slice(64));
+                });
+                return keys;
+            }
+        }
+        public override Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
+            if (ocl == null) {
+                return base.DeriveRootKey_BatchPassphrases(phrase, passphrases);
+            }
+            else {
+                //  ADA reverses password/salt
+                byte[] salt = phrase.Indices.ElevenToEight();
+                byte[][] passwords = new byte[passphrases.Length][];
+                for (int i = 0; i < passphrases.Length; i++) passwords[i] = passphrases[i].ToUTF8Bytes();
+                Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPassword(new Phrase[] { phrase }, passphrases, passwords, salt, 4096, 96);
+                Object[] keys = new object[passphrases.Length];
+                Parallel.For(0, passphrases.Length, i => {
+                    if (Global.Done) return;
+                    keys[i] = new CardanoSharp.Wallet.Models.Keys.PrivateKey(seeds[i].seed.Slice(0, 64), seeds[i].seed.Slice(64));
+                });
+                return keys;
+            }
+        }
+        */
         protected override Object DeriveChildKey(Object parentKey, uint index) {
             var key = (CardanoSharp.Wallet.Models.Keys.PrivateKey)parentKey;
             string path = PathNode.GetPath(index);
