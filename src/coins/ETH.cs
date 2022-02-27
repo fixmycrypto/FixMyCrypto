@@ -66,6 +66,9 @@ namespace FixMyCrypto {
             byte[] seed = Cryptography.Pbkdf2_HMAC512(p, salt, 2048, 64);
             return ExtKey.CreateFromSeed(seed);
         }
+        public override bool IsUsingOpenCL() {
+            return (ocl != null);
+        }
         public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
             if (ocl == null) {
                 return base.DeriveRootKey_BatchPhrases(phrases, passphrase);

@@ -28,7 +28,6 @@ namespace FixMyCrypto {
         }
         
         public void Finish() {
-            Global.Done = true;
             queue.CompleteAdding();
             Log.Info("PP done, valid: " + valid + " invalid: " + invalid + $", dupes: {dupes}, total time: {sw1.ElapsedMilliseconds/1000.0:F2}s, Total phrases/s: {1000*(valid+invalid)/sw1.ElapsedMilliseconds}, Valid phrases/s: {1000*valid/sw1.ElapsedMilliseconds}, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
         }

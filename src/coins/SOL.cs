@@ -40,6 +40,9 @@ namespace FixMyCrypto {
             return new Cryptography.Key(iL, iR);
         }
         /*
+        public override bool IsUsingOpenCL() {
+            return (ocl != null);
+        }
         public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
             if (ocl == null) {
                 return base.DeriveRootKey_BatchPhrases(phrases, passphrase);

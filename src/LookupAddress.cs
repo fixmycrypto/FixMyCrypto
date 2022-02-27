@@ -79,7 +79,7 @@ namespace FixMyCrypto {
             int count = 0;
             Stopwatch stopWatch = new Stopwatch();
 
-            while (!Global.Done) {
+            while (!Global.Done && !queue.IsCompleted) {
 
                 Work w = null;
 

@@ -70,6 +70,9 @@ namespace FixMyCrypto {
         protected OpenCL ocl = null;
         protected MultiPassphrase mp = null;
         protected long mpCount = 0;
+        public virtual bool IsUsingOpenCL() {
+            return false;
+        }
 
         private class Batch {
             public Object[] keys;
@@ -275,10 +278,10 @@ namespace FixMyCrypto {
         public delegate void ProduceAddress(List<Address> addresses);
 
         public void ProcessBatch() {
-            while (!Global.Done) {
+            while (!Global.Done && !batchQueue.IsCompleted) {
                 Batch batch = null;
 
-                batchQueue.TryTake(out batch, 10);
+                batchQueue.TryTake(out batch, 100);
 
                 if (batch == null) continue;
 
@@ -391,7 +394,6 @@ namespace FixMyCrypto {
         }
         public abstract CoinType GetCoinType();
         public void Finish() {
-            Global.Done = true;
             phraseQueue.CompleteAdding();
             addressQueue.CompleteAdding();
             batchQueue.CompleteAdding();
@@ -447,7 +449,7 @@ namespace FixMyCrypto {
                 PassphraseLog();
             };
 
-            while (!Global.Done) {
+            while (!Global.Done && !phraseQueue.IsCompleted) {
 
                 //  Dequeue phrase
                 Work w = null;
@@ -530,7 +532,7 @@ namespace FixMyCrypto {
                         stopWatch.Stop();
                     }
                 }
-                else if (ocl == null && phraseBatch.Count > 0) {
+                else if (!IsUsingOpenCL() && phraseBatch.Count > 0) {
                     //  Run a partial cpu batch
 
                     Phrase[] phrases = phraseBatch.ToArray();
@@ -547,9 +549,9 @@ namespace FixMyCrypto {
                 GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
             }
 
-            t.Join();
             passphraseLogger.Stop();
             Finish();
+            t.Join();
             stopWatch.Stop();
         }
 

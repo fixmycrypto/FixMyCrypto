@@ -27,6 +27,10 @@ namespace FixMyCrypto {
             return new CardanoSharp.Wallet.Models.Keys.PrivateKey(rootKey.Slice(0, 64), rootKey.Slice(64));
         }
         /*
+        public override bool IsUsingOpenCL() {
+            return (ocl != null);
+        }
+        
         public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
             if (ocl == null) {
                 return base.DeriveRootKey_BatchPhrases(phrases, passphrase);

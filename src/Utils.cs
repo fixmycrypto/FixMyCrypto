@@ -257,6 +257,7 @@ namespace FixMyCrypto
 
         public static void DoFoundResult(CoinType coin, Address addr) {
             Global.Found = true;
+            Global.Done = true;
 
             Log.All("\n\n\n\n");
 
