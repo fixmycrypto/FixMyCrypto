@@ -21,6 +21,10 @@ namespace FixMyCrypto {
             return "m/1852'/1815'/{account}'/2/0";
         }
         public override Object DeriveRootKey(Phrase phrase, string passphrase) {
+            if (IsUsingOpenCL()) {
+                return DeriveRootKey_BatchPhrases(new Phrase[] { phrase }, passphrase)[0];
+            }
+
             byte[] entropy = phrase.Indices.ElevenToEight();
             var rootKey = Cryptography.Pbkdf2_HMAC512(passphrase, entropy, 4096, 96);
             rootKey = Cryptography.TweakBits(rootKey);

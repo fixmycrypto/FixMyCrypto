@@ -163,6 +163,10 @@ namespace FixMyCrypto {
             return keyType;
         }
         public override Object DeriveRootKey(Phrase phrase, string passphrase) {
+            if (IsUsingOpenCL()) {
+                return DeriveRootKey_BatchPhrases(new Phrase[] { phrase }, passphrase)[0];
+            }
+
             string p = phrase.ToPhrase();
             byte[] salt = Cryptography.PassphraseToSalt(passphrase);
             byte[] seed = Cryptography.Pbkdf2_HMAC512(p, salt, 2048, 64);

@@ -40,8 +40,9 @@ namespace FixMyCrypto {
             }
         }
 
-        public static List<Address> TestDerivation(string phrase, string passphrase, CoinType coin, string path) {
+        public static List<Address> TestDerivation(string phrase, string passphrase, CoinType coin, string path, OpenCL ocl) {
             PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null);
+            p2a.SetOpenCL(ocl);
 
             int account, index;
 
@@ -228,6 +229,63 @@ namespace FixMyCrypto {
                 Mnemonic m = new Mnemonic(p.ToPhrase());
                 if (!m.IsValidChecksum) throw new Exception($"phrase invalid (NBitcoin): {p.ToPhrase()}");
             });
+        }
+
+        public static void TestAddressDerivation(dynamic secrets, bool useOpenCL) {
+            OpenCL ocl = null;
+            if (useOpenCL) {
+                ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevice);
+            }
+            //  Test address derivation (no blockchain)
+            foreach (dynamic coin in secrets) {
+                CoinType ct;
+
+                try {
+                    string name = (string)coin.Name;
+                    if (name.Contains(",")) name = name.Substring(0, name.IndexOf(","));
+                    ct = Settings.GetCoinType(name);
+                }
+                catch (Exception) {
+                    continue;
+                }
+
+                dynamic secret = coin.Value;
+
+                //  Validate phrase
+                Phrase.Validate(secret.phrase.Value);
+
+                //  Test address derivation
+                if (secret.knownAddresses != null) {
+                    foreach (dynamic known in secret.knownAddresses) {
+                        string address = known.address.Value;
+
+                        //  Validate address
+                        PhraseToAddress.ValidateAddress(ct, address);
+
+                        string path = null;
+                        if (known.path != null) path = known.path.Value;
+                        List<Address> addresses = TestDerivation(secret.phrase.Value, secret.passphrase.Value, ct, path, ocl);
+
+                        bool found = false;
+                        foreach (Address a in addresses) {
+                            if (a.address == address && (path == null || a.path == path)) {
+                                Log.Debug($"Derived {ct} address: {address} ({a.path})");
+                                found = true;
+                            }
+                        }
+
+                        if (!found) {
+                            Log.Error($"{ct} failed to derive:\n\t{address} ({path}).\nFound:\n");
+                            foreach (Address a in addresses) {
+                                Log.Error($"\t{a.address} {a.path}");
+                            }
+                            Environment.Exit(1);
+                        }
+                    }
+                }
+
+                Log.Debug();
+            }
         }
 
         public static void Run(int count, string opts) {
@@ -418,55 +476,12 @@ namespace FixMyCrypto {
                 Environment.Exit(1);
             }
 
-            //  Test address derivation (no blockchain)
-            foreach (dynamic coin in secrets) {
-                CoinType ct;
-
-                try {
-                    string name = (string)coin.Name;
-                    if (name.Contains(",")) name = name.Substring(0, name.IndexOf(","));
-                    ct = Settings.GetCoinType(name);
-                }
-                catch (Exception) {
-                    continue;
-                }
-
-                dynamic secret = coin.Value;
-
-                //  Validate phrase
-                Phrase.Validate(secret.phrase.Value);
-
-                //  Test address derivation
-                if (secret.knownAddresses != null) {
-                    foreach (dynamic known in secret.knownAddresses) {
-                        string address = known.address.Value;
-
-                        //  Validate address
-                        PhraseToAddress.ValidateAddress(ct, address);
-
-                        string path = null;
-                        if (known.path != null) path = known.path.Value;
-                        List<Address> addresses = TestDerivation(secret.phrase.Value, secret.passphrase.Value, ct, path);
-
-                        bool found = false;
-                        foreach (Address a in addresses) {
-                            if (a.address == address && (path == null || a.path == path)) {
-                                Log.Debug($"Derived {ct} address: {address} ({a.path})");
-                                found = true;
-                            }
-                        }
-
-                        if (!found) {
-                            Log.Error($"{ct} failed to derive:\n\t{address} ({path}).\nFound:\n");
-                            foreach (Address a in addresses) {
-                                Log.Error($"\t{a.address} {a.path}");
-                            }
-                            Environment.Exit(1);
-                        }
-                    }
-                }
-
-                Log.Debug();
+            //  Test address derivation
+            //  CPU
+            TestAddressDerivation(secrets, false);
+            //  OpenCL
+            if (Settings.OpenCLDevice >= 0 && Settings.OpenCLPlatform >= 0) {
+                TestAddressDerivation(secrets, true);
             }
 
             string[] coins = opts.Split(",");

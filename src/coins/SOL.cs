@@ -21,6 +21,10 @@ namespace FixMyCrypto {
             return p;
         }
         public override Object DeriveRootKey(Phrase phrase, string passphrase) {
+            if (IsUsingOpenCL()) {
+                return DeriveRootKey_BatchPhrases(new Phrase[] { phrase }, passphrase)[0];
+            }
+
             //  https://github.com/LedgerHQ/speculos/blob/c0311aef48412e40741a55f113939469da78e8e5/src/bolos/os_bip32.c#L112
 
             byte[] salt = Cryptography.PassphraseToSalt(passphrase);
@@ -39,7 +43,7 @@ namespace FixMyCrypto {
 
             return new Cryptography.Key(iL, iR);
         }
-        /*
+        
         public override bool IsUsingOpenCL() {
             return (ocl != null);
         }
@@ -77,7 +81,7 @@ namespace FixMyCrypto {
                 return keys;
             }
         }
-        */
+        
         protected override Object DeriveChildKey(Object parentKey, uint index) {
             //  https://github.com/LedgerHQ/speculos/blob/c0311aef48412e40741a55f113939469da78e8e5/src/bolos/os_bip32.c#L342
             //  https://github.com/alepop/ed25519-hd-key/blob/d8c0491bc39e197c86816973e80faab54b9cbc26/src/index.ts#L33
