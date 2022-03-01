@@ -63,7 +63,7 @@ namespace FixMyCrypto {
             if (programReady && dklen == usingDkLen) return;
 
             programReady = false;
-            outBufferSize = dklen;
+            outBufferSize = (dklen == 96) ? 128 : 64;
             wordSize = (dklen > 32) ? 8 : 4;
             pwdBufferSize = inBufferSize;
 
@@ -130,6 +130,7 @@ namespace FixMyCrypto {
             BinaryReader r = new BinaryReader(new MemoryStream(result));
             for (int i = 0; i < passwords.Length; i++) {
                 byte[] seed = r.ReadBytes(outBufferSize);
+                if (outBufferSize > dklen) seed = seed.Slice(0, dklen);
                 if (phrases.Length == passwords.Length) {
                     retval[i] = new Seed(seed, phrases[i], passphrases[0]);
                 }
@@ -204,6 +205,7 @@ namespace FixMyCrypto {
             BinaryReader r = new BinaryReader(new MemoryStream(result));
             for (int i = 0; i < salts.Length; i++) {
                 byte[] seed = r.ReadBytes(outBufferSize);
+                if (outBufferSize > dklen) seed = seed.Slice(0, dklen);
                 if (phrases.Length == salts.Length) {
                     retval[i] = new Seed(seed, phrases[i], passphrases[0]);
                 }

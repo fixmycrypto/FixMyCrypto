@@ -30,13 +30,13 @@ namespace FixMyCrypto {
             rootKey = Cryptography.TweakBits(rootKey);
             return new CardanoSharp.Wallet.Models.Keys.PrivateKey(rootKey.Slice(0, 64), rootKey.Slice(64));
         }
-        /*
+        
         public override bool IsUsingOpenCL() {
             return (ocl != null);
         }
         
         public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
-            if (ocl == null) {
+            if (!IsUsingOpenCL()) {
                 return base.DeriveRootKey_BatchPhrases(phrases, passphrase);
             }
             else {
@@ -48,13 +48,14 @@ namespace FixMyCrypto {
                 Object[] keys = new object[phrases.Length];
                 Parallel.For(0, phrases.Length, i => {
                     if (Global.Done) return;
-                    keys[i] = new CardanoSharp.Wallet.Models.Keys.PrivateKey(seeds[i].seed.Slice(0, 64), seeds[i].seed.Slice(64));
+                    byte[] key = Cryptography.TweakBits(seeds[i].seed);
+                    keys[i] = new CardanoSharp.Wallet.Models.Keys.PrivateKey(key.Slice(0, 64), key.Slice(64));
                 });
                 return keys;
             }
         }
         public override Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
-            if (ocl == null) {
+            if (!IsUsingOpenCL()) {
                 return base.DeriveRootKey_BatchPassphrases(phrase, passphrases);
             }
             else {
@@ -66,12 +67,13 @@ namespace FixMyCrypto {
                 Object[] keys = new object[passphrases.Length];
                 Parallel.For(0, passphrases.Length, i => {
                     if (Global.Done) return;
-                    keys[i] = new CardanoSharp.Wallet.Models.Keys.PrivateKey(seeds[i].seed.Slice(0, 64), seeds[i].seed.Slice(64));
+                    byte[] key = Cryptography.TweakBits(seeds[i].seed);
+                    keys[i] = new CardanoSharp.Wallet.Models.Keys.PrivateKey(key.Slice(0, 64), key.Slice(64));
                 });
                 return keys;
             }
         }
-        */
+        
         protected override Object DeriveChildKey(Object parentKey, uint index) {
             var key = (CardanoSharp.Wallet.Models.Keys.PrivateKey)parentKey;
             string path = PathNode.GetPath(index);
