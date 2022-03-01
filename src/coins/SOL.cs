@@ -48,7 +48,7 @@ namespace FixMyCrypto {
             return (ocl != null);
         }
         public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
-            if (ocl == null) {
+            if (!IsUsingOpenCL()) {
                 return base.DeriveRootKey_BatchPhrases(phrases, passphrase);
             }
             else {
@@ -65,7 +65,7 @@ namespace FixMyCrypto {
             }
         }
         public override Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
-            if (ocl == null) {
+            if (!IsUsingOpenCL()) {
                 return base.DeriveRootKey_BatchPassphrases(phrase, passphrases);
             }
             else {
