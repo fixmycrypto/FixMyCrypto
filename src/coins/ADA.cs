@@ -35,6 +35,9 @@ namespace FixMyCrypto {
             return (ocl != null);
         }
         
+        public override int GetKeyLength() {
+            return 96;
+        }
         public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
             if (!IsUsingOpenCL()) {
                 return base.DeriveRootKey_BatchPhrases(phrases, passphrase);

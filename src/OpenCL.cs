@@ -87,8 +87,11 @@ namespace FixMyCrypto {
         }
 
         public int GetBatchSize() {
-            //  TODO
-            return 16384;
+            int memoryPerWork = (wordSize + inBufferSize) + (wordSize + saltBufferSize) + outBufferSize;
+            int workgroupPerCore = (int)(chosenDevice.LocalMemorySize / memoryPerWork);
+            int size = workgroupPerCore * chosenDevice.MaximumComputeUnits;
+            Log.Debug($"Workgroup size: {size}");
+            return size;
         }
 
         public Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, int iters = 2048, int dklen = 64) {
@@ -296,7 +299,7 @@ namespace FixMyCrypto {
 
         public static void LogOpenCLInfo() {
             IEnumerable<Platform> platforms = Platform.GetPlatforms();
-            ConsoleTable consoleTable = new ConsoleTable("Platform", "OpenCL Version", "Vendor", "Device", "Driver Version", "Bits", "Memory", "Clock Speed", "Available");
+            ConsoleTable consoleTable = new ConsoleTable("Platform", "OpenCL Version", "Vendor", "Device", "Driver Version", "Bits", "Global Memory", "Local Memory", "Clock Speed", "CUs", "Available");
             foreach (Platform platform in platforms)
             {
                 foreach (Device device in platform.GetDevices(DeviceType.All))
@@ -309,7 +312,9 @@ namespace FixMyCrypto {
                         device.DriverVersion,
                         $"{device.AddressBits} Bit",
                         $"{Math.Round(device.GlobalMemorySize / 1024.0f / 1024.0f / 1024.0f, 2)} GiB",
+                        $"{Math.Round(device.LocalMemorySize / 1024.0f, 2)} KiB",
                         $"{device.MaximumClockFrequency} MHz",
+                        device.MaximumComputeUnits,
                         device.IsAvailable ? "✔" : "✖");
                 }
             }

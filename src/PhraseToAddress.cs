@@ -74,6 +74,10 @@ namespace FixMyCrypto {
             return false;
         }
 
+        public virtual int GetKeyLength() {
+            return 64;
+        }
+
         private class Batch {
             public Object[] keys;
 
@@ -281,7 +285,7 @@ namespace FixMyCrypto {
             while (!Global.Done && !batchQueue.IsCompleted) {
                 Batch batch = null;
 
-                batchQueue.TryTake(out batch, 100);
+                batchQueue.TryTake(out batch, 10);
 
                 if (batch == null) continue;
 
@@ -438,8 +442,11 @@ namespace FixMyCrypto {
                 }
             }
 
-            int batchSize = 1024;
-            if (ocl != null) batchSize = ocl.GetBatchSize();
+            if (IsUsingOpenCL()) {
+                ocl.Init_Sha512(GetKeyLength());
+            }
+
+            int batchSize = IsUsingOpenCL() ? ocl.GetBatchSize() : 1024;
             Queue<Phrase> phraseBatch = new(batchSize);
             Queue<string> passphraseBatch = new(batchSize);
 
@@ -461,7 +468,7 @@ namespace FixMyCrypto {
                 Work w = null;
 
                 queueWaitTime.Start();
-                phraseQueue.TryTake(out w, 100);
+                phraseQueue.TryTake(out w, 10);
                 queueWaitTime.Stop();
 
                 if (w != null) {
