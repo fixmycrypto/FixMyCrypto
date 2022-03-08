@@ -28,7 +28,7 @@ namespace FixMyCrypto {
 
         private int saltBufferSize;     //  max char length of a passphrase
 
-        private int inBufferSize = 256; //  max char length of a phrase
+        private int inBufferSize = 128; //  max char length of a phrase
 
         private int pwdBufferSize;
 
@@ -68,6 +68,7 @@ namespace FixMyCrypto {
             pwdBufferSize = inBufferSize;
 
             // Creates a program and then the kernel from it
+            /*
             string code = OpenCL_Bufferstructs.buffer_structs_template_cl + OpenCL_Sha512.hmac512_cl + OpenCL_Pbkdf2.pbkdf2_cl + OpenCL_Pbkdf2.pbkdf2_variants;
             code = code.Replace("<hashBlockSize_bits>", "1024");
             code = code.Replace("<hashDigestSize_bits>", "512");
@@ -77,6 +78,8 @@ namespace FixMyCrypto {
             code = code.Replace("<pwdBufferSize_bytes>", $"{pwdBufferSize}");
             code = code.Replace("<ctBufferSize_bytes>", $"{saltBufferSize}");
             code = code.Replace("<word_size>", $"{wordSize}");
+            */
+            string code = Bip39_Solver_Sha.sha_cl + Bip39_Solver.int_to_address_cl;
 
             Log.Info("Compiling OpenCL scripts...");
             program?.Dispose();
@@ -99,14 +102,14 @@ namespace FixMyCrypto {
 
             // Log.Debug($"password batch size={passwords.Length}");
 
-            byte[] data = new byte[passwords.Length * (wordSize + inBufferSize)];
+            byte[] data = new byte[passwords.Length * (4 + inBufferSize)];
             BinaryWriter w = new(new MemoryStream(data));
             for (int i = 0; i < passwords.Length; i++) {
                 byte[] pb = passwords[i];
                 if (pb.Length > inBufferSize) {
                         throw new Exception("phrase exceeds max length");
                 }
-                w.Write((ulong)pb.Length);
+                w.Write((uint)pb.Length);
                 w.Write(pb);
                 w.Write(new byte[inBufferSize - pb.Length]);
             }
@@ -115,9 +118,9 @@ namespace FixMyCrypto {
             if (salt.Length > saltBufferSize) {
                 throw new Exception("passphrase max length set incorrectly");
             }
-            byte[] saltData = new byte[wordSize + saltBufferSize];
+            byte[] saltData = new byte[4 + saltBufferSize];
             BinaryWriter w2 = new(new MemoryStream(saltData));
-            w2.Write((ulong)salt.Length);
+            w2.Write((uint)salt.Length);
             w2.Write(salt);
             w2.Write(new byte[saltBufferSize - salt.Length]);
             w2.Close();
@@ -133,6 +136,7 @@ namespace FixMyCrypto {
             BinaryReader r = new BinaryReader(new MemoryStream(result));
             for (int i = 0; i < passwords.Length; i++) {
                 byte[] seed = r.ReadBytes(outBufferSize);
+                Console.WriteLine($"seed: {seed.ToHexString()}");
                 if (outBufferSize > dklen) seed = seed.Slice(0, dklen);
                 if (phrases.Length == passwords.Length) {
                     retval[i] = new Seed(seed, phrases[i], passphrases[0]);
