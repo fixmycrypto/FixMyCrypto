@@ -28,7 +28,7 @@ namespace FixMyCrypto {
 
         private int saltBufferSize;     //  max char length of a passphrase
 
-        private int inBufferSize = 128; //  max char length of a phrase
+        private int inBufferSize = 256; //  max char length of a phrase
 
         private int pwdBufferSize;
 
