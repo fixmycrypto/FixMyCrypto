@@ -22,7 +22,7 @@ namespace FixMyCrypto {
         }
         public override Object DeriveRootKey(Phrase phrase, string passphrase) {
             if (IsUsingOpenCL()) {
-                return DeriveRootKey_BatchPhrases(new Phrase[] { phrase }, passphrase)[0];
+                return DeriveRootKey_BatchPassphrases(phrase, new string[] { passphrase })[0];
             }
 
             byte[] entropy = phrase.Indices.ElevenToEight();

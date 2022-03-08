@@ -63,23 +63,23 @@ namespace FixMyCrypto {
             if (programReady && dklen == usingDkLen) return;
 
             programReady = false;
-            outBufferSize = (dklen == 96) ? 128 : 64;
+            outBufferSize = (dklen > 64) ? 128 : 64;
             wordSize = (dklen > 32) ? 8 : 4;
             pwdBufferSize = inBufferSize;
 
             // Creates a program and then the kernel from it
             /*
             string code = OpenCL_Bufferstructs.buffer_structs_template_cl + OpenCL_Sha512.hmac512_cl + OpenCL_Pbkdf2.pbkdf2_cl + OpenCL_Pbkdf2.pbkdf2_variants;
-            code = code.Replace("<hashBlockSize_bits>", "1024");
-            code = code.Replace("<hashDigestSize_bits>", "512");
+            */
+            string code = Bip39_Solver_Sha.sha_cl + Bip39_Solver.int_to_address_cl;
+            // code = code.Replace("<hashBlockSize_bits>", "1024");
+            // code = code.Replace("<hashDigestSize_bits>", "512");
             code = code.Replace("<inBufferSize_bytes>", $"{inBufferSize}");
             code = code.Replace("<outBufferSize_bytes>", $"{outBufferSize}");
             code = code.Replace("<saltBufferSize_bytes>", $"{saltBufferSize}");
             code = code.Replace("<pwdBufferSize_bytes>", $"{pwdBufferSize}");
             code = code.Replace("<ctBufferSize_bytes>", $"{saltBufferSize}");
-            code = code.Replace("<word_size>", $"{wordSize}");
-            */
-            string code = Bip39_Solver_Sha.sha_cl + Bip39_Solver.int_to_address_cl;
+            // code = code.Replace("<word_size>", $"{wordSize}");
 
             Log.Info("Compiling OpenCL scripts...");
             program?.Dispose();
