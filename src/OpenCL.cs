@@ -95,11 +95,14 @@ namespace FixMyCrypto {
         }
 
         public int GetBatchSize() {
+            return 8192;
+            /*
             int memoryPerWork = (wordSize + inBufferSize) + (wordSize + saltBufferSize) + outBufferSize;
             int workgroupPerCore = (int)(chosenDevice.LocalMemorySize / memoryPerWork);
             int size = workgroupPerCore * chosenDevice.MaximumComputeUnits;
             Log.Debug($"Workgroup size: {size}");
             return size;
+            */
         }
 
         public Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, int iters = 2048, int dklen = 64) {
@@ -240,14 +243,15 @@ namespace FixMyCrypto {
             program_bip32derive_ready = true;
         }
 
-        public Cryptography.Key[] Bip32_Derive(byte[][] keys, uint path, int keyLen = 32, int ccLen = 32) {
+        public Cryptography.Key[] Bip32_Derive(Cryptography.Key[] keys, uint path, int keyLen = 32, int ccLen = 32) {
             Init_Bip32Derive();
 
             int length = keyLen + ccLen;
             int count = keys.Length;
             byte[] data = new byte[count * length];
             for (int i = 0; i < count; i++) {
-                Array.Copy(keys[i], 0, data, i * length, length);
+                Array.Copy(keys[i].data, 0, data, i * length, keyLen);
+                Array.Copy(keys[i].cc, 0, data, i * length + keyLen, ccLen);
             }
 
             string kernelName;
@@ -294,27 +298,25 @@ namespace FixMyCrypto {
             }
         }
 
-        public void Benchmark_Bip32Derive(int count = 10240)
+        public void Benchmark_Bip32Derive(uint path, int count = 10240)
         {
-            uint path = 1; //PathNode.Harden(1);
-            byte[][] src = new byte[count][];
+            Log.Info($"Benchmark_Bip32Derive path={path}");
+            Cryptography.Key[] src = new Cryptography.Key[count];
             ExtKey[] ex = new ExtKey[count];
             ExtKey[] child = new ExtKey[count];
-            for (int i = 0; i < count; i++) {
+            Parallel.For(0, count, i => {
                 Phrase p = new Phrase();
                 byte[] seed = Cryptography.Pbkdf2_HMAC512(p.ToPhrase(), Cryptography.PassphraseToSalt(""), 2048, 64);
                 ex[i] = ExtKey.CreateFromSeed(seed);
 
-                src[i] = new byte[64];
-                Array.Copy(ex[i].PrivateKey.ToBytes(), src[i], 32);
-                Array.Copy(ex[i].ChainCode, 0, src[i], 32, 32);
-            }
+                src[i] = new(ex[i].PrivateKey.ToBytes(), ex[i].ChainCode);
+            });
 
             Stopwatch sw = new Stopwatch();
             sw.Start();
-            for (int i = 0; i < count; i++) {
+            Parallel.For(0, count, i => {
                 child[i] = ex[i].Derive(path);
-            }
+            });
             sw.Stop();
             long cpu = sw.ElapsedMilliseconds;
 
@@ -337,7 +339,7 @@ namespace FixMyCrypto {
                     Log.Error($"CC{i} OCL {keys[i].cc.ToHexString()} != ExtKey {child[i].ChainCode.ToHexString()}");
                 }
             }
-            Log.Info($"cputime={cpu} ocltime={ocl} badkey={badkey} badcc={badcc}");
+            Log.Info($"Benchmark_Bip32Derive() cputime={cpu} ocltime={ocl} badkey={badkey} badcc={badcc}");
             if (badkey > 0 || badcc > 0) throw new Exception("bad results in Benchmark_Bip32Derive()");
         }
 
@@ -346,7 +348,7 @@ namespace FixMyCrypto {
             Wordlists.Initialize();
 
             {
-                Log.Debug("Benchmark OpenCL phrases...");
+                Log.Info("Benchmark OpenCL phrases...");
                 Phrase[] ph = new Phrase[tcount];
                 byte[][] passwords = new byte[tcount][];
                 for (int i = 0; i < tcount; i++) ph[i] = new Phrase();
@@ -376,12 +378,12 @@ namespace FixMyCrypto {
                         badcount++;
                     }
                 }
-                Log.Debug($"badcount={badcount} ocltime={ocltime} cputime={cputime}");
+                Log.Info($"Benchmark_Pbkdf2() phrases ocltime={ocltime} cputime={cputime} badcount={badcount}");
                 if (badcount > 0) throw new SystemException("failed Benchmark_Pbkdf2() phrases");
             }
 
             {
-                Log.Debug("Benchmark OpenCL passphrases...");
+                Log.Info("Benchmark OpenCL passphrases...");
                 Phrase ph = new Phrase();
                 string phrase = ph.ToPhrase();
                 byte[] password = phrase.ToUTF8Bytes();
@@ -415,7 +417,7 @@ namespace FixMyCrypto {
                         badcount++;
                     }
                 }
-                Log.Debug($"badcount={badcount} ocltime={ocltime} cputime={cputime}");
+                Log.Info($"Benchmark_Pbkdf2() passphrases ocltime={ocltime} cputime={cputime} badcount={badcount}");
                 if (badcount > 0) throw new SystemException("failed Benchmark_Pbkdf2() passphrases");
             }
 
