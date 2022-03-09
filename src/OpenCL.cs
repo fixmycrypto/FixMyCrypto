@@ -25,6 +25,9 @@ namespace FixMyCrypto {
 
         private Program program_bip32derive;
 
+        private CommandQueue commandQueue;
+        private Dictionary<string, Kernel> kernels = new();
+
         private bool program_pbkdf2_ready = false;
 
         private bool program_bip32derive_ready = false;
@@ -53,13 +56,15 @@ namespace FixMyCrypto {
             chosenDevice = platforms.ToList()[platformId].GetDevices(DeviceType.All).ToList()[deviceId];
             Log.Info($"Selected device ({platformId}, {deviceId}): {chosenDevice.Name} ({chosenDevice.Vendor})");
             context = Context.CreateContext(chosenDevice);            
-
+            commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevice);
             saltBufferSize = 8 + maxPassphraseLength;   //  "mnemonic" + passphrase
         }
 
         ~OpenCL() {
             program_pbkdf2?.Dispose();
             program_bip32derive?.Dispose();
+            foreach (Kernel k in kernels.Values) k?.Dispose();
+            commandQueue?.Dispose();
             context?.Dispose();
             chosenDevice?.Dispose();
         }
@@ -159,21 +164,26 @@ namespace FixMyCrypto {
         private byte[] RunKernel(string kernelName, byte[] data, byte[] saltData, int count) {
             byte[] result = null;
 
-            try {
-                using Kernel kernel = program_pbkdf2.CreateKernel(kernelName);
+            Kernel kernel;
+            if (kernels.ContainsKey(kernelName)) {
+                kernel = kernels[kernelName];
+            }
+            else {
+                kernel = program_pbkdf2.CreateKernel(kernelName);
+                kernels[kernelName] = kernel;
+            }
 
+            try {
                 int outSize = outBufferSize * count;
                 using MemoryBuffer inBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, data);
                 using MemoryBuffer saltBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, saltData);
                 using MemoryBuffer outBuffer = context.CreateBuffer<byte>(MemoryFlag.WriteOnly, outSize);
 
-                using (CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevice)) {
-                    kernel.SetKernelArgument(0, inBuffer);
-                    kernel.SetKernelArgument(1, saltBuffer);
-                    kernel.SetKernelArgument(2, outBuffer);
-                    commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
-                    result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
-                }
+                kernel.SetKernelArgument(0, inBuffer);
+                kernel.SetKernelArgument(1, saltBuffer);
+                kernel.SetKernelArgument(2, outBuffer);
+                commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
+                result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
             }
             catch (Exception e) {
                 Log.Error(e.ToString());
@@ -249,10 +259,12 @@ namespace FixMyCrypto {
             int length = keyLen + ccLen;
             int count = keys.Length;
             byte[] data = new byte[count * length];
+            BinaryWriter w = new(new MemoryStream(data));
             for (int i = 0; i < count; i++) {
-                Array.Copy(keys[i].data, 0, data, i * length, keyLen);
-                Array.Copy(keys[i].cc, 0, data, i * length + keyLen, ccLen);
+                w.Write(keys[i].data);
+                w.Write(keys[i].cc);
             }
+            w.Close();
 
             string kernelName;
 
@@ -270,20 +282,25 @@ namespace FixMyCrypto {
             byte[] result;
 
             try {
-                using Kernel kernel = program_bip32derive.CreateKernel(kernelName);
+                Kernel kernel;
+                if (kernels.ContainsKey(kernelName)) {
+                    kernel = kernels[kernelName];
+                }
+                else {
+                    kernel = program_bip32derive.CreateKernel(kernelName);
+                    kernels[kernelName] = kernel;
+                }
 
                 int outSize = length * count;
                 using MemoryBuffer inBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, data);
                 using MemoryBuffer pathBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, paths);
                 using MemoryBuffer outBuffer = context.CreateBuffer<byte>(MemoryFlag.WriteOnly, outSize);
 
-                using (CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevice)) {
-                    kernel.SetKernelArgument(0, inBuffer);
-                    kernel.SetKernelArgument(1, outBuffer);
-                    kernel.SetKernelArgument(2, pathBuffer);
-                    commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
-                    result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
-                }
+                kernel.SetKernelArgument(0, inBuffer);
+                kernel.SetKernelArgument(1, outBuffer);
+                kernel.SetKernelArgument(2, pathBuffer);
+                commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
+                result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
 
                 Cryptography.Key[] ret = new Cryptography.Key[count];
                 BinaryReader r = new BinaryReader(new MemoryStream(result));

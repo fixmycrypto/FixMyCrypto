@@ -156,6 +156,7 @@ namespace FixMyCrypto {
         protected virtual Object[] DeriveChildKey_Batch(Object[] parents, uint index) {
             Object[] keys = new object[parents.Length];
             Parallel.For(0, parents.Length, i => {
+                if (Global.Done) return;
                 keys[i] = DeriveChildKey(parents[i], index);
             });
             return keys;
@@ -178,25 +179,12 @@ namespace FixMyCrypto {
             }
         }
 
-        private void DeriveChildKeys_Batch(PathNode[] nodes) {
-            Object[] parentKeys = new object[nodes.Length];
-            for (int i = 0; i < nodes.Length; i++) {
-                parentKeys[i] = nodes[i].Parent.Key;
-            }
+        private void DeriveChildKeys_Batch(PathNode node) {
+            node.Keys = DeriveChildKey_Batch(node.Parent.Keys, node.Value);
 
-            Object[] childKeys = DeriveChildKey_Batch(parentKeys, nodes[0].Value);
-
-            for (int i = 0; i < nodes.Length; i++) {
-                nodes[i].Key = childKeys[i];
-            }
-
-            for (int i = 0; i < nodes[0].Children.Count; i++) {
-                PathNode[] childNodes = new PathNode[nodes.Length];
-                for (int j = 0; j < nodes.Length; j++) {
-                    childNodes[j] = nodes[j].Children[i];
-                }
-
-                DeriveChildKeys_Batch(childNodes);
+            foreach (PathNode child in node.Children) {
+                if (Global.Done) break;
+                DeriveChildKeys_Batch(child);
             }
         }
 
@@ -213,6 +201,22 @@ namespace FixMyCrypto {
             foreach (PathNode child in node.Children) {
                 if (Global.Done) break;
                 DeriveAddresses(child, phrase, passphrase, addresses);
+            }
+        }
+        private void DeriveAddressesBatch(PathNode node, int index, Phrase phrase, string passphrase, List<Address> addresses) {
+            if (node.End) {
+                node.Key = node.Keys[index];
+                var address = DeriveAddress(node);
+                if (address != null) {
+                    address.phrase = phrase;
+                    address.passphrase = passphrase;
+                    addresses.Add(address);
+                }
+            }
+
+            foreach (PathNode child in node.Children) {
+                if (Global.Done) break;
+                DeriveAddressesBatch(child, index, phrase, passphrase, addresses);
             }
         }
         private List<Address> GetAddressesList(Phrase phrase, string[] passphrases, int account, int index, string[] paths) {
@@ -323,24 +327,17 @@ namespace FixMyCrypto {
                     PhraseBatch pb = batch as PhraseBatch;
                     // Log.Debug($"PhraseBatch {pb.phrases.Length}");
 
-                    PathTree[] trees = new PathTree[pb.phrases.Length];
-                    for (int i = 0; i < pb.phrases.Length; i++) {
-                        trees[i] = new PathTree(pb.tree);
-                        trees[i].Root.Key = pb.keys[i];
-                    }
+                    PathTree t = new PathTree(pb.tree);
+                    t.Root.Keys = pb.keys;
 
-                    for (int i = 0; i < pb.tree.Root.Children.Count; i++) {
-                        PathNode[] children = new PathNode[pb.phrases.Length];
-                        for (int j = 0; j < pb.phrases.Length; j++) {
-                            children[j] = trees[j].Root.Children[i];
-                        }
-                        DeriveChildKeys_Batch(children);
+                    foreach (PathNode child in t.Root.Children) {
+                        DeriveChildKeys_Batch(child);
                     }
 
                     Parallel.For(0, pb.phrases.Length, i => {
                         List<Address> addrs = new();
 
-                        DeriveAddresses(trees[i].Root, pb.phrases[i], pb.passphrase, addrs);
+                        DeriveAddressesBatch(t.Root, i, pb.phrases[i], pb.passphrase, addrs);
 
                         if (Produce != null) Produce(addrs);
 
@@ -359,24 +356,17 @@ namespace FixMyCrypto {
                     PassphraseBatch pb = batch as PassphraseBatch;
                     // Log.Debug($"PassphraseBatch {pb.passphrases.Length}");
 
-                    PathTree[] trees = new PathTree[pb.passphrases.Length];
-                    for (int i = 0; i < pb.passphrases.Length; i++) {
-                        trees[i] = new PathTree(pb.tree);
-                        trees[i].Root.Key = pb.keys[i];
-                    }
+                    PathTree t = new PathTree(pb.tree);
+                    t.Root.Keys = pb.keys;
 
-                    for (int i = 0; i < pb.tree.Root.Children.Count; i++) {
-                        PathNode[] children = new PathNode[pb.passphrases.Length];
-                        for (int j = 0; j < pb.passphrases.Length; j++) {
-                            children[j] = trees[j].Root.Children[i];
-                        }
-                        DeriveChildKeys_Batch(children);
+                    foreach (PathNode child in t.Root.Children) {
+                        DeriveChildKeys_Batch(child);
                     }
 
                     Parallel.For(0, pb.passphrases.Length, i => {
                         List<Address> addrs = new();
 
-                        DeriveAddresses(trees[i].Root, pb.phrase, pb.passphrases[i], addrs);
+                        DeriveAddressesBatch(t.Root, i, pb.phrase, pb.passphrases[i], addrs);
 
                         if (pb.produceAddress != null) pb.produceAddress(addrs);
 

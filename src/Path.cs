@@ -181,14 +181,16 @@ namespace FixMyCrypto {
             return s;
         }
     }
+
     public class PathNode {
         public static uint Hardened = 0x80000000U;
         public static uint RootIndex = 0x7fffffffU;
-        public PathNode Parent { get; private set; }
-        public uint Value { get; }
-        public List<PathNode> Children { get; }
+        public PathNode Parent { get; protected set; }
+        public uint Value { get; protected set; }
+        public List<PathNode> Children { get; protected set; }
         public bool End { get; set; }
         public Object Key { get; set; }
+        public Object[] Keys { get; set; }
 
         public PathNode(PathNode parent, uint prefix) {
             this.Parent = parent;

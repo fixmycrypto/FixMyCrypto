@@ -85,8 +85,8 @@ namespace FixMyCrypto {
             Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
             Parallel.For(0, phrases.Length, i => {
                 if (Global.Done) return;
-                ExtKey ex = ExtKey.CreateFromSeed(seeds[i].seed);
-                keys[i] = new(ex.PrivateKey.ToBytes(), ex.ChainCode);
+                byte[] key = Cryptography.HMAC512_Bitcoin(seeds[i].seed);
+                keys[i] = new Cryptography.Key(key.Slice(0, 32), key.Slice(32));
             });
             return keys;
         }
@@ -102,8 +102,8 @@ namespace FixMyCrypto {
             Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
             Parallel.For(0, passphrases.Length, i => {
                 if (Global.Done) return;
-                ExtKey ex = ExtKey.CreateFromSeed(seeds[i].seed);
-                keys[i] = new(ex.PrivateKey.ToBytes(), ex.ChainCode);
+                byte[] key = Cryptography.HMAC512_Bitcoin(seeds[i].seed);
+                keys[i] = new Cryptography.Key(key.Slice(0, 32), key.Slice(32));
             });
             return keys;
         }

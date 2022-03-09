@@ -73,6 +73,13 @@ namespace FixMyCrypto {
             return HMAC256.ComputeHash(data);
         }
 
+        protected static byte[] bitcoin_seed = Encoding.ASCII.GetBytes("Bitcoin seed");
+
+        public static byte[] HMAC512_Bitcoin(byte[] data) {
+            using HMACSHA512 HMAC512 = new HMACSHA512(bitcoin_seed);
+            return HMAC512.ComputeHash(data);
+        }
+
         public static byte[] TweakBits(byte[] data) {
             // * clear the lowest 3 bits
             // * clear the highest bit

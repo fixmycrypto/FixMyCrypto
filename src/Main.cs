@@ -178,6 +178,8 @@ namespace FixMyCrypto {
             if (Settings.OpenCLPlatform >= 0 && Settings.OpenCLDevice >= 0) {
                 try {
                     ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevice, maxPassphraseLength);
+                    ocl.Init_Sha512();
+                    ocl.Init_Bip32Derive();
                 }
                 catch (Exception e) {
                     Log.Error(e.ToString());
