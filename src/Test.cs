@@ -235,6 +235,8 @@ namespace FixMyCrypto {
             OpenCL ocl = null;
             if (useOpenCL) {
                 ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevice);
+                ocl.Benchmark_Pbkdf2(ocl.GetBatchSize());
+                ocl.Benchmark_Bip32Derive();
             }
             //  Test address derivation (no blockchain)
             foreach (dynamic coin in secrets) {

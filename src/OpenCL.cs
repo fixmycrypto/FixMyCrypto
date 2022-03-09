@@ -1,4 +1,4 @@
-
+using NBitcoin;
 using OpenCl.DotNetCore;
 using OpenCl.DotNetCore.CommandQueues;
 using OpenCl.DotNetCore.Contexts;
@@ -18,12 +18,16 @@ using ConsoleTables;
 
 namespace FixMyCrypto {
 
-    public class OpenCL {
+    class OpenCL {
 
         private Context context;
-        private Program program;
+        private Program program_pbkdf2;
 
-        private bool programReady = false;
+        private Program program_bip32derive;
+
+        private bool program_pbkdf2_ready = false;
+
+        private bool program_bip32derive_ready = false;
         private int usingDkLen;
 
         private int saltBufferSize;     //  max char length of a passphrase
@@ -54,38 +58,39 @@ namespace FixMyCrypto {
         }
 
         ~OpenCL() {
-            program?.Dispose();
+            program_pbkdf2?.Dispose();
+            program_bip32derive?.Dispose();
             context?.Dispose();
             chosenDevice?.Dispose();
         }
 
         public void Init_Sha512(int dklen = 64) {
-            if (programReady && dklen == usingDkLen) return;
+            if (program_pbkdf2_ready && dklen == usingDkLen) return;
 
-            programReady = false;
+            program_pbkdf2_ready = false;
             outBufferSize = (dklen > 64) ? 128 : 64;
             wordSize = (dklen > 32) ? 8 : 4;
             pwdBufferSize = inBufferSize;
 
             // Creates a program and then the kernel from it
-            /*
+            
             string code = OpenCL_Bufferstructs.buffer_structs_template_cl + OpenCL_Sha512.hmac512_cl + OpenCL_Pbkdf2.pbkdf2_cl + OpenCL_Pbkdf2.pbkdf2_variants;
-            */
-            string code = Bip39_Solver_Sha.sha_cl + Bip39_Solver.int_to_address_cl;
-            // code = code.Replace("<hashBlockSize_bits>", "1024");
-            // code = code.Replace("<hashDigestSize_bits>", "512");
+            // string code = Bip39_Solver_Sha.sha_cl + Bip39_Solver.int_to_address_cl;
+            
+            code = code.Replace("<hashBlockSize_bits>", "1024");
+            code = code.Replace("<hashDigestSize_bits>", "512");
             code = code.Replace("<inBufferSize_bytes>", $"{inBufferSize}");
             code = code.Replace("<outBufferSize_bytes>", $"{outBufferSize}");
             code = code.Replace("<saltBufferSize_bytes>", $"{saltBufferSize}");
             code = code.Replace("<pwdBufferSize_bytes>", $"{pwdBufferSize}");
             code = code.Replace("<ctBufferSize_bytes>", $"{saltBufferSize}");
-            // code = code.Replace("<word_size>", $"{wordSize}");
+            code = code.Replace("<word_size>", $"{wordSize}");
 
-            Log.Info("Compiling OpenCL scripts...");
-            program?.Dispose();
-            program = context.CreateAndBuildProgramFromString(code);
+            Log.Info("Compiling OpenCL PBKDF2 scripts...");
+            program_pbkdf2?.Dispose();
+            program_pbkdf2 = context.CreateAndBuildProgramFromString(code);
             Log.Info("OpenCL Compiled");
-            programReady = true;
+            program_pbkdf2_ready = true;
             usingDkLen = dklen;
         }
 
@@ -102,14 +107,14 @@ namespace FixMyCrypto {
 
             // Log.Debug($"password batch size={passwords.Length}");
 
-            byte[] data = new byte[passwords.Length * (4 + inBufferSize)];
+            byte[] data = new byte[passwords.Length * (wordSize + inBufferSize)];
             BinaryWriter w = new(new MemoryStream(data));
             for (int i = 0; i < passwords.Length; i++) {
                 byte[] pb = passwords[i];
                 if (pb.Length > inBufferSize) {
                         throw new Exception("phrase exceeds max length");
                 }
-                w.Write((uint)pb.Length);
+                w.Write((ulong)pb.Length);
                 w.Write(pb);
                 w.Write(new byte[inBufferSize - pb.Length]);
             }
@@ -118,9 +123,9 @@ namespace FixMyCrypto {
             if (salt.Length > saltBufferSize) {
                 throw new Exception("passphrase max length set incorrectly");
             }
-            byte[] saltData = new byte[4 + saltBufferSize];
+            byte[] saltData = new byte[wordSize + saltBufferSize];
             BinaryWriter w2 = new(new MemoryStream(saltData));
-            w2.Write((uint)salt.Length);
+            w2.Write((ulong)salt.Length);
             w2.Write(salt);
             w2.Write(new byte[saltBufferSize - salt.Length]);
             w2.Close();
@@ -136,7 +141,7 @@ namespace FixMyCrypto {
             BinaryReader r = new BinaryReader(new MemoryStream(result));
             for (int i = 0; i < passwords.Length; i++) {
                 byte[] seed = r.ReadBytes(outBufferSize);
-                Console.WriteLine($"seed: {seed.ToHexString()}");
+                // Console.WriteLine($"seed: {seed.ToHexString()}");
                 if (outBufferSize > dklen) seed = seed.Slice(0, dklen);
                 if (phrases.Length == passwords.Length) {
                     retval[i] = new Seed(seed, phrases[i], passphrases[0]);
@@ -152,7 +157,7 @@ namespace FixMyCrypto {
             byte[] result = null;
 
             try {
-                using Kernel kernel = program.CreateKernel(kernelName);
+                using Kernel kernel = program_pbkdf2.CreateKernel(kernelName);
 
                 int outSize = outBufferSize * count;
                 using MemoryBuffer inBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, data);
@@ -223,7 +228,120 @@ namespace FixMyCrypto {
             return retval;
         }
 
-        public void Benchmark(int tcount = 20480)
+        public void Init_Bip32Derive() {
+            if (program_bip32derive_ready) return;
+
+            string code = Bip39_Solver.common_cl + Bip39_Solver_Secp256k1.secp256k1_common_cl + Bip39_Solver_Secp256k1.secp256k1_scalar_cl + Bip39_Solver_Secp256k1.secp256k1_field_cl + Bip39_Solver_Secp256k1.secp256k1_group_cl + Bip39_Solver_Secp256k1.secp256k1_preq_cl + Bip39_Solver_Secp256k1.secp256k1_cl + Bip39_Solver_Sha.sha2_cl + Bip39_Solver.address_cl;
+
+            Log.Info("Compiling OpenCL BIP32 Derive scripts...");
+            program_bip32derive?.Dispose();
+            program_bip32derive = context.CreateAndBuildProgramFromString(code);
+            Log.Info("OpenCL Compiled");
+            program_bip32derive_ready = true;
+        }
+
+        public Cryptography.Key[] Bip32_Derive(byte[][] keys, uint path, int keyLen = 32, int ccLen = 32) {
+            Init_Bip32Derive();
+
+            int length = keyLen + ccLen;
+            int count = keys.Length;
+            byte[] data = new byte[count * length];
+            for (int i = 0; i < count; i++) {
+                Array.Copy(keys[i], 0, data, i * length, length);
+            }
+
+            string kernelName;
+
+            if (PathNode.IsHardened(path))
+            {
+                kernelName = "bip32_derive_hardened";
+            }
+            else
+            {
+                kernelName = "bip32_derive_normal";
+            }
+
+            uint[] paths = new uint[] { path };
+
+            byte[] result;
+
+            try {
+                using Kernel kernel = program_bip32derive.CreateKernel(kernelName);
+
+                int outSize = length * count;
+                using MemoryBuffer inBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, data);
+                using MemoryBuffer pathBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, paths);
+                using MemoryBuffer outBuffer = context.CreateBuffer<byte>(MemoryFlag.WriteOnly, outSize);
+
+                using (CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevice)) {
+                    kernel.SetKernelArgument(0, inBuffer);
+                    kernel.SetKernelArgument(1, outBuffer);
+                    kernel.SetKernelArgument(2, pathBuffer);
+                    commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
+                    result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                }
+
+                Cryptography.Key[] ret = new Cryptography.Key[count];
+                BinaryReader r = new BinaryReader(new MemoryStream(result));
+                for (int i = 0; i < count; i++) {
+                    ret[i] = new Cryptography.Key(r.ReadBytes(keyLen), r.ReadBytes(ccLen));
+                }
+                return ret;
+            }
+            catch (Exception e) {
+                Log.Error(e.ToString());
+                throw;
+            }
+        }
+
+        public void Benchmark_Bip32Derive(int count = 10240)
+        {
+            uint path = 1; //PathNode.Harden(1);
+            byte[][] src = new byte[count][];
+            ExtKey[] ex = new ExtKey[count];
+            ExtKey[] child = new ExtKey[count];
+            for (int i = 0; i < count; i++) {
+                Phrase p = new Phrase();
+                byte[] seed = Cryptography.Pbkdf2_HMAC512(p.ToPhrase(), Cryptography.PassphraseToSalt(""), 2048, 64);
+                ex[i] = ExtKey.CreateFromSeed(seed);
+
+                src[i] = new byte[64];
+                Array.Copy(ex[i].PrivateKey.ToBytes(), src[i], 32);
+                Array.Copy(ex[i].ChainCode, 0, src[i], 32, 32);
+            }
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            for (int i = 0; i < count; i++) {
+                child[i] = ex[i].Derive(path);
+            }
+            sw.Stop();
+            long cpu = sw.ElapsedMilliseconds;
+
+            Cryptography.Key[] keys;
+            
+            Init_Bip32Derive();
+            sw.Restart();
+            keys = Bip32_Derive(src, path);
+            sw.Stop();
+            long ocl = sw.ElapsedMilliseconds;
+
+            int badkey = 0, badcc = 0;
+            for (int i = 0; i < count; i++) {
+                if (keys[i].data.ToHexString() != child[i].PrivateKey.ToBytes().ToHexString()) {
+                    badkey++;
+                    Log.Error($"SK{i} OCL {keys[i].data.ToHexString()} != ExtKey {child[i].PrivateKey.ToBytes().ToHexString()}");
+                }
+                if (keys[i].cc.ToHexString() != child[i].ChainCode.ToHexString()) {
+                    badcc++;
+                    Log.Error($"CC{i} OCL {keys[i].cc.ToHexString()} != ExtKey {child[i].ChainCode.ToHexString()}");
+                }
+            }
+            Log.Info($"cputime={cpu} ocltime={ocl} badkey={badkey} badcc={badcc}");
+            if (badkey > 0 || badcc > 0) throw new Exception("bad results in Benchmark_Bip32Derive()");
+        }
+
+        public void Benchmark_Pbkdf2(int tcount = 1024)
         {
             Wordlists.Initialize();
 
@@ -259,6 +377,7 @@ namespace FixMyCrypto {
                     }
                 }
                 Log.Debug($"badcount={badcount} ocltime={ocltime} cputime={cputime}");
+                if (badcount > 0) throw new SystemException("failed Benchmark_Pbkdf2() phrases");
             }
 
             {
@@ -297,6 +416,7 @@ namespace FixMyCrypto {
                     }
                 }
                 Log.Debug($"badcount={badcount} ocltime={ocltime} cputime={cputime}");
+                if (badcount > 0) throw new SystemException("failed Benchmark_Pbkdf2() passphrases");
             }
 
         }

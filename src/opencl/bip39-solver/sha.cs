@@ -1,6 +1,6 @@
 namespace FixMyCrypto {
     class Bip39_Solver_Sha {
-        public static string sha_cl = @"
+        public static string sha2_cl = @"
 #define F1(x,y,z) (bitselect(z,y,x))
 #define F0(x,y,z) (bitselect (x, y, ((x) ^ (z))))
 #define mod(x,y) ((x)-((x)/(y)*(y)))
