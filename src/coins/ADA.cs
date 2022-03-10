@@ -86,14 +86,14 @@ namespace FixMyCrypto {
             var key = (CardanoSharp.Wallet.Models.Keys.PrivateKey)pk;
             return key.GetPublicKey(false);
         }
-        protected override Address DeriveAddress(PathNode node) {
-            var pub = GetPublicKey(node.Key);
+        protected override Address DeriveAddress(PathNode node, int index) {
+            var pub = GetPublicKey(node.Keys[index]);
 
             //  Stake key is path with last 2 sections replaced by /2/0
 
             PathNode stakeNode = node.Parent.Parent.GetChild(2U).GetChild(0U);
 
-            var stakePub = GetPublicKey(stakeNode.Key);
+            var stakePub = GetPublicKey(stakeNode.Keys[index]);
 
             var baseAddr = this.addressService.GetAddress(
                 pub, 
@@ -141,6 +141,24 @@ namespace FixMyCrypto {
 
             return new CardanoSharp.Wallet.Models.Keys.PrivateKey(key.data, key.cc);
         }
+
+        public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
+            //  No OpenCL yet
+            Object[] keys = new object[phrases.Length];
+            Parallel.For(0, phrases.Length, i => {
+                keys[i] = DeriveRootKey(phrases[i], passphrase);
+            });
+            return keys;
+        }
+
+        public override Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
+            //  No OpenCL yet
+            Object[] keys = new object[passphrases.Length];
+            Parallel.For(0, passphrases.Length, i => {
+                keys[i] = DeriveRootKey(phrase, passphrases[i]);
+            });
+            return keys;
+        }
     }
     class PhraseToAddressCardanoTrezor : PhraseToAddressCardano {
         public PhraseToAddressCardanoTrezor(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses) {
@@ -153,6 +171,24 @@ namespace FixMyCrypto {
             var rootKey = Cryptography.Pbkdf2_HMAC512(passphrase, entropy, 4096, 96);
             rootKey = Cryptography.TweakBits(rootKey);
             return new CardanoSharp.Wallet.Models.Keys.PrivateKey(rootKey.Slice(0, 64), rootKey.Slice(64));
+        }
+
+        public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
+            //  No OpenCL yet
+            Object[] keys = new object[phrases.Length];
+            Parallel.For(0, phrases.Length, i => {
+                keys[i] = DeriveRootKey(phrases[i], passphrase);
+            });
+            return keys;
+        }
+
+        public override Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
+            //  No OpenCL yet
+            Object[] keys = new object[passphrases.Length];
+            Parallel.For(0, passphrases.Length, i => {
+                keys[i] = DeriveRootKey(phrase, passphrases[i]);
+            });
+            return keys;
         }
     }
 

@@ -39,7 +39,11 @@ namespace FixMyCrypto {
 
                 case CoinType.XRP:
 
-                this.network = Network.Main;    //  TODO
+                this.network = Network.Main;
+
+                break;
+
+                case CoinType.ETH:
 
                 break;
 
@@ -225,16 +229,16 @@ namespace FixMyCrypto {
             return ocl.Bip32_Derive(Array.ConvertAll(parents, item => (Cryptography.Key)item), index);
         }
 
-        protected override Address DeriveAddress(PathNode node) {
+        protected override Address DeriveAddress(PathNode node, int index) {
             ExtKey sk;
 
             if (IsUsingOpenCL()) {
-                Cryptography.Key key = (Cryptography.Key)node.Key;
+                Cryptography.Key key = (Cryptography.Key)node.Keys[index];
                 Key k = new Key(key.data);
                 sk = new ExtKey(k, key.cc, 0, new HDFingerprint(), 0);
             }
             else {
-                sk = (ExtKey)node.Key;
+                sk = (ExtKey)node.Keys[index];
             }
 
             string path = node.GetPath();

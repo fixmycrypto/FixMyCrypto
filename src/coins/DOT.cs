@@ -50,8 +50,8 @@ namespace FixMyCrypto {
         protected virtual byte GetPrefix(PathNode node) {
             return (byte)node.Value;
         }
-        protected override Address DeriveAddress(PathNode node) {
-            var key = (Cryptography.Key)node.Key;
+        protected override Address DeriveAddress(PathNode node, int index) {
+            var key = (Cryptography.Key)node.Keys[index];
             if (key == null) return null;
 
             byte[] pub = GetPublicKey(key.data);

@@ -189,7 +189,6 @@ namespace FixMyCrypto {
         public uint Value { get; protected set; }
         public List<PathNode> Children { get; protected set; }
         public bool End { get; set; }
-        public Object Key { get; set; }
         public Object[] Keys { get; set; }
 
         public PathNode(PathNode parent, uint prefix) {
@@ -203,7 +202,7 @@ namespace FixMyCrypto {
         public PathNode(PathNode src) {
             this.Value = src.Value;
             this.End = src.End;
-            this.Key = src.Key;
+            this.Keys = src.Keys;
             this.Children = new List<PathNode>();
             foreach (var child in src.Children) {
                 PathNode c = new PathNode(child);

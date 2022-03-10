@@ -6,12 +6,12 @@ using NBitcoin;
 using Cryptography.ECDSA;
 
 namespace FixMyCrypto {
-    class PhraseToAddressXrp : PhraseToAddress {
+    class PhraseToAddressXrp : PhraseToAddressBitAltcoin {
 
         static string base58orig = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
         static string base58xrp =  "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
-        public PhraseToAddressXrp(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses) {
+        public PhraseToAddressXrp(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses, CoinType.XRP) {
         }
         public override CoinType GetCoinType() { return CoinType.XRP; }
         public override string[] GetDefaultPaths(string[] knownAddresses) {
@@ -19,59 +19,18 @@ namespace FixMyCrypto {
             return p;
         }
  
-        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
-            if (IsUsingOpenCL()) {
-                return DeriveRootKey_BatchPhrases(new Phrase[] { phrase }, passphrase)[0];
+        protected override Address DeriveAddress(PathNode node, int index) {
+            ExtKey sk;
+            
+            if (!IsUsingOpenCL()) {
+                sk = (ExtKey)node.Keys[index];
+            } 
+            else {
+                Cryptography.Key key = (Cryptography.Key)node.Keys[index];
+                Key k = new Key(key.data);
+                sk = new ExtKey(k, key.cc, 0, new HDFingerprint(), 0);
             }
 
-            string p = phrase.ToPhrase();
-            byte[] salt = Cryptography.PassphraseToSalt(passphrase);
-            byte[] seed = Cryptography.Pbkdf2_HMAC512(p, salt, 2048, 64);
-            return ExtKey.CreateFromSeed(seed);
-        }
-        public override bool IsUsingOpenCL() {
-            return (ocl != null);
-        }
-        public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
-            if (!IsUsingOpenCL()) {
-                return base.DeriveRootKey_BatchPhrases(phrases, passphrase);
-            }
-            else {
-                byte[][] passwords = new byte[phrases.Length][];
-                for (int i = 0; i < phrases.Length; i++) passwords[i] = phrases[i].ToPhrase().ToUTF8Bytes();
-                byte[] salt = Cryptography.PassphraseToSalt(passphrase);
-                Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPassword(phrases, new string[] { passphrase }, passwords, salt);
-                Object[] keys = new object[phrases.Length];
-                Parallel.For(0, phrases.Length, i => {
-                    if (Global.Done) return;
-                    keys[i] = ExtKey.CreateFromSeed(seeds[i].seed);
-                });
-                return keys;
-            }
-        }
-        public override Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
-            if (!IsUsingOpenCL()) {
-                return base.DeriveRootKey_BatchPassphrases(phrase, passphrases);
-            }
-            else {
-                byte[] password = phrase.ToPhrase().ToUTF8Bytes();
-                byte[][] salts = new byte[passphrases.Length][];
-                for (int i = 0; i < passphrases.Length; i++) salts[i] = Cryptography.PassphraseToSalt(passphrases[i]);
-                Seed[] seeds = ocl.Pbkdf2_Sha512_MultiSalt(new Phrase[] { phrase }, passphrases, password, salts);
-                Object[] keys = new object[passphrases.Length];
-                Parallel.For(0, passphrases.Length, i => {
-                    if (Global.Done) return;
-                    keys[i] = ExtKey.CreateFromSeed(seeds[i].seed);
-                });
-                return keys;
-            }
-        }
-        protected override Object DeriveChildKey(Object parentKey, uint index) {
-            ExtKey key = (ExtKey)parentKey;
-            return key.Derive(index);
-        }
-        protected override Address DeriveAddress(PathNode node) {
-            ExtKey sk = (ExtKey)node.Key;
             int version = 0;
             int version_size = version > 255 ? 2 : 1;
             byte[] tmp = new byte[20 + version_size + 4];

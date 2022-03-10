@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using NBitcoin;
 
 namespace FixMyCrypto {
-    class PhraseToAddressEth : PhraseToAddress {
-        public PhraseToAddressEth(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses) {
+    class PhraseToAddressEth : PhraseToAddressBitAltcoin {
+        public PhraseToAddressEth(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses, CoinType.ETH) {
         }
         public override CoinType GetCoinType() { return CoinType.ETH; }
         private char GetChecksumDigit(byte h, char c) {
@@ -60,78 +60,16 @@ namespace FixMyCrypto {
             return p;
         }
  
-        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
-            if (IsUsingOpenCL()) {
-                return DeriveRootKey_BatchPhrases(new Phrase[] { phrase }, passphrase)[0];
-            }
-
-            string p = phrase.ToPhrase();
-            byte[] salt = Cryptography.PassphraseToSalt(passphrase);
-            byte[] seed = Cryptography.Pbkdf2_HMAC512(p, salt, 2048, 64);
-            return ExtKey.CreateFromSeed(seed);
-        }
-        public override bool IsUsingOpenCL() {
-            return (ocl != null);
-        }
-        public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
-            if (!IsUsingOpenCL()) {
-                return base.DeriveRootKey_BatchPhrases(phrases, passphrase);
-            }
-
-            byte[][] passwords = new byte[phrases.Length][];
-            for (int i = 0; i < phrases.Length; i++) passwords[i] = phrases[i].ToPhrase().ToUTF8Bytes();
-            byte[] salt = Cryptography.PassphraseToSalt(passphrase);
-            Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPassword(phrases, new string[] { passphrase }, passwords, salt);
-            Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
-            Parallel.For(0, phrases.Length, i => {
-                if (Global.Done) return;
-                byte[] key = Cryptography.HMAC512_Bitcoin(seeds[i].seed);
-                keys[i] = new Cryptography.Key(key.Slice(0, 32), key.Slice(32));
-            });
-            return keys;
-        }
-        public override Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
-            if (!IsUsingOpenCL()) {
-                return base.DeriveRootKey_BatchPassphrases(phrase, passphrases);
-            }
-
-            byte[] password = phrase.ToPhrase().ToUTF8Bytes();
-            byte[][] salts = new byte[passphrases.Length][];
-            for (int i = 0; i < passphrases.Length; i++) salts[i] = Cryptography.PassphraseToSalt(passphrases[i]);
-            Seed[] seeds = ocl.Pbkdf2_Sha512_MultiSalt(new Phrase[] { phrase }, passphrases, password, salts);
-            Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
-            Parallel.For(0, passphrases.Length, i => {
-                if (Global.Done) return;
-                byte[] key = Cryptography.HMAC512_Bitcoin(seeds[i].seed);
-                keys[i] = new Cryptography.Key(key.Slice(0, 32), key.Slice(32));
-            });
-            return keys;
-        }
-        protected override Object DeriveChildKey(Object parentKey, uint index) {
-            if (IsUsingOpenCL()) {
-                return DeriveChildKey_Batch(new Object[] { parentKey }, index)[0];
-            }
-
-            ExtKey key = (ExtKey)parentKey;
-            return key.Derive(index);
-        }
-        protected override Object[] DeriveChildKey_Batch(Object[] parents, uint index) {
-            if (!IsUsingOpenCL()) {
-                return base.DeriveChildKey_Batch(parents, index);
-            }
-
-            return ocl.Bip32_Derive(Array.ConvertAll(parents, item => (Cryptography.Key)item), index);
-        }
-        protected override Address DeriveAddress(PathNode node) {
+        protected override Address DeriveAddress(PathNode node, int index) {
             ExtKey sk;
 
             if (IsUsingOpenCL()) {
-                Cryptography.Key key = (Cryptography.Key)node.Key;
+                Cryptography.Key key = (Cryptography.Key)node.Keys[index];
                 Key k = new Key(key.data);
                 sk = new ExtKey(k, key.cc, 0, new HDFingerprint(), 0);
             }
             else {
-                sk = (ExtKey)node.Key;
+                sk = (ExtKey)node.Keys[index];
             }
 
             string address = SkToAddress(sk);

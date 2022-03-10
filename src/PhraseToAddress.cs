@@ -161,7 +161,7 @@ namespace FixMyCrypto {
             });
             return keys;
         }
-        protected abstract Address DeriveAddress(PathNode node);
+        protected abstract Address DeriveAddress(PathNode node, int keyIndex);
         public abstract void ValidateAddress(string address);
 
         public static void ValidateAddress(CoinType coin, string address) {
@@ -170,14 +170,16 @@ namespace FixMyCrypto {
         }
 
         protected virtual string GetStakePath() { return null; }
+        /*
         private void DeriveChildKeys(PathNode node) {
-            node.Key = DeriveChildKey(node.Parent.Key, node.Value);
+            node.Keys = DeriveChildKey_Batch(node.Parent.Keys, node.Value);
 
             foreach (PathNode child in node.Children) {
                 if (Global.Done) break;
                 DeriveChildKeys(child);
             }
         }
+        */
 
         private void DeriveChildKeys_Batch(PathNode node) {
             node.Keys = DeriveChildKey_Batch(node.Parent.Keys, node.Value);
@@ -187,10 +189,10 @@ namespace FixMyCrypto {
                 DeriveChildKeys_Batch(child);
             }
         }
-
+    /*
         private void DeriveAddresses(PathNode node, Phrase phrase, string passphrase, List<Address> addresses) {
             if (node.End) {
-                var address = DeriveAddress(node);
+                var address = DeriveAddress(node, 0);
                 if (address != null) {
                     address.phrase = phrase;
                     address.passphrase = passphrase;
@@ -203,10 +205,10 @@ namespace FixMyCrypto {
                 DeriveAddresses(child, phrase, passphrase, addresses);
             }
         }
+        */
         private void DeriveAddressesBatch(PathNode node, int index, Phrase phrase, string passphrase, List<Address> addresses) {
             if (node.End) {
-                node.Key = node.Keys[index];
-                var address = DeriveAddress(node);
+                var address = DeriveAddress(node, index);
                 if (address != null) {
                     address.phrase = phrase;
                     address.passphrase = passphrase;
@@ -281,15 +283,15 @@ namespace FixMyCrypto {
                 if (Global.Done) break;
 
                 // tree.Root.Key = key.key;
-                tree.Root.Key = DeriveRootKey(phrase, passphrase);
+                tree.Root.Keys = DeriveRootKey_BatchPhrases(new Phrase[] { phrase }, passphrase);
 
                 foreach (PathNode child in tree.Root.Children) {
-                    DeriveChildKeys(child);
+                    DeriveChildKeys_Batch(child);
                 }
 
                 List<Address> addrs = new();
 
-                DeriveAddresses(tree.Root, phrase, passphrase, addrs);
+                DeriveAddressesBatch(tree.Root, 0, phrase, passphrase, addrs);
 
                 bool found = false;
 

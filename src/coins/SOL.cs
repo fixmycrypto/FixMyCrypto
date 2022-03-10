@@ -107,8 +107,8 @@ namespace FixMyCrypto {
             return new Cryptography.Key(I.Slice(0, 32), I.Slice(32));
         }
 
-        protected override Address DeriveAddress(PathNode node) {
-            var key = (Cryptography.Key)node.Key;
+        protected override Address DeriveAddress(PathNode node, int index) {
+            var key = (Cryptography.Key)node.Keys[index];
 
             byte[] pub = Cryptography.Ed25519PublicKeyFromSeed(key.data);
 
