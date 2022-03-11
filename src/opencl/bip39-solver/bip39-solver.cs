@@ -5,63 +5,88 @@ namespace FixMyCrypto {
 #define inBufferSize <inBufferSize_bytes>
 #define outBufferSize <outBufferSize_bytes>
 #define saltBufferSize <saltBufferSize_bytes>
-#define pwdBufferSize <pwdBufferSize_bytes>
+//#define pwdBufferSize <pwdBufferSize_bytes>
 #define hashlength 64
 
-        typedef struct {
-            uint length; // in bytes
-            uchar buffer[inBufferSize];
-        } inbuf;
+    typedef struct {
+        <word_type> length; // in bytes
+        uchar buffer[inBufferSize];
+    } inbuf;
 
-        typedef struct {
-            uchar buffer[outBufferSize];
-        } outbuf;
+    typedef struct {
+        uchar buffer[outBufferSize];
+    } outbuf;
 
-        // Salt buffer, used by pbkdf2 & pbe
-        typedef struct {
-            uint length; // in bytes
-            uchar buffer[saltBufferSize];
-        } saltbuf;
+    // Salt buffer, used by pbkdf2 & pbe
+    typedef struct {
+        <word_type> length; // in bytes
+        uchar buffer[saltBufferSize];
+    } saltbuf;
 
-        // Password buffer, used by pbkdf2 & pbe
-        typedef struct {
-            uint length; // in bytes
-            uchar buffer[pwdBufferSize];
-        } pwdbuf;
-
-        void copy_pad_previous(uchar *pad, uchar *previous, uchar *joined) {
-            for(int x=0;x<128;x++){
-                joined[x] = pad[x];
-            }
-            for(int x=0;x<hashlength;x++){
-                joined[x+128] = previous[x];
-            }
+    void copy_pad_previous(uchar *pad, uchar *previous, uchar *joined) {
+        for(int x=0;x<128;x++){
+            joined[x] = pad[x];
         }
+        for(int x=0;x<hashlength;x++){
+            joined[x+128] = previous[x];
+        }
+    }
 
-    void xor_seed_with_round(char *seed, char *round) {
+    void xor_seed_with_round(__global uchar *seed, uchar *round) {
         for(int x=0;x<hashlength;x++){
             seed[x] = seed[x] ^ round[x];
         }
     }
 
-        __kernel void pbkdf2(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer,
-    __private unsigned int iters, __private unsigned int dkLen_bytes) {
+    void print_byte_array_hex(uchar *arr, int len) {
+        for (int i = 0; i < len; i++) {
+            printf(""%02x"", arr[i]);
+        }
+        printf(""\n\n"");
+    }
+
+    __kernel void pbkdf2(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer,
+    __private unsigned int iters, __private unsigned int dkLen_bytes, uchar mode) {
 
         ulong idx = get_global_id(0);
         uchar ipad_key[128];
         uchar opad_key[128];
+        uchar pwd_hash[hashlength] = { 0 };
 
-        __global uchar *pwd = inbuffer[idx].buffer;
+        __global uchar *pwd;
         __global uchar *seed = outbuffer[idx].buffer;
-        __global uchar *salt = saltbuffer[0].buffer;
-        uint pwdLen = inbuffer[idx].length;
-        uint saltLen = saltbuffer[0].length;
+        __global uchar *salt;
+        <word_type> pwdLen;
+        <word_type> saltLen;
 
-        printf(""pwd: %s\n"", pwd);
-        printf(""salt: %s\n"", salt);
+        if (mode == 0)
+        {
+            pwd = inbuffer[idx].buffer;
+            salt = saltbuffer[0].buffer;
+            pwdLen = inbuffer[idx].length;
+            saltLen = saltbuffer[0].length;
+        }
+        else
+        {
+            pwd = inbuffer[0].buffer;
+            salt = saltbuffer[idx].buffer;
+            pwdLen = inbuffer[0].length;
+            saltLen = saltbuffer[idx].length;
+        }
+
+        printf(""pwd (%d): %s\n"", pwdLen, pwd);
+        printf(""salt (%d): %s\n"", saltLen, salt);
 
         int blocks = outBufferSize / hashlength;
-        printf(""dkLen_bytes=%d outBufferSize=%d blocks=%d\n"", dkLen_bytes, outBufferSize, blocks);
+        //printf(""dkLen_bytes=%d outBufferSize=%d blocks=%d\n"", dkLen_bytes, outBufferSize, blocks);
+
+        if (pwdLen > 128) {
+            printf(""idx=%d start sha512\n"", idx);
+            sha512(&pwd, pwdLen, &pwd_hash);
+            //printf(""hashed password:"");
+            //print_byte_array_hex(pwd_hash, hashlength);
+            //printf(""\n"");
+        }
 
         for (int block = 1; block <= blocks; block++) {
             for(int x=0;x<128;x++){
@@ -69,9 +94,17 @@ namespace FixMyCrypto {
                 opad_key[x] = 0x5c;
             }
 
-            for(uint x=0;x<pwdLen && x < 128;x++){
-                ipad_key[x] = ipad_key[x] ^ pwd[x];
-                opad_key[x] = opad_key[x] ^ pwd[x];
+            if (pwdLen > 128) {
+                for(uint x=0;x<hashlength;x++){
+                    ipad_key[x] = ipad_key[x] ^ pwd_hash[x];
+                    opad_key[x] = opad_key[x] ^ pwd_hash[x];
+                }
+            }
+            else {
+                for(uint x=0;x<pwdLen;x++){
+                    ipad_key[x] = ipad_key[x] ^ pwd[x];
+                    opad_key[x] = opad_key[x] ^ pwd[x];
+                }
             }
 
             uchar sha512_result[hashlength] = { 0 };
@@ -83,10 +116,10 @@ namespace FixMyCrypto {
             for(int i=0;i<saltLen;i++){
                 key_previous_concat[x++] = salt[i];
             }
-            key_previous_concat[x++] = 0;
-            key_previous_concat[x++] = 0;
-            key_previous_concat[x++] = 0;
-            key_previous_concat[x++] = (uchar)block;
+            key_previous_concat[x++] = (block >> 24) & 0xff;
+            key_previous_concat[x++] = (block >> 16) & 0xff;
+            key_previous_concat[x++] = (block >> 8) & 0xff;
+            key_previous_concat[x++] = (uchar)block & 0xff;
 
             sha512(&key_previous_concat, x, &sha512_result);
             copy_pad_previous(&opad_key, &sha512_result, &key_previous_concat);
@@ -94,6 +127,7 @@ namespace FixMyCrypto {
             xor_seed_with_round(seed, &sha512_result);
 
             for(int x=1;x<iters;x++){
+                //printf(""iter %d\n"", x);
                 copy_pad_previous(&ipad_key, &sha512_result, &key_previous_concat);
                 sha512(&key_previous_concat, 192, &sha512_result);
                 copy_pad_previous(&opad_key, &sha512_result, &key_previous_concat);
@@ -106,12 +140,21 @@ namespace FixMyCrypto {
     }
 
     __kernel void pbkdf2_2048_64(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer) {
-        pbkdf2(inbuffer, saltbuffer, outbuffer, 2048, 64);
+        pbkdf2(inbuffer, saltbuffer, outbuffer, 2048, 64, 0);
+    }
+
+    __kernel void pbkdf2_saltlist_2048_64(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer) {
+        pbkdf2(inbuffer, saltbuffer, outbuffer, 2048, 64, 1);
     }
 
    __kernel void pbkdf2_4096_96(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer) {
-        pbkdf2(inbuffer, saltbuffer, outbuffer, 4096, 96);
+        pbkdf2(inbuffer, saltbuffer, outbuffer, 4096, 96, 0);
     }
+
+    __kernel void pbkdf2_saltlist_4096_96(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer) {
+        pbkdf2(inbuffer, saltbuffer, outbuffer, 4096, 96, 1);
+    }
+
         ";
 
         public static string address_cl = @"

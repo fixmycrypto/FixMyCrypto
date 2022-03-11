@@ -26,7 +26,9 @@ namespace FixMyCrypto {
         private Program program_bip32derive;
 
         private CommandQueue commandQueue;
-        private Dictionary<string, Kernel> kernels = new();
+        private Dictionary<string, Kernel> pbkdf2_kernels = new();
+
+        private Dictionary<string, Kernel> bip32_kernels = new();
 
         private bool program_pbkdf2_ready = false;
 
@@ -37,7 +39,7 @@ namespace FixMyCrypto {
 
         private int inBufferSize = 256; //  max char length of a phrase
 
-        private int pwdBufferSize;
+        //private int pwdBufferSize;
 
         private int outBufferSize;
 
@@ -63,7 +65,7 @@ namespace FixMyCrypto {
         ~OpenCL() {
             program_pbkdf2?.Dispose();
             program_bip32derive?.Dispose();
-            foreach (Kernel k in kernels.Values) k?.Dispose();
+            foreach (Kernel k in pbkdf2_kernels.Values) k?.Dispose();
             commandQueue?.Dispose();
             context?.Dispose();
             chosenDevice?.Dispose();
@@ -74,24 +76,29 @@ namespace FixMyCrypto {
 
             program_pbkdf2_ready = false;
             outBufferSize = (dklen > 64) ? 128 : 64;
-            wordSize = (dklen > 32) ? 8 : 4;
-            pwdBufferSize = inBufferSize;
+            //wordSize = (dklen > 32) ? 8 : 4;
+            wordSize = 4;
+
+            //pwdBufferSize = inBufferSize;
 
             // Creates a program and then the kernel from it
             
-            string code = OpenCL_Bufferstructs.buffer_structs_template_cl + OpenCL_Sha512.hmac512_cl + OpenCL_Pbkdf2.pbkdf2_cl + OpenCL_Pbkdf2.pbkdf2_variants;
-            // string code = Bip39_Solver_Sha.sha_cl + Bip39_Solver.int_to_address_cl;
+            // string code = OpenCL_Bufferstructs.buffer_structs_template_cl + OpenCL_Sha512.hmac512_cl + OpenCL_Pbkdf2.pbkdf2_cl + OpenCL_Pbkdf2.pbkdf2_variants;
+            string code = Bip39_Solver_Sha.sha2_cl + Bip39_Solver.int_to_address_cl;
             
             code = code.Replace("<hashBlockSize_bits>", "1024");
             code = code.Replace("<hashDigestSize_bits>", "512");
             code = code.Replace("<inBufferSize_bytes>", $"{inBufferSize}");
             code = code.Replace("<outBufferSize_bytes>", $"{outBufferSize}");
             code = code.Replace("<saltBufferSize_bytes>", $"{saltBufferSize}");
-            code = code.Replace("<pwdBufferSize_bytes>", $"{pwdBufferSize}");
+            //code = code.Replace("<pwdBufferSize_bytes>", $"{pwdBufferSize}");
             code = code.Replace("<ctBufferSize_bytes>", $"{saltBufferSize}");
             code = code.Replace("<word_size>", $"{wordSize}");
+            code = code.Replace("<word_type>", wordSize == 8 ? "ulong" : "uint");
 
             Log.Info("Compiling OpenCL PBKDF2 scripts...");
+            foreach (var k in pbkdf2_kernels.Values) k?.Dispose();
+            pbkdf2_kernels.Clear();
             program_pbkdf2?.Dispose();
             program_pbkdf2 = context.CreateAndBuildProgramFromString(code);
             Log.Info("OpenCL Compiled");
@@ -100,15 +107,18 @@ namespace FixMyCrypto {
         }
 
         public int GetBatchSize() {
-            return 8192;
-            /*
-            int memoryPerWork = (wordSize + inBufferSize) + (wordSize + saltBufferSize) + outBufferSize;
-            int workgroupPerCore = (int)(chosenDevice.LocalMemorySize / memoryPerWork);
-            int size = workgroupPerCore * chosenDevice.MaximumComputeUnits;
-            Log.Debug($"Workgroup size: {size}");
-            return size;
-            */
+            //return 8192;
+            
+            // int memoryPerWork = (wordSize + inBufferSize) + (wordSize + saltBufferSize) + outBufferSize + 1024;
+            // int workgroupPerCore = (int)(0.95 * chosenDevice.LocalMemorySize / memoryPerWork);
+            // int size = workgroupPerCore * chosenDevice.MaximumComputeUnits;
+            // Log.Debug($"Workgroup size: {size}");
+            // return size;
+            
+            return 1024;
         }
+
+
 
         public Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, int iters = 2048, int dklen = 64) {
             Init_Sha512(dklen);
@@ -122,7 +132,12 @@ namespace FixMyCrypto {
                 if (pb.Length > inBufferSize) {
                         throw new Exception("phrase exceeds max length");
                 }
-                w.Write((ulong)pb.Length);
+                if (wordSize == 8) {
+                    w.Write((ulong)pb.Length);
+                }
+                else {
+                    w.Write((uint)pb.Length);
+                }
                 w.Write(pb);
                 w.Write(new byte[inBufferSize - pb.Length]);
             }
@@ -133,7 +148,12 @@ namespace FixMyCrypto {
             }
             byte[] saltData = new byte[wordSize + saltBufferSize];
             BinaryWriter w2 = new(new MemoryStream(saltData));
-            w2.Write((ulong)salt.Length);
+                if (wordSize == 8) {
+                    w2.Write((ulong)salt.Length);
+                }
+                else {
+                    w2.Write((uint)salt.Length);
+                }
             w2.Write(salt);
             w2.Write(new byte[saltBufferSize - salt.Length]);
             w2.Close();
@@ -162,15 +182,19 @@ namespace FixMyCrypto {
         }
 
         private byte[] RunKernel(string kernelName, byte[] data, byte[] saltData, int count) {
-            byte[] result = null;
-
             Kernel kernel;
-            if (kernels.ContainsKey(kernelName)) {
-                kernel = kernels[kernelName];
+            if (pbkdf2_kernels.ContainsKey(kernelName)) {
+                kernel = pbkdf2_kernels[kernelName];
             }
             else {
-                kernel = program_pbkdf2.CreateKernel(kernelName);
-                kernels[kernelName] = kernel;
+                try {
+                    kernel = program_pbkdf2.CreateKernel(kernelName);
+                    pbkdf2_kernels[kernelName] = kernel;
+                }
+                catch (Exception e) {
+                    Log.Error(e.ToString() + $"\nkernel name: {kernelName}");
+                    throw;
+                }
             }
 
             try {
@@ -183,39 +207,48 @@ namespace FixMyCrypto {
                 kernel.SetKernelArgument(1, saltBuffer);
                 kernel.SetKernelArgument(2, outBuffer);
                 commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
-                result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                return result;
             }
             catch (Exception e) {
-                Log.Error(e.ToString());
+                Log.Error(e.ToString() + $"\nkernel name: {kernelName}");
                 throw;
             }
-
-            return result;
         }
 
         public Seed[] Pbkdf2_Sha512_MultiSalt(Phrase[] phrases, string[] passphrases, byte[] password, byte[][] salts, int iters = 2048, int dklen = 64) {
             Init_Sha512(dklen);
             // Log.Debug($"salt batch size={salts.Length}");
 
-            byte[] data = new byte[wordSize + pwdBufferSize];
+            byte[] data = new byte[wordSize + inBufferSize];
             BinaryWriter w = new(new MemoryStream(data));
-            if (password.Length > pwdBufferSize) {
+            if (password.Length > inBufferSize) {
                     throw new Exception("phrase exceeds max length");
             }
-            w.Write((ulong)password.Length);
+                if (wordSize == 8) {
+                    w.Write((ulong)password.Length);
+                }
+                else {
+                    w.Write((uint)password.Length);
+                }
             w.Write(password);
-            w.Write(new byte[pwdBufferSize - password.Length]);
+            w.Write(new byte[inBufferSize - password.Length]);
             w.Close();
 
-            byte[] saltData = new byte[salts.Length * (wordSize + inBufferSize)];
+            byte[] saltData = new byte[salts.Length * (wordSize + saltBufferSize)];
             BinaryWriter w2 = new(new MemoryStream(saltData));
             for (int i = 0; i < salts.Length; i++) {
-                if (salts[i].Length > inBufferSize) {
+                if (salts[i].Length > saltBufferSize) {
                     throw new Exception("passphrase max length set incorrectly");
                 }
-                w2.Write((ulong)salts[i].Length);
+                if (wordSize == 8) {
+                    w2.Write((ulong)salts[i].Length);
+                }
+                else {
+                    w2.Write((uint)salts[i].Length);
+                }
                 w2.Write(salts[i]);
-                w2.Write(new byte[inBufferSize - salts[i].Length]);
+                w2.Write(new byte[saltBufferSize - salts[i].Length]);
             }
             w2.Close();
 
@@ -247,6 +280,8 @@ namespace FixMyCrypto {
             string code = Bip39_Solver.common_cl + Bip39_Solver_Secp256k1.secp256k1_common_cl + Bip39_Solver_Secp256k1.secp256k1_scalar_cl + Bip39_Solver_Secp256k1.secp256k1_field_cl + Bip39_Solver_Secp256k1.secp256k1_group_cl + Bip39_Solver_Secp256k1.secp256k1_preq_cl + Bip39_Solver_Secp256k1.secp256k1_cl + Bip39_Solver_Sha.sha2_cl + Bip39_Solver.address_cl;
 
             Log.Info("Compiling OpenCL BIP32 Derive scripts...");
+            foreach (var k in bip32_kernels.Values) k?.Dispose();
+            bip32_kernels.Clear();
             program_bip32derive?.Dispose();
             program_bip32derive = context.CreateAndBuildProgramFromString(code);
             Log.Info("OpenCL Compiled");
@@ -279,16 +314,14 @@ namespace FixMyCrypto {
 
             uint[] paths = new uint[] { path };
 
-            byte[] result;
-
             try {
                 Kernel kernel;
-                if (kernels.ContainsKey(kernelName)) {
-                    kernel = kernels[kernelName];
+                if (bip32_kernels.ContainsKey(kernelName)) {
+                    kernel = bip32_kernels[kernelName];
                 }
                 else {
                     kernel = program_bip32derive.CreateKernel(kernelName);
-                    kernels[kernelName] = kernel;
+                    bip32_kernels[kernelName] = kernel;
                 }
 
                 int outSize = length * count;
@@ -300,7 +333,7 @@ namespace FixMyCrypto {
                 kernel.SetKernelArgument(1, outBuffer);
                 kernel.SetKernelArgument(2, pathBuffer);
                 commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
-                result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
 
                 Cryptography.Key[] ret = new Cryptography.Key[count];
                 BinaryReader r = new BinaryReader(new MemoryStream(result));
@@ -368,7 +401,7 @@ namespace FixMyCrypto {
                 Log.Info("Benchmark OpenCL phrases...");
                 Phrase[] ph = new Phrase[tcount];
                 byte[][] passwords = new byte[tcount][];
-                for (int i = 0; i < tcount; i++) ph[i] = new Phrase();
+                for (int i = 0; i < tcount; i++) ph[i] = new Phrase(12);
                 for (int i = 0; i < tcount; i++) passwords[i] = ph[i].ToPhrase().ToUTF8Bytes();
                 string pp = "";
                 byte[] salt = Cryptography.PassphraseToSalt(pp);
@@ -401,7 +434,7 @@ namespace FixMyCrypto {
 
             {
                 Log.Info("Benchmark OpenCL passphrases...");
-                Phrase ph = new Phrase();
+                Phrase ph = new Phrase(12);
                 string phrase = ph.ToPhrase();
                 byte[] password = phrase.ToUTF8Bytes();
                 string[] pp = new string[tcount];
