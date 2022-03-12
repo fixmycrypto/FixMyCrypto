@@ -156,12 +156,14 @@ static void F(__global word *pwd, const word pwdLen_bytes,
     }
 }
 
+/*
 void print_wg_size(__constant const char *name) {
     size_t g = get_global_size(0);
     size_t l = get_local_size(0);
     size_t wg = get_num_groups(0);
     printf(""%s(): global=%ld local=%ld groups=%ld\n"", name, g, l, wg);
 }
+*/
 
 __kernel void pbkdf2(__global const inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer,
     __private unsigned int iters, __private unsigned int dkLen_bytes)
@@ -169,11 +171,13 @@ __kernel void pbkdf2(__global const inbuf *inbuffer, __global const saltbuf *sal
 
     unsigned int idx = get_global_id(0);
 
+/*
     //  debug
     if (idx == 0)
     {
         print_wg_size((__constant const char*)""pbkdf2 (brute)"");
     }
+*/
 
     word pwdLen_bytes = inbuffer[idx].length;
     __global word *pwdBuffer = inbuffer[idx].buffer;
@@ -235,13 +239,13 @@ __kernel void pbkdf2_saltlist(__global const inbuf *inbuffer, __global const sal
 {
 
 	unsigned int idx = get_global_id(0);
-
+/*
     //  debug
     if (idx == 0)
     {
         print_wg_size((__constant const char*)""pbkdf2_saltlist (brute)"");
     }
-
+*/
     word pwdLen_bytes = inbuffer[0].length;
     __global word *pwdBuffer = inbuffer[0].buffer;
     __global word *currOutBuffer = outbuffer[idx].buffer;
