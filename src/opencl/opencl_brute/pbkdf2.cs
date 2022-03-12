@@ -267,22 +267,22 @@ __kernel void pbkdf2_saltlist(__global const inbuf *inbuffer, __global const sal
 ";
 
 public static string pbkdf2_variants = @"
-__kernel void pbkdf2_2048_64(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
+__kernel void pbkdf2_2048_64(__global const inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
 {
     pbkdf2(inbuffer, saltbuffer, outbuffer, 2048, 64);
 }
 
-__kernel void pbkdf2_saltlist_2048_64(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
+__kernel void pbkdf2_saltlist_2048_64(__global const inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
 {
     pbkdf2_saltlist(inbuffer, saltbuffer, outbuffer, 2048, 64);
 }
 
-__kernel void pbkdf2_4096_96(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
+__kernel void pbkdf2_4096_96(__global const inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
 {
     pbkdf2(inbuffer, saltbuffer, outbuffer, 4096, 96);
 }
 
-__kernel void pbkdf2_saltlist_4096_96(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
+__kernel void pbkdf2_saltlist_4096_96(__global const inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
 {
     pbkdf2_saltlist(inbuffer, saltbuffer, outbuffer, 4096, 96);
 }

@@ -24,9 +24,9 @@ public static string buffer_structs_template_cl = @"
 // Practical sizes of buffers, in words.
 #define inBufferSize ceilDiv(<inBufferSize_bytes>, wordSize)
 #define outBufferSize ceilDiv(<outBufferSize_bytes>, wordSize)
-#define pwdBufferSize ceilDiv(<pwdBufferSize_bytes>, wordSize)
+//#define pwdBufferSize ceilDiv(<pwdBufferSize_bytes>, wordSize)
 #define saltBufferSize ceilDiv(<saltBufferSize_bytes>, wordSize)
-#define ctBufferSize ceilDiv(<ctBufferSize_bytes>, wordSize)
+//#define ctBufferSize ceilDiv(<ctBufferSize_bytes>, wordSize)
 
 // 
 #define hashBlockSize_bytes ceilDiv(<hashBlockSize_bits>, 8) /* Needs to be a multiple of 4, or 8 when we work with unsigned longs */
@@ -94,7 +94,6 @@ typedef struct {
     word length; // in bytes
     word buffer[pwdBufferSize];
 } pwdbuf;
-*/
 
 // ciphertext buffer, used in pbe.
 // no code relating to this in the opencl.py core, dealt with in signal_pbe_mac.cl as it's a special case
@@ -102,6 +101,7 @@ typedef struct {
     word length; // in bytes
     word buffer[ctBufferSize];
 } ctbuf;
+*/
 
 
 
