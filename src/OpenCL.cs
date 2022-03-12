@@ -76,15 +76,15 @@ namespace FixMyCrypto {
 
             program_pbkdf2_ready = false;
             outBufferSize = (dklen > 64) ? 128 : 64;
-            //wordSize = (dklen > 32) ? 8 : 4;
-            wordSize = 4;
+            wordSize = (dklen > 32) ? 8 : 4;
+            // wordSize = 4;
 
             //pwdBufferSize = inBufferSize;
 
             // Creates a program and then the kernel from it
             
-            // string code = OpenCL_Bufferstructs.buffer_structs_template_cl + OpenCL_Sha512.hmac512_cl + OpenCL_Pbkdf2.pbkdf2_cl + OpenCL_Pbkdf2.pbkdf2_variants;
-            string code = Bip39_Solver_Sha.sha2_cl + Bip39_Solver.int_to_address_cl;
+            string code = OpenCL_Bufferstructs.buffer_structs_template_cl + OpenCL_Sha512.hmac512_cl + OpenCL_Pbkdf2.pbkdf2_cl + OpenCL_Pbkdf2.pbkdf2_variants;
+            // string code = Bip39_Solver_Sha.sha2_cl + Bip39_Solver.int_to_address_cl;
             
             code = code.Replace("<hashBlockSize_bits>", "1024");
             code = code.Replace("<hashDigestSize_bits>", "512");

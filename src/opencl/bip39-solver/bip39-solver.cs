@@ -45,6 +45,13 @@ namespace FixMyCrypto {
         printf(""\n\n"");
     }
 
+void print_wg_size(const char *name) {
+    size_t g = get_global_size(0);
+    size_t l = get_local_size(0);
+    size_t wg = get_num_groups(0);
+    printf(""%s(): global=%ld local=%ld groups=%ld\n"", name, g, l, wg);
+}
+
     __kernel void pbkdf2(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer,
     __private unsigned int iters, __private unsigned int dkLen_bytes, uchar mode) {
 
@@ -52,6 +59,12 @@ namespace FixMyCrypto {
         uchar ipad_key[128];
         uchar opad_key[128];
         uchar pwd_hash[hashlength] = { 0 };
+
+        //  debug
+        if (idx == 0)
+        {
+            print_wg_size((__constant char*)""pbkdf2 (bip39)"");
+        }
 
         __global uchar *pwd;
         __global uchar *seed = outbuffer[idx].buffer;
@@ -376,9 +389,23 @@ typedef struct {
     uint path;
 } pathBuffer;
 
+void print_wg_size(const char *name) {
+    size_t g = get_global_size(0);
+    size_t l = get_local_size(0);
+    size_t wg = get_num_groups(0);
+    printf(""%s(): global=%ld local=%ld groups=%ld\n"", name, g, l, wg);
+}
+
 __kernel void bip32_derive_hardened(__global keyBuffer *parent, __global keyBuffer *child, __global pathBuffer *pathBuffer) {
 
   ulong idx = get_global_id(0);
+
+  //  debug
+  if (idx == 0)
+  {
+    print_wg_size((__constant char*)""bip32_derive_hardened"");
+  }
+
   uint child_number = (1 << 31) | pathBuffer[0].path;
   uchar hmacsha512_result[64] = { 0 };
   uchar hmac_input[37] = {0};
@@ -399,14 +426,21 @@ __kernel void bip32_derive_hardened(__global keyBuffer *parent, __global keyBuff
 
 __kernel void bip32_derive_normal(__global keyBuffer *parent, __global keyBuffer *child, __global pathBuffer *pathBuffer) {
   ulong idx = get_global_id(0);
+
+  //  debug
+  if (idx == 0)
+  {
+    print_wg_size((__constant char*)""bip32_derive_normal"");
+  }
+
   uchar hmacsha512_result[64] = { 0 };
   //extended_public_key_t pub;
   //public_from_private(parent, &pub);
   uchar pub[32] = { 0 };
-  secp256k1_ec_pubkey_create(pub, parent[idx].key);
+  secp256k1_ec_pubkey_create(&pub, parent[idx].key);
   uchar hmac_input[37] = {0};
   //serialized_public_key(&pub, &hmac_input);
-  secp256k1_ec_pubkey_serialize(&hmac_input, 33, pub, SECP256K1_EC_COMPRESSED);
+  secp256k1_ec_pubkey_serialize(&hmac_input, 33, &pub, SECP256K1_EC_COMPRESSED);
   hmac_input[33] = pathBuffer[0].path >> 24;
   hmac_input[34] = (pathBuffer[0].path & 0x00FF0000) >> 16;
   hmac_input[35] = (pathBuffer[0].path & 0x0000FF00) >> 8;

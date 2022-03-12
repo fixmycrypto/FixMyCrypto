@@ -156,11 +156,25 @@ static void F(__global word *pwd, const word pwdLen_bytes,
     }
 }
 
-__kernel void pbkdf2(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer,
+void print_wg_size(__constant const char *name) {
+    size_t g = get_global_size(0);
+    size_t l = get_local_size(0);
+    size_t wg = get_num_groups(0);
+    printf(""%s(): global=%ld local=%ld groups=%ld\n"", name, g, l, wg);
+}
+
+__kernel void pbkdf2(__global const inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer,
     __private unsigned int iters, __private unsigned int dkLen_bytes)
 {
 
     unsigned int idx = get_global_id(0);
+
+    //  debug
+    if (idx == 0)
+    {
+        print_wg_size((__constant const char*)""pbkdf2 (brute)"");
+    }
+
     word pwdLen_bytes = inbuffer[idx].length;
     __global word *pwdBuffer = inbuffer[idx].buffer;
     __global word *currOutBuffer = outbuffer[idx].buffer;
@@ -216,23 +230,30 @@ __kernel void hmac_main(__global inbuf *inbuffer, __global const saltbuf *saltbu
 // Originally created for BTCRecover by Stephen Rothery, available at https://github.com/3rdIteration/btcrecover
 //    MIT License
 
-__kernel void pbkdf2_saltlist(__global const pwdbuf *pwdbuffer_arg, __global inbuf *inbuffer, __global outbuf *outbuffer,
+__kernel void pbkdf2_saltlist(__global const inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer,
     __private unsigned int iters, __private unsigned int dkLen_bytes)
 {
 
 	unsigned int idx = get_global_id(0);
-    word pwdLen_bytes = pwdbuffer_arg[0].length;
-    __global word *pwdBuffer = pwdbuffer_arg[0].buffer;
+
+    //  debug
+    if (idx == 0)
+    {
+        print_wg_size((__constant const char*)""pbkdf2_saltlist (brute)"");
+    }
+
+    word pwdLen_bytes = inbuffer[0].length;
+    __global word *pwdBuffer = inbuffer[0].buffer;
     __global word *currOutBuffer = outbuffer[idx].buffer;
 
     // Copy salt so that we can write our integer into the last 4 bytes
-    word saltLen_bytes = inbuffer[idx].length;
+    word saltLen_bytes = saltbuffer[idx].length;
     int saltLen = ceilDiv(saltLen_bytes, wordSize);
     word personal_salt[saltBufferSize+2] = {0};
 
 
     for (int j = 0; j < saltLen; j++){
-        personal_salt[j] = inbuffer[idx].buffer[j];
+        personal_salt[j] = saltbuffer[idx].buffer[j];
     }
 
     // Determine the number of calls to F that we need to make
@@ -251,9 +272,9 @@ __kernel void pbkdf2_2048_64(__global inbuf *inbuffer, __global const saltbuf *s
     pbkdf2(inbuffer, saltbuffer, outbuffer, 2048, 64);
 }
 
-__kernel void pbkdf2_saltlist_2048_64(__global const pwdbuf *pwdbuffer_arg, __global inbuf *inbuffer, __global outbuf *outbuffer)
+__kernel void pbkdf2_saltlist_2048_64(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
 {
-    pbkdf2_saltlist(pwdbuffer_arg, inbuffer, outbuffer, 2048, 64);
+    pbkdf2_saltlist(inbuffer, saltbuffer, outbuffer, 2048, 64);
 }
 
 __kernel void pbkdf2_4096_96(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
@@ -261,9 +282,9 @@ __kernel void pbkdf2_4096_96(__global inbuf *inbuffer, __global const saltbuf *s
     pbkdf2(inbuffer, saltbuffer, outbuffer, 4096, 96);
 }
 
-__kernel void pbkdf2_saltlist_4096_96(__global const pwdbuf *pwdbuffer_arg, __global inbuf *inbuffer, __global outbuf *outbuffer)
+__kernel void pbkdf2_saltlist_4096_96(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer)
 {
-    pbkdf2_saltlist(pwdbuffer_arg, inbuffer, outbuffer, 4096, 96);
+    pbkdf2_saltlist(inbuffer, saltbuffer, outbuffer, 4096, 96);
 }
 ";
 

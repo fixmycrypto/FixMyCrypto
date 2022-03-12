@@ -570,7 +570,7 @@ namespace FixMyCrypto {
                     }
                     catch (Exception ex) {
                         Log.Error("P2A error: " + ex.Message);
-                        break;
+                        FixMyCrypto.PauseAndExit(1);
                     }
                     finally {
                         stopWatch.Stop();
