@@ -20,7 +20,7 @@ namespace FixMyCrypto {
         protected override string GetStakePath() {
             return "m/1852'/1815'/{account}'/2/0";
         }
-        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
+        public override Cryptography.Key DeriveRootKey(Phrase phrase, string passphrase) {
             if (IsUsingOpenCL()) {
                 return DeriveRootKey_BatchPassphrases(phrase, new string[] { passphrase })[0];
             }
@@ -28,7 +28,7 @@ namespace FixMyCrypto {
             byte[] entropy = phrase.Indices.ElevenToEight();
             var rootKey = Cryptography.Pbkdf2_HMAC512(passphrase, entropy, 4096, 96);
             rootKey = Cryptography.TweakBits(rootKey);
-            return new CardanoSharp.Wallet.Models.Keys.PrivateKey(rootKey.Slice(0, 64), rootKey.Slice(64));
+            return new Cryptography.Key(rootKey.Slice(0, 64), rootKey.Slice(64));
         }
         
         public override bool IsUsingOpenCL() {
@@ -38,7 +38,7 @@ namespace FixMyCrypto {
         public override int GetKeyLength() {
             return 96;
         }
-        public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
+        public override Cryptography.Key[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
             if (!IsUsingOpenCL()) {
                 return base.DeriveRootKey_BatchPhrases(phrases, passphrase);
             }
@@ -48,16 +48,16 @@ namespace FixMyCrypto {
                 for (int i = 0; i < phrases.Length; i++) salts[i] = phrases[i].Indices.ElevenToEight();
                 byte[] password = passphrase.ToUTF8Bytes();
                 Seed[] seeds = ocl.Pbkdf2_Sha512_MultiSalt(phrases, new string[] { passphrase }, password, salts, 4096, 96);
-                Object[] keys = new object[phrases.Length];
+                Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
                 Parallel.For(0, phrases.Length, i => {
                     if (Global.Done) return;
                     byte[] key = Cryptography.TweakBits(seeds[i].seed);
-                    keys[i] = new CardanoSharp.Wallet.Models.Keys.PrivateKey(key.Slice(0, 64), key.Slice(64));
+                    keys[i] = new Cryptography.Key(key.Slice(0, 64), key.Slice(64));
                 });
                 return keys;
             }
         }
-        public override Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
+        public override Cryptography.Key[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
             if (!IsUsingOpenCL()) {
                 return base.DeriveRootKey_BatchPassphrases(phrase, passphrases);
             }
@@ -67,23 +67,24 @@ namespace FixMyCrypto {
                 byte[][] passwords = new byte[passphrases.Length][];
                 for (int i = 0; i < passphrases.Length; i++) passwords[i] = passphrases[i].ToUTF8Bytes();
                 Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPassword(new Phrase[] { phrase }, passphrases, passwords, salt, 4096, 96);
-                Object[] keys = new object[passphrases.Length];
+                Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
                 Parallel.For(0, passphrases.Length, i => {
                     if (Global.Done) return;
                     byte[] key = Cryptography.TweakBits(seeds[i].seed);
-                    keys[i] = new CardanoSharp.Wallet.Models.Keys.PrivateKey(key.Slice(0, 64), key.Slice(64));
+                    keys[i] = new Cryptography.Key(key.Slice(0, 64), key.Slice(64));
                 });
                 return keys;
             }
         }
         
-        protected override Object DeriveChildKey(Object parentKey, uint index) {
-            var key = (CardanoSharp.Wallet.Models.Keys.PrivateKey)parentKey;
+        protected override Cryptography.Key DeriveChildKey(Cryptography.Key parentKey, uint index) {
+            var key = new CardanoSharp.Wallet.Models.Keys.PrivateKey(parentKey.data, parentKey.cc);
             string path = PathNode.GetPath(index);
-            return key.Derive(path);
+            var child = key.Derive(path);
+            return new Cryptography.Key(child.Key, child.Chaincode);
         }
-        protected virtual CardanoSharp.Wallet.Models.Keys.PublicKey GetPublicKey(Object pk) {
-            var key = (CardanoSharp.Wallet.Models.Keys.PrivateKey)pk;
+        protected virtual CardanoSharp.Wallet.Models.Keys.PublicKey GetPublicKey(Cryptography.Key sk) {
+            var key = new CardanoSharp.Wallet.Models.Keys.PrivateKey(sk.data, sk.cc);
             return key.GetPublicKey(false);
         }
         protected override Address DeriveAddress(PathNode node, int index) {
@@ -136,24 +137,24 @@ namespace FixMyCrypto {
         public PhraseToAddressCardanoLedger(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses) {
         }
         public override CoinType GetCoinType() { return CoinType.ADALedger; }
-        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
+        public override Cryptography.Key DeriveRootKey(Phrase phrase, string passphrase) {
             var key = Cryptography.Ledger_expand_seed_ed25519_bip32(phrase, passphrase);
 
-            return new CardanoSharp.Wallet.Models.Keys.PrivateKey(key.data, key.cc);
+            return new Cryptography.Key(key.data, key.cc);
         }
 
-        public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
+        public override Cryptography.Key[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
             //  No OpenCL yet
-            Object[] keys = new object[phrases.Length];
+            Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
             Parallel.For(0, phrases.Length, i => {
                 keys[i] = DeriveRootKey(phrases[i], passphrase);
             });
             return keys;
         }
 
-        public override Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
+        public override Cryptography.Key[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
             //  No OpenCL yet
-            Object[] keys = new object[passphrases.Length];
+            Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
             Parallel.For(0, passphrases.Length, i => {
                 keys[i] = DeriveRootKey(phrase, passphrases[i]);
             });
@@ -166,25 +167,25 @@ namespace FixMyCrypto {
 
         public override CoinType GetCoinType() { return CoinType.ADATrezor; }
 
-        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
+        public override Cryptography.Key DeriveRootKey(Phrase phrase, string passphrase) {
             byte[] entropy = phrase.Indices.ElevenToEight(phrase.Length == 24);
             var rootKey = Cryptography.Pbkdf2_HMAC512(passphrase, entropy, 4096, 96);
             rootKey = Cryptography.TweakBits(rootKey);
-            return new CardanoSharp.Wallet.Models.Keys.PrivateKey(rootKey.Slice(0, 64), rootKey.Slice(64));
+            return new Cryptography.Key(rootKey.Slice(0, 64), rootKey.Slice(64));
         }
 
-        public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
+        public override Cryptography.Key[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
             //  No OpenCL yet
-            Object[] keys = new object[phrases.Length];
+            Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
             Parallel.For(0, phrases.Length, i => {
                 keys[i] = DeriveRootKey(phrases[i], passphrase);
             });
             return keys;
         }
 
-        public override Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
+        public override Cryptography.Key[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
             //  No OpenCL yet
-            Object[] keys = new object[passphrases.Length];
+            Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
             Parallel.For(0, passphrases.Length, i => {
                 keys[i] = DeriveRootKey(phrase, passphrases[i]);
             });

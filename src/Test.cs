@@ -92,9 +92,9 @@ namespace FixMyCrypto {
         public static void TestCardanoKeyVector(string name, string phrase, string passphrase, CoinType coin, string expectSK, string expectCC) {
             PhraseToAddress p = PhraseToAddress.Create(coin, null, null);
             Phrase ph = new Phrase(phrase);
-            CardanoSharp.Wallet.Models.Keys.PrivateKey sk = (CardanoSharp.Wallet.Models.Keys.PrivateKey)p.DeriveRootKey(ph, passphrase);
-            string gotSK = sk.Key.ToHexString();
-            string gotCC = sk.Chaincode.ToHexString();
+            Cryptography.Key sk = p.DeriveRootKey(ph, passphrase);
+            string gotSK = sk.data.ToHexString();
+            string gotCC = sk.cc.ToHexString();
             if (gotSK != expectSK) {
                 Log.Debug($"{coin} test vector '{name}' failed SK:\nexpect: {expectSK}\ngot   : {gotSK}");
                 throw new Exception("test failed");

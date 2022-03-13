@@ -126,7 +126,7 @@ namespace FixMyCrypto {
             return p.Substring(a.Length + 1);
         }
     }
-    public class PathTree {
+    class PathTree {
         public PathNode Root { get; }
         public PathTree() {
             Root = new PathNode(null, PathNode.RootIndex);
@@ -182,14 +182,14 @@ namespace FixMyCrypto {
         }
     }
 
-    public class PathNode {
+    class PathNode {
         public static uint Hardened = 0x80000000U;
         public static uint RootIndex = 0x7fffffffU;
         public PathNode Parent { get; protected set; }
         public uint Value { get; protected set; }
         public List<PathNode> Children { get; protected set; }
         public bool End { get; set; }
-        public Object[] Keys { get; set; }
+        public Cryptography.Key[] Keys { get; set; }
 
         public PathNode(PathNode parent, uint prefix) {
             this.Parent = parent;

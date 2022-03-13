@@ -30,7 +30,7 @@ namespace FixMyCrypto {
             return paths.ToArray();
         }
  
-        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
+        public override Cryptography.Key DeriveRootKey(Phrase phrase, string passphrase) {
             //  https://github.com/paritytech/substrate-bip39/blob/c56994c06fe29693cfed445400ddc53bb12e472b/src/lib.rs#L45
             byte[] entropy = phrase.Indices.ElevenToEight();
             byte[] salt = Cryptography.PassphraseToSalt(passphrase);
@@ -39,7 +39,7 @@ namespace FixMyCrypto {
             return new Cryptography.Key(seed, null);
         }
 
-        protected override Object DeriveChildKey(Object parentKey, uint index) {
+        protected override Cryptography.Key DeriveChildKey(Cryptography.Key parentKey, uint index) {
             return parentKey;
         }
 
@@ -102,18 +102,16 @@ namespace FixMyCrypto {
  
         public override CoinType GetCoinType() { return CoinType.DOTLedger; }
 
-        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
+        public override Cryptography.Key DeriveRootKey(Phrase phrase, string passphrase) {
 
             //  Ledger: https://github.com/algorand/ledger-app-algorand/blob/master/src/algo_keys.c
             return Cryptography.Ledger_expand_seed_ed25519_bip32(phrase, passphrase);
         }
 
-        protected override Object DeriveChildKey(Object parentKey, uint index) {
-            var k = (Cryptography.Key)parentKey;
-
+        protected override Cryptography.Key DeriveChildKey(Cryptography.Key parentKey, uint index) {
             //  Borrowing CardanoSharp's BIP32 Derive
 
-            var key = new CardanoSharp.Wallet.Models.Keys.PrivateKey(k.data, k.cc);
+            var key = new CardanoSharp.Wallet.Models.Keys.PrivateKey(parentKey.data, parentKey.cc);
             string path = PathNode.GetPath(index);
             var derived = key.Derive(path);
             return new Cryptography.Key(derived.Key, derived.Chaincode);

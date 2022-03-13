@@ -61,16 +61,8 @@ namespace FixMyCrypto {
         }
  
         protected override Address DeriveAddress(PathNode node, int index) {
-            ExtKey sk;
-
-            // if (IsUsingOpenCL()) {
-                Cryptography.Key key = (Cryptography.Key)node.Keys[index];
-                Key k = new Key(key.data);
-                sk = new ExtKey(k, key.cc, 0, new HDFingerprint(), 0);
-            // }
-            // else {
-            //     sk = (ExtKey)node.Keys[index];
-            // }
+            Cryptography.Key key = node.Keys[index];
+            ExtKey sk = new ExtKey(new Key(key.data), key.cc);
 
             string address = SkToAddress(sk);
             return new Address(address, node.GetPath());

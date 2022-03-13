@@ -20,17 +20,9 @@ namespace FixMyCrypto {
         }
  
         protected override Address DeriveAddress(PathNode node, int index) {
-            ExtKey sk;
-            
-            // if (!IsUsingOpenCL()) {
-            //     sk = (ExtKey)node.Keys[index];
-            // } 
-            // else {
-                Cryptography.Key key = (Cryptography.Key)node.Keys[index];
-                Key k = new Key(key.data);
-                sk = new ExtKey(k, key.cc, 0, new HDFingerprint(), 0);
-            // }
-
+            Cryptography.Key key = (Cryptography.Key)node.Keys[index];
+            ExtKey sk = new ExtKey(new Key(key.data), key.cc);
+ 
             int version = 0;
             int version_size = version > 255 ? 2 : 1;
             byte[] tmp = new byte[20 + version_size + 4];

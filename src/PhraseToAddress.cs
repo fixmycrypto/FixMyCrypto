@@ -79,13 +79,13 @@ namespace FixMyCrypto {
         }
 
         private class Batch {
-            public Object[] keys;
+            public Cryptography.Key[] keys;
 
             public PathTree tree;
 
             public ProduceAddress produceAddress;
             
-            public Batch (Object[] keys, PathTree tree, ProduceAddress produceAddress) {
+            public Batch (Cryptography.Key[] keys, PathTree tree, ProduceAddress produceAddress) {
                 this.keys = keys;
                 this.tree = tree;
                 this.produceAddress = produceAddress;
@@ -95,7 +95,7 @@ namespace FixMyCrypto {
             public Phrase[] phrases;
             public string passphrase;
 
-            public PhraseBatch(Phrase[] phrases, string passphrase, Object[] keys, PathTree tree, ProduceAddress produceAddress) : base(keys, tree, produceAddress) {
+            public PhraseBatch(Phrase[] phrases, string passphrase, Cryptography.Key[] keys, PathTree tree, ProduceAddress produceAddress) : base(keys, tree, produceAddress) {
                 this.phrases = phrases;
                 this.passphrase = passphrase;
             }
@@ -103,7 +103,7 @@ namespace FixMyCrypto {
         private class PassphraseBatch : Batch {
             public Phrase phrase;
             public string[] passphrases;
-            public PassphraseBatch(Phrase phrase, string[] passphrases, Object[] keys, PathTree tree, ProduceAddress produceAddress) : base(keys, tree, produceAddress) {
+            public PassphraseBatch(Phrase phrase, string[] passphrases, Cryptography.Key[] keys, PathTree tree, ProduceAddress produceAddress) : base(keys, tree, produceAddress) {
                 this.phrase = phrase;
                 this.passphrases = passphrases;
             }
@@ -130,11 +130,11 @@ namespace FixMyCrypto {
             }
         }
 
-        public abstract Object DeriveRootKey(Phrase phrase, string passphrase);
+        public abstract Cryptography.Key DeriveRootKey(Phrase phrase, string passphrase);
 
-        public virtual Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase)
+        public virtual Cryptography.Key[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase)
         {
-            Object[] keys = new object[phrases.Length];
+            Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
             Parallel.For(0, phrases.Length, i => {
                 if (Global.Done) return;
                 keys[i] = DeriveRootKey(phrases[i], passphrase);
@@ -142,19 +142,19 @@ namespace FixMyCrypto {
             return keys;
         }
 
-        public virtual Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases)
+        public virtual Cryptography.Key[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases)
         {
-            Object[] keys = new object[passphrases.Length];
+            Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
             Parallel.For(0, passphrases.Length, i => {
                 if (Global.Done) return;
                 keys[i] = DeriveRootKey(phrase, passphrases[i]);
             });
             return keys;
         }
-        protected abstract Object DeriveChildKey(Object parentKey, uint index);
+        protected abstract Cryptography.Key DeriveChildKey(Cryptography.Key parentKey, uint index);
 
-        protected virtual Object[] DeriveChildKey_Batch(Object[] parents, uint index) {
-            Object[] keys = new object[parents.Length];
+        protected virtual Cryptography.Key[] DeriveChildKey_Batch(Cryptography.Key[] parents, uint index) {
+            Cryptography.Key[] keys = new Cryptography.Key[parents.Length];
             Parallel.For(0, parents.Length, i => {
                 if (Global.Done) return;
                 keys[i] = DeriveChildKey(parents[i], index);
@@ -391,7 +391,7 @@ namespace FixMyCrypto {
 
             if (Global.Done) return;
 
-            Object[] keys = DeriveRootKey_BatchPassphrases(phrase, passphrases);
+            Cryptography.Key[] keys = DeriveRootKey_BatchPassphrases(phrase, passphrases);
 
             //  Enqueue batch
 
@@ -409,7 +409,7 @@ namespace FixMyCrypto {
 
             if (Global.Done) return;
 
-            Object[] keys = DeriveRootKey_BatchPhrases(phrases, passphrase);
+            Cryptography.Key[] keys = DeriveRootKey_BatchPhrases(phrases, passphrase);
 
             PhraseBatch pb = new PhraseBatch(phrases, passphrase, keys, tree, Produce);
             

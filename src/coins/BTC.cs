@@ -166,7 +166,7 @@ namespace FixMyCrypto {
             if (path.StartsWith("m/86")) keyType = ScriptPubKeyType.TaprootBIP86;
             return keyType;
         }
-        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
+        public override Cryptography.Key DeriveRootKey(Phrase phrase, string passphrase) {
             if (IsUsingOpenCL() && !ocl.IsBusy) {
                 return DeriveRootKey_BatchPhrases(new Phrase[] { phrase }, passphrase)[0];
             }
@@ -180,7 +180,7 @@ namespace FixMyCrypto {
         public override bool IsUsingOpenCL() {
             return (ocl != null);
         }
-        public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
+        public override Cryptography.Key[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
             if (!IsUsingOpenCL() || ocl.IsBusy) {
                 return base.DeriveRootKey_BatchPhrases(phrases, passphrase);
             }
@@ -197,7 +197,7 @@ namespace FixMyCrypto {
             });
             return keys;
         }
-        public override Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
+        public override Cryptography.Key[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
             if (!IsUsingOpenCL() || ocl.IsBusy) {
                 return base.DeriveRootKey_BatchPassphrases(phrase, passphrases);
             }
@@ -214,35 +214,24 @@ namespace FixMyCrypto {
             });
             return keys;
         }
-        protected override Object DeriveChildKey(Object parentKey, uint index) {
+        protected override Cryptography.Key DeriveChildKey(Cryptography.Key parentKey, uint index) {
             if (IsUsingOpenCL() && !ocl.IsBusy) {
-                return DeriveChildKey_Batch(new Object[] { parentKey }, index)[0];
+                return DeriveChildKey_Batch(new Cryptography.Key[] { parentKey }, index)[0];
             }
 
-            // ExtKey key = (ExtKey)parentKey;
-            // return key.Derive(index);
-
-            return ((Cryptography.Key)parentKey).Derive_Bip32(index);
+            return parentKey.Derive_Bip32(index);
         }
-        protected override Object[] DeriveChildKey_Batch(Object[] parents, uint index) {
+        protected override Cryptography.Key[] DeriveChildKey_Batch(Cryptography.Key[] parents, uint index) {
             if (!IsUsingOpenCL() || ocl.IsBusy) {
                 return base.DeriveChildKey_Batch(parents, index);
             }
 
-            return ocl.Bip32_Derive(Array.ConvertAll(parents, item => (Cryptography.Key)item), index);
+            return ocl.Bip32_Derive(parents, index);
         }
 
         protected override Address DeriveAddress(PathNode node, int index) {
-            ExtKey sk;
-
-            // if (IsUsingOpenCL()) {
-                Cryptography.Key key = (Cryptography.Key)node.Keys[index];
-                Key k = new Key(key.data);
-                sk = new ExtKey(k, key.cc, 0, new HDFingerprint(), 0);
-            // }
-            // else {
-            //     sk = (ExtKey)node.Keys[index];
-            // }
+            Cryptography.Key key = node.Keys[index];
+            ExtKey sk = new ExtKey(new Key(key.data), key.cc);
 
             string path = node.GetPath();
             string address = sk.GetPublicKey().GetAddress(GetKeyType(path), this.network).ToString();

@@ -45,26 +45,25 @@ namespace FixMyCrypto {
 
             return new Cryptography.Key(entropy.Slice(0, 32), null);
         }
-        public override Object DeriveRootKey(Phrase phrase, string passphrase) {
+        public override Cryptography.Key DeriveRootKey(Phrase phrase, string passphrase) {
             if (phrase.Length == 25) return this.Restore25(phrase);
 
             //  Ledger: https://github.com/algorand/ledger-app-algorand/blob/master/src/algo_keys.c
             return Cryptography.Ledger_expand_seed_ed25519_bip32(phrase, passphrase);
 
         }
-        protected override Object DeriveChildKey(Object parentKey, uint index) {
-            var k = (Cryptography.Key)parentKey;
-            if (k == null || k.data.Length != 64) return null;  //  for non-Ledger
+        protected override Cryptography.Key DeriveChildKey(Cryptography.Key parentKey, uint index) {
+            if (parentKey == null || parentKey.data.Length != 64) return null;  //  for non-Ledger
 
             //  Borrowing CardanoSharp's BIP32 Derive
 
-            var key = new CardanoSharp.Wallet.Models.Keys.PrivateKey(k.data, k.cc);
+            var key = new CardanoSharp.Wallet.Models.Keys.PrivateKey(parentKey.data, parentKey.cc);
             string path = PathNode.GetPath(index);
             var derived = key.Derive(path);
             return new Cryptography.Key(derived.Key, derived.Chaincode);
         }
         protected override Address DeriveAddress(PathNode node, int index) {
-            var key = (Cryptography.Key)node.Keys[index];
+            var key = node.Keys[index];
             if (key == null) return null;
 
             byte[] pub = Cryptography.Ed25519PublicKeyFromSeed(key.data.Slice(0, 32));
