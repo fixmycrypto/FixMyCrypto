@@ -10,6 +10,7 @@ using OpenCl.DotNetCore.Programs;
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,9 +27,9 @@ namespace FixMyCrypto {
         private Program program_bip32derive;
 
         private CommandQueue commandQueue;
-        private Dictionary<string, Kernel> pbkdf2_kernels = new();
+        private ConcurrentDictionary<string, Kernel> pbkdf2_kernels = new();
 
-        private Dictionary<string, Kernel> bip32_kernels = new();
+        private ConcurrentDictionary<string, Kernel> bip32_kernels = new();
 
         private bool program_pbkdf2_ready = false;
 
@@ -48,6 +49,9 @@ namespace FixMyCrypto {
         private Device chosenDevice;
 
         private int maxPassphraseLength;
+        private int running = 0;
+        private object mutex = new();
+        public Boolean IsBusy { get { return running > 0; }}
 
 
         // private CommandQueue commandQueue;
@@ -215,8 +219,10 @@ namespace FixMyCrypto {
                 kernel.SetKernelArgument(0, inBuffer);
                 kernel.SetKernelArgument(1, saltBuffer);
                 kernel.SetKernelArgument(2, outBuffer);
+                lock (mutex) { running++; }
                 commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
                 byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                lock (mutex) { running--; }
                 return result;
             }
             catch (Exception e) {
@@ -345,8 +351,10 @@ namespace FixMyCrypto {
                 kernel.SetKernelArgument(0, inBuffer);
                 kernel.SetKernelArgument(1, outBuffer);
                 kernel.SetKernelArgument(2, pathBuffer);
+                lock (mutex) { running++; }
                 commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
                 byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                lock (mutex) { running--; }
 
                 Cryptography.Key[] ret = new Cryptography.Key[count];
                 BinaryReader r = new BinaryReader(new MemoryStream(result));

@@ -167,20 +167,21 @@ namespace FixMyCrypto {
             return keyType;
         }
         public override Object DeriveRootKey(Phrase phrase, string passphrase) {
-            if (IsUsingOpenCL()) {
+            if (IsUsingOpenCL() && !ocl.IsBusy) {
                 return DeriveRootKey_BatchPhrases(new Phrase[] { phrase }, passphrase)[0];
             }
 
             string p = phrase.ToPhrase();
             byte[] salt = Cryptography.PassphraseToSalt(passphrase);
             byte[] seed = Cryptography.Pbkdf2_HMAC512(p, salt, 2048, 64);
-            return ExtKey.CreateFromSeed(seed);
+            byte[] key = Cryptography.HMAC512_Bitcoin(seed);
+            return new Cryptography.Key(key.Slice(0, 32), key.Slice(32));
         }
         public override bool IsUsingOpenCL() {
             return (ocl != null);
         }
         public override Object[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
-            if (!IsUsingOpenCL()) {
+            if (!IsUsingOpenCL() || ocl.IsBusy) {
                 return base.DeriveRootKey_BatchPhrases(phrases, passphrase);
             }
 
@@ -197,7 +198,7 @@ namespace FixMyCrypto {
             return keys;
         }
         public override Object[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
-            if (!IsUsingOpenCL()) {
+            if (!IsUsingOpenCL() || ocl.IsBusy) {
                 return base.DeriveRootKey_BatchPassphrases(phrase, passphrases);
             }
 
@@ -214,15 +215,17 @@ namespace FixMyCrypto {
             return keys;
         }
         protected override Object DeriveChildKey(Object parentKey, uint index) {
-            if (IsUsingOpenCL()) {
+            if (IsUsingOpenCL() && !ocl.IsBusy) {
                 return DeriveChildKey_Batch(new Object[] { parentKey }, index)[0];
             }
 
-            ExtKey key = (ExtKey)parentKey;
-            return key.Derive(index);
+            // ExtKey key = (ExtKey)parentKey;
+            // return key.Derive(index);
+
+            return ((Cryptography.Key)parentKey).Derive_Bip32(index);
         }
         protected override Object[] DeriveChildKey_Batch(Object[] parents, uint index) {
-            if (!IsUsingOpenCL()) {
+            if (!IsUsingOpenCL() || ocl.IsBusy) {
                 return base.DeriveChildKey_Batch(parents, index);
             }
 
@@ -232,14 +235,14 @@ namespace FixMyCrypto {
         protected override Address DeriveAddress(PathNode node, int index) {
             ExtKey sk;
 
-            if (IsUsingOpenCL()) {
+            // if (IsUsingOpenCL()) {
                 Cryptography.Key key = (Cryptography.Key)node.Keys[index];
                 Key k = new Key(key.data);
                 sk = new ExtKey(k, key.cc, 0, new HDFingerprint(), 0);
-            }
-            else {
-                sk = (ExtKey)node.Keys[index];
-            }
+            // }
+            // else {
+            //     sk = (ExtKey)node.Keys[index];
+            // }
 
             string path = node.GetPath();
             string address = sk.GetPublicKey().GetAddress(GetKeyType(path), this.network).ToString();
