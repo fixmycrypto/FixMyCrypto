@@ -51,7 +51,7 @@ namespace FixMyCrypto {
         private int maxPassphraseLength;
         private int running = 0;
         private object mutex = new();
-        public Boolean IsBusy { get { return running > 0; }}
+        // public Boolean IsBusy { get { return running > 0; }}
 
 
         // private CommandQueue commandQueue;

@@ -167,7 +167,7 @@ namespace FixMyCrypto {
             return keyType;
         }
         public override Cryptography.Key DeriveRootKey(Phrase phrase, string passphrase) {
-            if (IsUsingOpenCL() && !ocl.IsBusy) {
+            if (IsUsingOpenCL()) {
                 return DeriveRootKey_BatchPhrases(new Phrase[] { phrase }, passphrase)[0];
             }
 
@@ -181,7 +181,7 @@ namespace FixMyCrypto {
             return (ocl != null);
         }
         public override Cryptography.Key[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
-            if (!IsUsingOpenCL() || ocl.IsBusy) {
+            if (!IsUsingOpenCL()) {
                 return base.DeriveRootKey_BatchPhrases(phrases, passphrase);
             }
 
@@ -198,7 +198,7 @@ namespace FixMyCrypto {
             return keys;
         }
         public override Cryptography.Key[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
-            if (!IsUsingOpenCL() || ocl.IsBusy) {
+            if (!IsUsingOpenCL()) {
                 return base.DeriveRootKey_BatchPassphrases(phrase, passphrases);
             }
 
@@ -215,14 +215,14 @@ namespace FixMyCrypto {
             return keys;
         }
         protected override Cryptography.Key DeriveChildKey(Cryptography.Key parentKey, uint index) {
-            if (!IsUsingOpenCL() || ocl.IsBusy) {
+            if (!IsUsingOpenCL()) {
                 return parentKey.Derive_Bip32(index);
             }
 
             return DeriveChildKey_Batch(new Cryptography.Key[] { parentKey }, index)[0];
         }
         protected override Cryptography.Key[] DeriveChildKey_Batch(Cryptography.Key[] parents, uint index) {
-            if (!IsUsingOpenCL() || ocl.IsBusy) {
+            if (!IsUsingOpenCL()) {
                 return base.DeriveChildKey_Batch(parents, index);
             }
 
