@@ -79,14 +79,11 @@ namespace FixMyCrypto {
         }
 
         private class Batch {
-            public Cryptography.Key[] keys;
-
             public PathTree tree;
 
             public ProduceAddress produceAddress;
             
-            public Batch (Cryptography.Key[] keys, PathTree tree, ProduceAddress produceAddress) {
-                this.keys = keys;
+            public Batch(PathTree tree, ProduceAddress produceAddress) {
                 this.tree = tree;
                 this.produceAddress = produceAddress;
             }
@@ -95,7 +92,7 @@ namespace FixMyCrypto {
             public Phrase[] phrases;
             public string passphrase;
 
-            public PhraseBatch(Phrase[] phrases, string passphrase, Cryptography.Key[] keys, PathTree tree, ProduceAddress produceAddress) : base(keys, tree, produceAddress) {
+            public PhraseBatch(Phrase[] phrases, string passphrase, PathTree tree, ProduceAddress produceAddress) : base(tree, produceAddress) {
                 this.phrases = phrases;
                 this.passphrase = passphrase;
             }
@@ -103,7 +100,7 @@ namespace FixMyCrypto {
         private class PassphraseBatch : Batch {
             public Phrase phrase;
             public string[] passphrases;
-            public PassphraseBatch(Phrase phrase, string[] passphrases, Cryptography.Key[] keys, PathTree tree, ProduceAddress produceAddress) : base(keys, tree, produceAddress) {
+            public PassphraseBatch(Phrase phrase, string[] passphrases,PathTree tree, ProduceAddress produceAddress) : base(tree, produceAddress) {
                 this.phrase = phrase;
                 this.passphrases = passphrases;
             }
@@ -170,16 +167,6 @@ namespace FixMyCrypto {
         }
 
         protected virtual string GetStakePath() { return null; }
-        /*
-        private void DeriveChildKeys(PathNode node) {
-            node.Keys = DeriveChildKey_Batch(node.Parent.Keys, node.Value);
-
-            foreach (PathNode child in node.Children) {
-                if (Global.Done) break;
-                DeriveChildKeys(child);
-            }
-        }
-        */
 
         private void DeriveChildKeys_Batch(PathNode node) {
             node.Keys = DeriveChildKey_Batch(node.Parent.Keys, node.Value);
@@ -189,23 +176,7 @@ namespace FixMyCrypto {
                 DeriveChildKeys_Batch(child);
             }
         }
-    /*
-        private void DeriveAddresses(PathNode node, Phrase phrase, string passphrase, List<Address> addresses) {
-            if (node.End) {
-                var address = DeriveAddress(node, 0);
-                if (address != null) {
-                    address.phrase = phrase;
-                    address.passphrase = passphrase;
-                    addresses.Add(address);
-                }
-            }
 
-            foreach (PathNode child in node.Children) {
-                if (Global.Done) break;
-                DeriveAddresses(child, phrase, passphrase, addresses);
-            }
-        }
-        */
         private void DeriveAddressesBatch(PathNode node, int index, Phrase phrase, string passphrase, List<Address> addresses) {
             if (node.End) {
                 var address = DeriveAddress(node, index);
@@ -276,9 +247,6 @@ namespace FixMyCrypto {
 
             List<Address> addresses = new();
 
-            // MasterKey[] masterKeys = DeriveMasterKeys(phrase, passphrases);
-            // foreach (MasterKey key in masterKeys) {
-
             foreach (string passphrase in passphrases) {
                 if (Global.Done) break;
 
@@ -330,7 +298,8 @@ namespace FixMyCrypto {
                     // Log.Debug($"PhraseBatch {pb.phrases.Length}");
 
                     PathTree t = new PathTree(pb.tree);
-                    t.Root.Keys = pb.keys;
+                    Cryptography.Key[] keys = DeriveRootKey_BatchPhrases(pb.phrases, pb.passphrase);
+                    t.Root.Keys = keys;
 
                     foreach (PathNode child in t.Root.Children) {
                         DeriveChildKeys_Batch(child);
@@ -359,7 +328,8 @@ namespace FixMyCrypto {
                     // Log.Debug($"PassphraseBatch {pb.passphrases.Length}");
 
                     PathTree t = new PathTree(pb.tree);
-                    t.Root.Keys = pb.keys;
+                    Cryptography.Key[] keys = DeriveRootKey_BatchPassphrases(pb.phrase, pb.passphrases);
+                    t.Root.Keys = keys;
 
                     foreach (PathNode child in t.Root.Children) {
                         DeriveChildKeys_Batch(child);
@@ -387,15 +357,15 @@ namespace FixMyCrypto {
             }
         }
 
+        protected virtual int GetTaskCount() { return IsUsingOpenCL() ? 2 : 1; }
+
         public void GetAddressesBatchPassphrases(Phrase phrase, string[] passphrases, PathTree tree, ProduceAddress Produce) {
 
             if (Global.Done) return;
 
-            Cryptography.Key[] keys = DeriveRootKey_BatchPassphrases(phrase, passphrases);
-
             //  Enqueue batch
 
-            PassphraseBatch pb = new PassphraseBatch(phrase, passphrases, keys, tree, Produce);
+            PassphraseBatch pb = new PassphraseBatch(phrase, passphrases, tree, Produce);
             
             try {
                 batchQueue.Add(pb);
@@ -403,15 +373,13 @@ namespace FixMyCrypto {
             catch (InvalidOperationException) {
                 return;
             }
-        }
+         }
 
         public void GetAddressesBatchPhrases(Phrase[] phrases, string passphrase, PathTree tree, ProduceAddress Produce = null) {
 
             if (Global.Done) return;
 
-            Cryptography.Key[] keys = DeriveRootKey_BatchPhrases(phrases, passphrase);
-
-            PhraseBatch pb = new PhraseBatch(phrases, passphrase, keys, tree, Produce);
+            PhraseBatch pb = new PhraseBatch(phrases, passphrase, tree, Produce);
             
             try {
                 batchQueue.Add(pb);
@@ -480,10 +448,13 @@ namespace FixMyCrypto {
             Queue<Phrase> phraseBatch = new(batchSize);
             Queue<string> passphraseBatch = new(batchSize);
 
-            //  Start batch thread
-            Thread t = new Thread(ProcessBatch);
-            t.Name = "ProcessBatch";
-            t.Start();
+            //  Start batch threads
+            Thread[] t = new Thread[GetTaskCount()];
+            for (int i = 0; i < t.Length; i++) {
+                t[i] = new Thread(ProcessBatch);
+                t[i].Name = $"ProcessBatch{i}";
+                t[i].Start();
+            }
 
             stopWatch.Start();
 
@@ -595,7 +566,7 @@ namespace FixMyCrypto {
 
             passphraseLogger.Stop();
             Finish();
-            t.Join();
+            foreach (Thread th in t) th.Join();
             stopWatch.Stop();
         }
 

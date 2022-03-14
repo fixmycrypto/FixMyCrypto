@@ -215,11 +215,11 @@ namespace FixMyCrypto {
             return keys;
         }
         protected override Cryptography.Key DeriveChildKey(Cryptography.Key parentKey, uint index) {
-            if (IsUsingOpenCL() && !ocl.IsBusy) {
-                return DeriveChildKey_Batch(new Cryptography.Key[] { parentKey }, index)[0];
+            if (!IsUsingOpenCL() || ocl.IsBusy) {
+                return parentKey.Derive_Bip32(index);
             }
 
-            return parentKey.Derive_Bip32(index);
+            return DeriveChildKey_Batch(new Cryptography.Key[] { parentKey }, index)[0];
         }
         protected override Cryptography.Key[] DeriveChildKey_Batch(Cryptography.Key[] parents, uint index) {
             if (!IsUsingOpenCL() || ocl.IsBusy) {
