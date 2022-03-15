@@ -69,6 +69,11 @@ namespace FixMyCrypto {
             chosenDevice?.Dispose();
         }
 
+        public void Stop() {
+            commandQueue?.Dispose();
+            commandQueue = null;
+        }
+
         public void Init_Sha512(int dklen = 64) {
             if (program_pbkdf2_ready && dklen == usingDkLen) return;
 
@@ -115,8 +120,6 @@ namespace FixMyCrypto {
             return 4096;
         }
 
-
-
         public Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, int iters = 2048, int dklen = 64) {
             Init_Sha512(dklen);
 
@@ -158,6 +161,8 @@ namespace FixMyCrypto {
             // Log.Debug($"saltData: {saltData.ToHexString()}");
 
             byte[] result = RunKernel($"pbkdf2_{iters}_{dklen}", data, saltData, passwords.Length);
+
+            if (Global.Done) return null;
 
             // Console.WriteLine($"ocl: {result.ToHexString()}");
 
@@ -211,6 +216,7 @@ namespace FixMyCrypto {
                 }
             }
             
+            if (Global.Done) return null;
 
             try {
                 int outSize = outBufferSize * count;
@@ -227,6 +233,8 @@ namespace FixMyCrypto {
                 return commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
             }
             catch (Exception e) {
+                if (Global.Done) return null;
+
                 Log.Error(e.ToString() + $"\nkernel name: {kernelName}");
                 throw;
             }
@@ -272,6 +280,7 @@ namespace FixMyCrypto {
 
             byte[] result = RunKernel($"pbkdf2_saltlist_{iters}_{dklen}", data, saltData, salts.Length);
 
+            if (Global.Done) return null;
             // Console.WriteLine($"ocl: {result.ToHexString()}");
 
             Seed[] retval = new Seed[salts.Length];
@@ -355,6 +364,7 @@ namespace FixMyCrypto {
                     bip32_kernels[kernelName] = kernel;
                 }
                 
+                if (Global.Done) return null;
 
                 int outSize = length * count;
                 using MemoryBuffer inBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, data);
@@ -368,6 +378,8 @@ namespace FixMyCrypto {
                     commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
                 }
                 byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+
+                if (Global.Done) return null;
 
                 Cryptography.Key[] ret = new Cryptography.Key[count];
                 BinaryReader r = new BinaryReader(new MemoryStream(result));
@@ -393,6 +405,8 @@ namespace FixMyCrypto {
                 return ret;
             }
             catch (Exception e) {
+                if (Global.Done) return null;
+
                 Log.Error(e.ToString());
                 throw;
             }

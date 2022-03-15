@@ -191,6 +191,7 @@ namespace FixMyCrypto {
             Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPassword(phrases, new string[] { passphrase }, passwords, salt);
             Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
             Parallel.For(0, phrases.Length, i => {
+                if (Global.Done) return;
                 byte[] key = Cryptography.HMAC512_Bitcoin(seeds[i].seed);
                 keys[i] = new Cryptography.Key(key.Slice(0, 32), key.Slice(32));
             });
@@ -207,6 +208,7 @@ namespace FixMyCrypto {
             Seed[] seeds = ocl.Pbkdf2_Sha512_MultiSalt(new Phrase[] { phrase }, passphrases, password, salts);
             Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
             Parallel.For(0, passphrases.Length, i => {
+                if (Global.Done) return;
                 byte[] key = Cryptography.HMAC512_Bitcoin(seeds[i].seed);
                 keys[i] = new Cryptography.Key(key.Slice(0, 32), key.Slice(32));
             });

@@ -133,6 +133,7 @@ namespace FixMyCrypto {
         {
             Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
             Parallel.For(0, phrases.Length, i => {
+                if (Global.Done) return;
                 keys[i] = DeriveRootKey(phrases[i], passphrase);
             });
             return keys;
@@ -142,6 +143,7 @@ namespace FixMyCrypto {
         {
             Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
             Parallel.For(0, passphrases.Length, i => {
+                if (Global.Done) return;
                 keys[i] = DeriveRootKey(phrase, passphrases[i]);
             });
             return keys;
@@ -151,6 +153,7 @@ namespace FixMyCrypto {
         protected virtual Cryptography.Key[] DeriveChildKey_Batch(Cryptography.Key[] parents, uint index) {
             Cryptography.Key[] keys = new Cryptography.Key[parents.Length];
             Parallel.For(0, parents.Length, i => {
+                if (Global.Done) return;
                 keys[i] = DeriveChildKey(parents[i], index);
             });
             return keys;
@@ -166,6 +169,8 @@ namespace FixMyCrypto {
         protected virtual string GetStakePath() { return null; }
 
         private void DeriveChildKeys_Batch(PathNode node) {
+            if (Global.Done) return;
+
             node.Keys = DeriveChildKey_Batch(node.Parent.Keys, node.Value);
 
             foreach (PathNode child in node.Children) {
@@ -174,6 +179,8 @@ namespace FixMyCrypto {
         }
 
         private void DeriveAddressesBatch(PathNode node, int index, Phrase phrase, string passphrase, List<Address> addresses) {
+            if (Global.Done) return;
+
             if (node.End) {
                 var address = DeriveAddress(node, index);
                 if (address != null) {
@@ -300,6 +307,8 @@ namespace FixMyCrypto {
                     }
 
                     Parallel.For(0, pb.phrases.Length, i => {
+                        if (Global.Done) return;
+
                         List<Address> addrs = new();
 
                         DeriveAddressesBatch(t.Root, i, pb.phrases[i], pb.passphrase, addrs);
@@ -329,6 +338,8 @@ namespace FixMyCrypto {
                     }
 
                     Parallel.For(0, pb.passphrases.Length, i => {
+                        if (Global.Done) return;
+
                         List<Address> addrs = new();
 
                         DeriveAddressesBatch(t.Root, i, pb.phrase, pb.passphrases[i], addrs);
@@ -348,6 +359,8 @@ namespace FixMyCrypto {
                     }
                 }
             }
+
+            if (Global.Done && IsUsingOpenCL()) ocl.Stop();
         }
 
         protected virtual int GetTaskCount() { return IsUsingOpenCL() ? Settings.Threads / 2 : 1; }
