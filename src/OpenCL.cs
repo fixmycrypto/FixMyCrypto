@@ -40,8 +40,6 @@ namespace FixMyCrypto {
 
         private int inBufferSize = 256; //  max char length of a phrase
 
-        //private int pwdBufferSize;
-
         private int outBufferSize;
 
         private int wordSize;
@@ -49,12 +47,6 @@ namespace FixMyCrypto {
         private Device chosenDevice;
 
         private int maxPassphraseLength;
-        private int running = 0;
-        private object mutex = new();
-        // public Boolean IsBusy { get { return running > 0; }}
-
-
-        // private CommandQueue commandQueue;
 
         public OpenCL(int platformId = 0, int deviceId = 0, int maxPassphraseLength = 32) {
             LogOpenCLInfo();
@@ -85,9 +77,6 @@ namespace FixMyCrypto {
             wordSize = (dklen > 32) ? 8 : 4;
             saltBufferSize = maxPassphraseLength + 8;   //  +8 for "mnemonic"
             if (saltBufferSize % wordSize != 0) saltBufferSize += wordSize - (saltBufferSize % wordSize);
-            // wordSize = 4;
-
-            //pwdBufferSize = inBufferSize;
 
             // Creates a program and then the kernel from it
             
@@ -99,8 +88,6 @@ namespace FixMyCrypto {
             code = code.Replace("<inBufferSize_bytes>", $"{inBufferSize}");
             code = code.Replace("<outBufferSize_bytes>", $"{outBufferSize}");
             code = code.Replace("<saltBufferSize_bytes>", $"{saltBufferSize}");
-            //code = code.Replace("<pwdBufferSize_bytes>", $"{pwdBufferSize}");
-            // code = code.Replace("<ctBufferSize_bytes>", $"{saltBufferSize}");
             code = code.Replace("<word_size>", $"{wordSize}");
             code = code.Replace("<word_type>", wordSize == 8 ? "ulong" : "uint");
 
@@ -118,8 +105,9 @@ namespace FixMyCrypto {
         public int GetBatchSize() {
             //return 8192;
             
-            // int memoryPerWork = (wordSize + inBufferSize) + (wordSize + saltBufferSize) + outBufferSize + 1024;
-            // int workgroupPerCore = (int)(0.95 * chosenDevice.LocalMemorySize / memoryPerWork);
+            // // int memoryPerWork = (wordSize + inBufferSize) + (wordSize + saltBufferSize) + outBufferSize;
+            // int memoryPerWork = saltBufferSize + (wordSize * 2) + (usingDkLen * 3) + (wordSize * 3);
+            // int workgroupPerCore = (int)(0.98 * chosenDevice.LocalMemorySize / memoryPerWork);
             // int size = workgroupPerCore * chosenDevice.MaximumComputeUnits;
             // Log.Debug($"Workgroup size: {size}");
             // return size;
@@ -148,7 +136,7 @@ namespace FixMyCrypto {
                     w.Write((uint)pb.Length);
                 }
                 w.Write(pb);
-                w.Write(new byte[inBufferSize - pb.Length]);
+                w.BaseStream.Position += inBufferSize - pb.Length;
             }
             w.Close();
 
@@ -157,14 +145,13 @@ namespace FixMyCrypto {
             }
             byte[] saltData = new byte[wordSize + saltBufferSize];
             BinaryWriter w2 = new(new MemoryStream(saltData));
-                if (wordSize == 8) {
-                    w2.Write((ulong)salt.Length);
-                }
-                else {
-                    w2.Write((uint)salt.Length);
-                }
+            if (wordSize == 8) {
+                w2.Write((ulong)salt.Length);
+            }
+            else {
+                w2.Write((uint)salt.Length);
+            }
             w2.Write(salt);
-            w2.Write(new byte[saltBufferSize - salt.Length]);
             w2.Close();
 
             // Log.Debug($"data: {data.ToHexString()}");
@@ -177,9 +164,26 @@ namespace FixMyCrypto {
             Seed[] retval = new Seed[passwords.Length];
             BinaryReader r = new BinaryReader(new MemoryStream(result));
             for (int i = 0; i < passwords.Length; i++) {
-                byte[] seed = r.ReadBytes(outBufferSize);
+                byte[] seed = r.ReadBytes(dklen);
+                if (outBufferSize > dklen) r.BaseStream.Position += (outBufferSize - dklen);
+
+                /*
+                //  debug
+                #if DEBUG
+                bool allZero = true;
+                for (int j = 0; j < seed.Length; j++) {
+                    if (seed[j] != 0) {
+                        allZero = false;
+                        break;
+                    }
+                }
+                if (allZero) {
+                    throw new Exception($"seed {i} is all zero");
+                }
+                #endif
+                */
+
                 // Console.WriteLine($"seed: {seed.ToHexString()}");
-                if (outBufferSize > dklen) seed = seed.Slice(0, dklen);
                 if (phrases.Length == passwords.Length) {
                     retval[i] = new Seed(seed, phrases[i], passphrases[0]);
                 }
@@ -209,21 +213,18 @@ namespace FixMyCrypto {
             
 
             try {
-                // using Kernel kernel = program_pbkdf2.CreateKernel(kernelName);
                 int outSize = outBufferSize * count;
                 using MemoryBuffer inBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, data);
                 using MemoryBuffer saltBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, saltData);
                 using MemoryBuffer outBuffer = context.CreateBuffer<byte>(MemoryFlag.WriteOnly, outSize);
 
-                // using CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevice);
-                kernel.SetKernelArgument(0, inBuffer);
-                kernel.SetKernelArgument(1, saltBuffer);
-                kernel.SetKernelArgument(2, outBuffer);
-                lock (mutex) { running++; }
-                commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
-                byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
-                lock (mutex) { running--; }
-                return result;
+                lock (kernel) {
+                    kernel.SetKernelArgument(0, inBuffer);
+                    kernel.SetKernelArgument(1, saltBuffer);
+                    kernel.SetKernelArgument(2, outBuffer);
+                    commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
+                }
+                return commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
             }
             catch (Exception e) {
                 Log.Error(e.ToString() + $"\nkernel name: {kernelName}");
@@ -238,16 +239,15 @@ namespace FixMyCrypto {
             byte[] data = new byte[wordSize + inBufferSize];
             BinaryWriter w = new(new MemoryStream(data));
             if (password.Length > inBufferSize) {
-                    throw new Exception("phrase exceeds max length");
+                throw new Exception("phrase exceeds max length");
             }
-                if (wordSize == 8) {
-                    w.Write((ulong)password.Length);
-                }
-                else {
-                    w.Write((uint)password.Length);
-                }
+            if (wordSize == 8) {
+                w.Write((ulong)password.Length);
+            }
+            else {
+                w.Write((uint)password.Length);
+            }
             w.Write(password);
-            w.Write(new byte[inBufferSize - password.Length]);
             w.Close();
 
             byte[] saltData = new byte[salts.Length * (wordSize + saltBufferSize)];
@@ -263,7 +263,7 @@ namespace FixMyCrypto {
                     w2.Write((uint)salts[i].Length);
                 }
                 w2.Write(salts[i]);
-                w2.Write(new byte[saltBufferSize - salts[i].Length]);
+                w2.BaseStream.Position += saltBufferSize - salts[i].Length;
             }
             w2.Close();
 
@@ -277,8 +277,25 @@ namespace FixMyCrypto {
             Seed[] retval = new Seed[salts.Length];
             BinaryReader r = new BinaryReader(new MemoryStream(result));
             for (int i = 0; i < salts.Length; i++) {
-                byte[] seed = r.ReadBytes(outBufferSize);
-                if (outBufferSize > dklen) seed = seed.Slice(0, dklen);
+                byte[] seed = r.ReadBytes(dklen);
+                if (outBufferSize > dklen) r.BaseStream.Position += (outBufferSize - dklen);
+
+                /*
+                //  debug
+                #if DEBUG
+                bool allZero = true;
+                for (int j = 0; j < seed.Length; j++) {
+                    if (seed[j] != 0) {
+                        allZero = false;
+                        break;
+                    }
+                }
+                if (allZero) {
+                    throw new Exception($"seed {i} is all zero");
+                }
+                #endif
+                */
+
                 if (phrases.Length == salts.Length) {
                     retval[i] = new Seed(seed, phrases[i], passphrases[0]);
                 }
@@ -318,12 +335,10 @@ namespace FixMyCrypto {
 
             string kernelName;
 
-            if (PathNode.IsHardened(path))
-            {
+            if (PathNode.IsHardened(path)) {
                 kernelName = "bip32_derive_hardened";
             }
-            else
-            {
+            else {
                 kernelName = "bip32_derive_normal";
             }
 
@@ -346,20 +361,34 @@ namespace FixMyCrypto {
                 using MemoryBuffer pathBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, paths);
                 using MemoryBuffer outBuffer = context.CreateBuffer<byte>(MemoryFlag.WriteOnly, outSize);
 
-                // using Kernel kernel = program_bip32derive.CreateKernel(kernelName);
-                // using CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevice);
-                kernel.SetKernelArgument(0, inBuffer);
-                kernel.SetKernelArgument(1, outBuffer);
-                kernel.SetKernelArgument(2, pathBuffer);
-                lock (mutex) { running++; }
-                commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
+                lock (kernel) {
+                    kernel.SetKernelArgument(0, inBuffer);
+                    kernel.SetKernelArgument(1, outBuffer);
+                    kernel.SetKernelArgument(2, pathBuffer);
+                    commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
+                }
                 byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
-                lock (mutex) { running--; }
 
                 Cryptography.Key[] ret = new Cryptography.Key[count];
                 BinaryReader r = new BinaryReader(new MemoryStream(result));
                 for (int i = 0; i < count; i++) {
                     ret[i] = new Cryptography.Key(r.ReadBytes(keyLen), r.ReadBytes(ccLen));
+
+                    /*
+                    //  debug
+                    #if DEBUG
+                    bool allZero = true;
+                    for (int j = 0; j < 32; j++) {
+                        if (ret[i].data[j] != 0) {
+                            allZero = false;
+                            break;
+                        }
+                    }
+                    if (allZero) {
+                        throw new Exception($"key {i} is all zero");
+                    }
+                    #endif
+                    */
                 }
                 return ret;
             }
@@ -449,7 +478,7 @@ namespace FixMyCrypto {
                         badcount++;
                     }
                 }
-                Log.Info($"Benchmark_Pbkdf2() phrases ocltime={ocltime} cputime={cputime} badcount={badcount}");
+                Log.Info($"Benchmark_Pbkdf2() phrases cputime={cputime} ocltime={ocltime} badcount={badcount}");
                 if (badcount > 0) throw new SystemException("failed Benchmark_Pbkdf2() phrases");
             }
 
@@ -488,7 +517,7 @@ namespace FixMyCrypto {
                         badcount++;
                     }
                 }
-                Log.Info($"Benchmark_Pbkdf2() passphrases ocltime={ocltime} cputime={cputime} badcount={badcount}");
+                Log.Info($"Benchmark_Pbkdf2() passphrases cputime={cputime} ocltime={ocltime} badcount={badcount}");
                 if (badcount > 0) throw new SystemException("failed Benchmark_Pbkdf2() passphrases");
             }
 

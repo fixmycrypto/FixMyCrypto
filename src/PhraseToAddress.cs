@@ -133,7 +133,6 @@ namespace FixMyCrypto {
         {
             Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
             Parallel.For(0, phrases.Length, i => {
-                if (Global.Done) return;
                 keys[i] = DeriveRootKey(phrases[i], passphrase);
             });
             return keys;
@@ -143,7 +142,6 @@ namespace FixMyCrypto {
         {
             Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
             Parallel.For(0, passphrases.Length, i => {
-                if (Global.Done) return;
                 keys[i] = DeriveRootKey(phrase, passphrases[i]);
             });
             return keys;
@@ -153,7 +151,6 @@ namespace FixMyCrypto {
         protected virtual Cryptography.Key[] DeriveChildKey_Batch(Cryptography.Key[] parents, uint index) {
             Cryptography.Key[] keys = new Cryptography.Key[parents.Length];
             Parallel.For(0, parents.Length, i => {
-                if (Global.Done) return;
                 keys[i] = DeriveChildKey(parents[i], index);
             });
             return keys;
@@ -172,7 +169,6 @@ namespace FixMyCrypto {
             node.Keys = DeriveChildKey_Batch(node.Parent.Keys, node.Value);
 
             foreach (PathNode child in node.Children) {
-                if (Global.Done) break;
                 DeriveChildKeys_Batch(child);
             }
         }
@@ -188,7 +184,6 @@ namespace FixMyCrypto {
             }
 
             foreach (PathNode child in node.Children) {
-                if (Global.Done) break;
                 DeriveAddressesBatch(child, index, phrase, passphrase, addresses);
             }
         }
@@ -298,8 +293,7 @@ namespace FixMyCrypto {
                     // Log.Debug($"PhraseBatch {pb.phrases.Length}");
 
                     PathTree t = new PathTree(pb.tree);
-                    Cryptography.Key[] keys = DeriveRootKey_BatchPhrases(pb.phrases, pb.passphrase);
-                    t.Root.Keys = keys;
+                    t.Root.Keys = DeriveRootKey_BatchPhrases(pb.phrases, pb.passphrase);
 
                     foreach (PathNode child in t.Root.Children) {
                         DeriveChildKeys_Batch(child);
@@ -328,8 +322,7 @@ namespace FixMyCrypto {
                     // Log.Debug($"PassphraseBatch {pb.passphrases.Length}");
 
                     PathTree t = new PathTree(pb.tree);
-                    Cryptography.Key[] keys = DeriveRootKey_BatchPassphrases(pb.phrase, pb.passphrases);
-                    t.Root.Keys = keys;
+                    t.Root.Keys = DeriveRootKey_BatchPassphrases(pb.phrase, pb.passphrases);
 
                     foreach (PathNode child in t.Root.Children) {
                         DeriveChildKeys_Batch(child);
@@ -357,7 +350,7 @@ namespace FixMyCrypto {
             }
         }
 
-        protected virtual int GetTaskCount() { return IsUsingOpenCL() ? 2 : 1; }
+        protected virtual int GetTaskCount() { return IsUsingOpenCL() ? Settings.Threads / 2 : 1; }
 
         public void GetAddressesBatchPassphrases(Phrase phrase, string[] passphrases, PathTree tree, ProduceAddress Produce) {
 
