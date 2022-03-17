@@ -5,6 +5,7 @@ results.json
 checkpoint*.json
 /secrets.json
 /settings.json
+/settings.*.json
 *.bak
 tests/**/log.txt
 graph.dot
