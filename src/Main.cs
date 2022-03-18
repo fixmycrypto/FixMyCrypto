@@ -32,8 +32,13 @@ namespace FixMyCrypto {
 
             interactive = !(args.Length > 0 && args[0] == "-ni");
 
+            if (args.Length > 0 && args[0] == "-opencl") {
+                OpenCL.LogOpenCLInfo();
+                PauseAndExit(0);
+            }
+
             try {
-                Settings.LoadSettings(test);
+                Settings.LoadSettings(test, args);
             }
             catch (Exception e) {
                 Console.Error.WriteLine($"Error loading settings.json: {e.Message}");

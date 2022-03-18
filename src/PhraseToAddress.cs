@@ -406,8 +406,10 @@ namespace FixMyCrypto {
             phraseQueue.CompleteAdding();
             addressQueue.CompleteAdding();
             batchQueue.CompleteAdding();
-            if (count > 0) Log.Info("P2A done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, keys/s: {1000*count/stopWatch.ElapsedMilliseconds}, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
-            count = 0;
+            lock (mutex) {
+                if (count > 0) Log.Info("P2A done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, keys/s: {1000*count/stopWatch.ElapsedMilliseconds}, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
+                count = Int32.MinValue;
+            }
         }
         private long ppLogTotal = 0, p2aLogTotal = 0;
         public void PassphraseLog() {
@@ -468,6 +470,7 @@ namespace FixMyCrypto {
             passphraseLogger.Elapsed += (StringReader, args) => {
                 PassphraseLog();
             };
+            passphraseLogger.Start();
 
             while (!Global.Done && !phraseQueue.IsCompleted) {
 
@@ -489,7 +492,6 @@ namespace FixMyCrypto {
                         if (passphraseCount > 1) {
                             passphraseTested = 0;
                             passphraseTotal = passphraseCount;
-                            passphraseLogger.Start();
                             IEnumerator<string> e = p.GetEnumerator();
                             while (e.MoveNext() && !Global.Done) {
                                 string current = e.Current;

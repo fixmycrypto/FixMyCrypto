@@ -67,8 +67,10 @@ namespace FixMyCrypto {
 
         public static string TopologyFile { get { if (result != null) return result.topologyFile; else return null; } }
 
-        public static int OpenCLPlatform {get { if (result != null && result.platform != null) return (int)result.platform.Value; else return -1; } }
-        public static int OpenCLDevice {get { if (result != null && result.device != null) return (int)result.device.Value; else return -1; } }
+        private static int platform = -1;
+        public static int OpenCLPlatform {get { return platform; } }
+        private static int device = -1;
+        public static int OpenCLDevice {get { return device; } }
 
         public static string GetApiPath(CoinType coin) {
             switch (coin) {
@@ -102,7 +104,7 @@ namespace FixMyCrypto {
 
         private static dynamic result;
 
-        public static void LoadSettings(bool ignore = false) {
+        public static void LoadSettings(bool ignore = false, string[] args = null) {
             string str = File.ReadAllText("settings.json");
             result = JsonConvert.DeserializeObject(str);
 
@@ -112,6 +114,31 @@ namespace FixMyCrypto {
 
             Indices = ParseRanges((string)result.indices);
             Accounts = ParseRanges((string)result.accounts);
+            if (result.platform != null) platform = (int)result.platform.Value;
+            if (result.device != null) device = (int)result.device.Value;
+
+            try {
+                for (int i = 0; i + 1 < args.Length; i++) {
+                    switch (args[i]) {
+                        case "-platform":
+                        case "-p":
+
+                        Int32.TryParse(args[i + 1], out platform);
+
+                        break;
+
+                        case "-device":
+                        case "-d":
+
+                        Int32.TryParse(args[i + 1], out device);
+
+                        break;
+                    }
+                }
+            }
+            catch (Exception e) {
+                throw new ArgumentException(e.Message);
+            }
         }
 
         public static CoinType GetCoinType(string str) {
