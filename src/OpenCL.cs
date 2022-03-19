@@ -463,6 +463,7 @@ namespace FixMyCrypto {
 
             {
                 Log.Info("Benchmark OpenCL phrases...");
+                Init_Sha512();
                 Phrase[] ph = new Phrase[tcount];
                 byte[][] passwords = new byte[tcount][];
                 for (int i = 0; i < tcount; i++) ph[i] = new Phrase(12);
@@ -498,6 +499,7 @@ namespace FixMyCrypto {
 
             {
                 Log.Info("Benchmark OpenCL passphrases...");
+                Init_Sha512();
                 Phrase ph = new Phrase(12);
                 string phrase = ph.ToPhrase();
                 byte[] password = phrase.ToUTF8Bytes();
@@ -539,24 +541,31 @@ namespace FixMyCrypto {
 
         public static void LogOpenCLInfo() {
             IEnumerable<Platform> platforms = Platform.GetPlatforms();
-            ConsoleTable consoleTable = new ConsoleTable("Platform", "OpenCL Version", "Vendor", "Device", "Driver Version", "Bits", "Global Memory", "Local Memory", "Clock Speed", "CUs", "Available");
+            ConsoleTable consoleTable = new ConsoleTable("Platform", "Device", "Global Memory", "Local Memory", "CUs");
+            int p = 0;
             foreach (Platform platform in platforms)
             {
+                int d = 0;
                 foreach (Device device in platform.GetDevices(DeviceType.All))
                 {
+                    if (!device.IsAvailable) continue;
+                    
                     consoleTable.AddRow(
-                        platform.Name,
-                        $"{platform.Version.MajorVersion}.{platform.Version.MinorVersion}",
-                        platform.Vendor,
-                        device.Name,
-                        device.DriverVersion,
-                        $"{device.AddressBits} Bit",
+                        p + ": " + platform.Name,
+                        // $"{platform.Version.MajorVersion}.{platform.Version.MinorVersion}",
+                        d + ": " + device.Name,
+                        // device.DriverVersion,
+                        // $"{device.AddressBits} Bit",
                         $"{Math.Round(device.GlobalMemorySize / 1024.0f / 1024.0f / 1024.0f, 2)} GiB",
                         $"{Math.Round(device.LocalMemorySize / 1024.0f, 2)} KiB",
-                        $"{device.MaximumClockFrequency} MHz",
-                        device.MaximumComputeUnits,
-                        device.IsAvailable ? "✔" : "✖");
+                        // $"{device.MaximumClockFrequency} MHz",
+                        device.MaximumComputeUnits
+                        // device.IsAvailable ? "✔" : "✖"
+                        );
+
+                        d++;
                 }
+                p++;
             }
             Log.Info("OpenCL Supported Platforms & Devices:");
             Log.Info(consoleTable.ToStringAlternative());
