@@ -84,31 +84,38 @@ namespace FixMyCrypto {
                 Work w = null;
 
                 queueWaitTime.Start();
-                queue.TryTake(out w, System.Threading.Timeout.Infinite);
-                queueWaitTime.Stop();
+                try {
+                    w = queue.Take();
+                }
+                catch (InvalidOperationException) {
+                    break;
+                }
+                finally {
+                    queueWaitTime.Stop();
+                }
 
-                if (w != null) {
-                    stopWatch.Start();
-                    try {
-                        foreach (Address address in w.addresses) {
-                            //Log.Debug($"LA{threadNum} query phrase: \"{w.phrase}\" address: {address}");
-                            LookupResult lookup = GetContents(address.address);
-                            //Log.Debug($"LA{threadNum} phrase: \"{w.phrase}\" address: {w.address} result: {lookup}");
-                            count++;
+                if (w == null) continue;
 
-                            if (lookup.txCount > 0 || lookup.coins > 0) {
-                                Finish();
+                stopWatch.Start();
+                try {
+                    foreach (Address address in w.addresses) {
+                        //Log.Debug($"LA{threadNum} query phrase: \"{w.phrase}\" address: {address}");
+                        LookupResult lookup = GetContents(address.address);
+                        //Log.Debug($"LA{threadNum} phrase: \"{w.phrase}\" address: {w.address} result: {lookup}");
+                        count++;
 
-                                FoundResult.DoFoundResult(this.GetCoinType(), address);
-                            }
+                        if (lookup.txCount > 0 || lookup.coins > 0) {
+                            Finish();
+
+                            FoundResult.DoFoundResult(this.GetCoinType(), address);
                         }
                     }
-                    catch (Exception e) {
-                        Log.Error("Lookup error: " + e.Message);
-                    }
-                    finally {
-                        stopWatch.Stop();
-                    }
+                }
+                catch (Exception e) {
+                    Log.Error("Lookup error: " + e.Message);
+                }
+                finally {
+                    stopWatch.Stop();
                 }
             }
             if (count > 0) Log.Info("LA" + threadNum + " done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, time/req: {(count != 0 ? ((double)stopWatch.ElapsedMilliseconds/count) : 0):F2}ms/req, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");

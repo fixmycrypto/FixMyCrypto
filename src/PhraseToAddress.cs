@@ -291,13 +291,18 @@ namespace FixMyCrypto {
             while (!Global.Done && !batchQueue.IsCompleted) {
                 Batch batch = null;
 
-                batchQueue.TryTake(out batch, 10);
+                try {
+                    batch = batchQueue.Take();
+                }
+                catch (InvalidOperationException) {
+                    break;
+                }
 
                 if (batch == null) continue;
 
                 if (batch is PhraseBatch) {
                     PhraseBatch pb = batch as PhraseBatch;
-                    // Log.Debug($"PhraseBatch {pb.phrases.Length}");
+                    Log.Debug($"PhraseBatch {pb.phrases.Length}");
 
                     PathTree t = new PathTree(pb.tree);
                     t.Root.Keys = DeriveRootKey_BatchPhrases(pb.phrases, pb.passphrase);
@@ -328,7 +333,7 @@ namespace FixMyCrypto {
                 }
                 else if (batch is PassphraseBatch) {
                     PassphraseBatch pb = batch as PassphraseBatch;
-                    // Log.Debug($"PassphraseBatch {pb.passphrases.Length}");
+                    Log.Debug($"PassphraseBatch {pb.passphrases.Length}");
 
                     PathTree t = new PathTree(pb.tree);
                     t.Root.Keys = DeriveRootKey_BatchPassphrases(pb.phrase, pb.passphrases);
@@ -478,10 +483,19 @@ namespace FixMyCrypto {
                 Work w = null;
 
                 queueWaitTime.Start();
-                phraseQueue.TryTake(out w, 10);
-                queueWaitTime.Stop();
+                try {
+                    w = phraseQueue.Take();
+                }
+                catch (InvalidOperationException) {
+                    break;
+                }
+                finally {
+                    queueWaitTime.Stop();
+                }
 
-                if (w != null) {
+                if (w == null) continue;
+
+                //if (w != null) {
  
                     if (Global.Done) break;
                     
@@ -554,7 +568,8 @@ namespace FixMyCrypto {
                     finally {
                         stopWatch.Stop();
                     }
-                }
+                
+                /*
                 else if (!IsUsingOpenCL() && phraseBatch.Count > 0) {
                     //  Run a partial cpu batch
 
@@ -562,6 +577,7 @@ namespace FixMyCrypto {
                     phraseBatch.Clear();
                     GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
                 }
+                */
             }
 
             //  End of phrase generation; finish any remaining phrases in queue
