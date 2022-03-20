@@ -306,7 +306,7 @@ namespace FixMyCrypto {
 
                 if (batch is PhraseBatch) {
                     PhraseBatch pb = batch as PhraseBatch;
-                    Log.Debug($"PhraseBatch {pb.phrases.Length}");
+                    // Log.Debug($"PhraseBatch {pb.phrases.Length}");
 
                     PathTree t = new PathTree(pb.tree);
                     t.Root.Keys = DeriveRootKey_BatchPhrases(pb.phrases, pb.passphrase);
@@ -337,7 +337,7 @@ namespace FixMyCrypto {
                 }
                 else if (batch is PassphraseBatch) {
                     PassphraseBatch pb = batch as PassphraseBatch;
-                    Log.Debug($"PassphraseBatch {pb.passphrases.Length}");
+                    // Log.Debug($"PassphraseBatch {pb.passphrases.Length}");
 
                     PathTree t = new PathTree(pb.tree);
                     t.Root.Keys = DeriveRootKey_BatchPassphrases(pb.phrase, pb.passphrases);

@@ -108,15 +108,8 @@ namespace FixMyCrypto {
         }
 
         public int GetBatchSize() {
-            //return 8192;
-            
-            // // int memoryPerWork = (wordSize + inBufferSize) + (wordSize + saltBufferSize) + outBufferSize;
-            // int memoryPerWork = saltBufferSize + (wordSize * 2) + (usingDkLen * 3) + (wordSize * 3);
-            // int workgroupPerCore = (int)(0.98 * chosenDevice.LocalMemorySize / memoryPerWork);
-            // int size = workgroupPerCore * chosenDevice.MaximumComputeUnits;
-            // Log.Debug($"Workgroup size: {size}");
-            // return size;
-            
+            //  TODO: improve this
+                        
             return 4096;
         }
 
@@ -549,7 +542,7 @@ namespace FixMyCrypto {
                 foreach (Device device in platform.GetDevices(DeviceType.All))
                 {
                     if (!device.IsAvailable) continue;
-                    
+
                     consoleTable.AddRow(
                         p + ": " + platform.Name,
                         // $"{platform.Version.MajorVersion}.{platform.Version.MinorVersion}",
