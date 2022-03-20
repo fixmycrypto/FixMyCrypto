@@ -253,7 +253,8 @@ namespace FixMyCrypto
             { CoinType.SOL, "7ky2LTXNwPASogjMURv88LoPRHAAL4v49HeD7MYARuM4" },
             { CoinType.ALGO, "EPQZU6GMEMKKEQH4CP7U2U2NTQE2ZVMOYAS7F5WMCUYIAYUKNJVUHW5W5A" },
             { CoinType.DOT, "14jUHiE429X8HwPRmj2Sy4Xvo5Z9ewJJJ273ctvmQgxgTJ4b" },
-            { CoinType.XRP, "rJtr6VfAP5Qmp2abKUfdJEGtHEckRpcKHk" }
+            { CoinType.XRP, "rJtr6VfAP5Qmp2abKUfdJEGtHEckRpcKHk" },
+            { CoinType.ATOM, "cosmos159zgwcx454uqrtrva8nk3sdrlegdxxln2w20s3" }
         };
 
         public static void DoFoundResult(CoinType coin, Address addr) {

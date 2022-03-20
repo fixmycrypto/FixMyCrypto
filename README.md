@@ -21,6 +21,7 @@
     * ALGO
     * DOT (Polkadot)
     * XRP (Ripple)
+    * ATOM (Cosmos)
     * Need another coin? Let us know!
 * Smart typo detection drastically reduces the search time
     * Phrase words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
@@ -47,6 +48,7 @@ Please consider donating to fund future development.
 * ALGO: EPQZU6GMEMKKEQH4CP7U2U2NTQE2ZVMOYAS7F5WMCUYIAYUKNJVUHW5W5A
 * DOT: 14jUHiE429X8HwPRmj2Sy4Xvo5Z9ewJJJ273ctvmQgxgTJ4b
 * XRP: rJtr6VfAP5Qmp2abKUfdJEGtHEckRpcKHk
+* ATOM: cosmos159zgwcx454uqrtrva8nk3sdrlegdxxln2w20s3
 
 # How to use
 
@@ -77,7 +79,7 @@ If you want to be extra careful, you can run the software in an amnesiac environ
 
 ### Required
 
-Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`, `LTC`, `SOL`, `ALGO`, `DOT`, `XRP`, etc.). (For ADA or DOT used with a Ledger or Trezor hardware wallet, see the relevant [special use cases](#special-use-cases) section.)
+Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`, `LTC`, `SOL`, `ALGO`, `DOT`, `XRP`, `ATOM`, etc.). (For ADA or DOT used with a Ledger or Trezor hardware wallet, see the relevant [special use cases](#special-use-cases) section.)
 
     "coin": "BTC",
 
@@ -467,5 +469,5 @@ To use blockchain search mode, leave the knownAddresses field blank. You must sp
 * Only English BIP39 wordlist and QWERTY keyboard layouts are currently implemented
 * BCH only supports legacy (1...) style addresses
 * SOL deprecated derivation path `m/501'/{account}'/0/{index}` not supported
-* SOL/ALGO/DOT/XRP blockchain search not implemented
+* SOL/ALGO/DOT/XRP/ATOM blockchain search not implemented
 
