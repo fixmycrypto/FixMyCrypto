@@ -23,6 +23,10 @@
     * XRP (Ripple)
     * ATOM (Cosmos)
     * Need another coin? Let us know!
+* [GPU acceleration](#GPU-Acceleration)
+    * PBKDF2 hashing for all cryptos
+    * Secp266k1 ECC for BTC & ETH (and their altcoins), XRP, ATOM
+    * Currently working on NVIDIA GPUs only
 * Smart typo detection drastically reduces the search time
     * Phrase words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
 * Support for special Ledger/Trezor hardware key derivation modes used for Cardano, Algorand, and Polkadot
@@ -70,6 +74,31 @@ The current progress will be saved every 30 seconds to the file `checkpoint.json
 # Paranoid "Amnesia" Environment
 
 If you want to be extra careful, you can run the software in an amnesiac environment which doesn't save any files to your hard drive, such as [`Tails Linux`](https://tails.boum.org). You still need to disconnect from the network before entering your phrase, but this ensures that no traces will be left behind once you reboot your system. Note that in the case of a power failure or reboot, your progress will be lost since the checkpoint file won't persist after a reboot.
+
+# GPU Acceleration
+
+GPU acceleration greatly increases the speed of the search, especially if you have a CPU with a lower core count, e.g. a quad core CPU paired with a fast gaming GPU. This currently works on NVIDIA GPUs only. 
+
+To verify that OpenCL is installed (it should be automatically instaleld by the NVIDIA drivers), you can run this command to see a list of available GPUs:
+
+    FixMyCrypto -opencl
+
+You should see a table that looks like this:
+
+| Platform       | Device                        | Global Memory | Local Memory | CUs |
+| --- | --- | --- | --- | --- |
+| 0: NVIDIA CUDA | 0: NVIDIA GeForce RTX 3060 Ti | 8 GiB         | 48 KiB       | 38  |
+
+If you have a single GPU, it will probably be Platform 0, Device 0 (unless you have other OpenCL drivers installed such as the Intel ICD). If you have multiple devices, you should choose the best platform & device. (Future versions will support multiple GPUs running together.)
+
+To run the search in GPU mode, you can either set the platform & device in your `settings.json` file:
+
+    "platform": 0,
+    "device": 0
+
+Alternatively, you can specify the platform & device on the command line:
+
+    FixMyCrypto -platform 0 -device 0
 
 ---
 
