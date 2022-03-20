@@ -17,6 +17,7 @@ namespace FixMyCrypto
         ADA,
         ADALedger,
         ADATrezor,
+        ATOM,
         ETH,
         DOGE,
         LTC,

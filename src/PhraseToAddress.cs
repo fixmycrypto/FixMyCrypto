@@ -54,6 +54,10 @@ namespace FixMyCrypto {
 
                 return new PhraseToAddressXrp(phrases, addresses);
 
+                case CoinType.ATOM:
+
+                return new PhraseToAddressAtom(phrases, addresses);
+
                 default:
 
                 throw new NotSupportedException();

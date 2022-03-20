@@ -407,6 +407,7 @@ namespace FixMyCrypto {
             PhraseToAddress.ValidateAddress(CoinType.ALGO, "VCMJKWOY5P5P7SKMZFFOCEROPJCZOTIJMNIYNUCKH7LRO45JMJP6UYBIJA");
             PhraseToAddress.ValidateAddress(CoinType.ALGO, "CA73GRGZZPMVE57DVFDPEBTHUHN3RT76RZGH4MGBZFJGAAL3ODN2WVDN7Q");
             PhraseToAddress.ValidateAddress(CoinType.DOT, "12G1bZ4Ki2H37o4iZHTADd46aZSAyG93SpBZSubzrM2sYHNX");
+            PhraseToAddress.ValidateAddress(CoinType.ATOM, "cosmos166tcdrw2pz7lu85dgs9ynzkw2xag7qksymfefh");
 
             //  Should fail
             FailValidateAddress(CoinType.BTC, "14NPVhtZo8c5vxuZwTOGYxJPd8HbtqEJpu");
@@ -418,6 +419,7 @@ namespace FixMyCrypto {
             FailValidateAddress(CoinType.ALGO, "CA73GRGZZPMVE57DVFDPEBTHUHN3RT76RZGH4MGBZFJGAAL3ODN2WVDN7");
             FailValidateAddress(CoinType.ALGO, "CA73GRGZZPMVE57DVFDPEBTHUHM3RT76RZGH4MGBZFJGAAL3ODN2WVDN7Q");
             FailValidateAddress(CoinType.DOT, "12G1bZ4Ki2H37o4iZHTADd46aZSAyG93SpBZSubzrM2sYHND");
+            FailValidateAddress(CoinType.ATOM, "cosmos166tcdrw2pz7lu85dgc9ynzkw2xag7qksymfefh");
 
             //  Validate donation addresses
             foreach (var pair in FoundResult.DonationAddresses) {

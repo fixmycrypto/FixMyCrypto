@@ -44,6 +44,7 @@ namespace FixMyCrypto {
                 break;
 
                 case CoinType.ETH:
+                case CoinType.ATOM:
 
                 break;
 
