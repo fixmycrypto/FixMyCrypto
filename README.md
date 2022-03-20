@@ -25,7 +25,7 @@
     * Need another coin? Let us know!
 * [GPU acceleration](#GPU-Acceleration)
     * PBKDF2 hashing for all cryptos
-    * Secp266k1 ECC for BTC & ETH (and their altcoins), XRP, ATOM
+    * Secp256k1 ECC for BTC & ETH (and their altcoins), XRP, ATOM
     * Currently working on NVIDIA GPUs only
 * Smart typo detection drastically reduces the search time
     * Phrase words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
