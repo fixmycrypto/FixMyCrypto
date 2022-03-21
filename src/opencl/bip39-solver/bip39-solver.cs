@@ -45,15 +45,6 @@ namespace FixMyCrypto {
         printf(""\n\n"");
     }
 
-/*
-void print_wg_size(__constant const char *name) {
-    size_t g = get_global_size(0);
-    size_t l = get_local_size(0);
-    size_t wg = get_num_groups(0);
-    printf(""%s(): global=%ld local=%ld groups=%ld\n"", name, g, l, wg);
-}
-*/
-
     __kernel void pbkdf2(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer,
     __private unsigned int iters, __private unsigned int dkLen_bytes, uchar mode) {
 
@@ -61,14 +52,6 @@ void print_wg_size(__constant const char *name) {
         uchar ipad_key[128];
         uchar opad_key[128];
         uchar pwd_hash[hashlength] = { 0 };
-
-/*
-        //  debug
-        if (idx == 0)
-        {
-            print_wg_size((__constant char*)""pbkdf2 (bip39)"");
-        }
-*/
 
         __global uchar *pwd;
         __global uchar *seed = outbuffer[idx].buffer;
@@ -91,15 +74,15 @@ void print_wg_size(__constant const char *name) {
             saltLen = saltbuffer[idx].length;
         }
 
-        printf(""pwd (%d): %s\n"", pwdLen, pwd);
-        printf(""salt (%d): %s\n"", saltLen, salt);
+        //printf(""pwd (%d): %s\n"", pwdLen, pwd);
+        //printf(""salt (%d): %s\n"", saltLen, salt);
 
         int blocks = outBufferSize / hashlength;
         //printf(""dkLen_bytes=%d outBufferSize=%d blocks=%d\n"", dkLen_bytes, outBufferSize, blocks);
 
         if (pwdLen > 128) {
-            printf(""idx=%d start sha512\n"", idx);
-            sha512(&pwd, pwdLen, &pwd_hash);
+            //printf(""idx=%d start sha512 pwd=%s\n"", idx, pwd);
+            sha512(pwd, pwdLen, pwd_hash);
             //printf(""hashed password:"");
             //print_byte_array_hex(pwd_hash, hashlength);
             //printf(""\n"");
@@ -393,26 +376,9 @@ typedef struct {
     uint path;
 } pathBuffer;
 
-/*
-void print_wg_size(__constant const char *name) {
-    size_t g = get_global_size(0);
-    size_t l = get_local_size(0);
-    size_t wg = get_num_groups(0);
-    printf(""%s(): global=%ld local=%ld groups=%ld\n"", name, g, l, wg);
-}
-*/
-
 __kernel void bip32_derive_hardened(__global keyBuffer *parent, __global keyBuffer *child, __global pathBuffer *pathBuffer) {
 
   ulong idx = get_global_id(0);
-
-/*
-  //  debug
-  if (idx == 0)
-  {
-    print_wg_size((__constant char*)""bip32_derive_hardened"");
-  }
-  */
 
   uint child_number = (1 << 31) | pathBuffer[0].path;
   uchar hmacsha512_result[64] = { 0 };
@@ -435,13 +401,6 @@ __kernel void bip32_derive_hardened(__global keyBuffer *parent, __global keyBuff
 __kernel void bip32_derive_normal(__global keyBuffer *parent, __global keyBuffer *child, __global pathBuffer *pathBuffer) {
   ulong idx = get_global_id(0);
 
-/*
-  //  debug
-  if (idx == 0)
-  {
-    print_wg_size((__constant char*)""bip32_derive_normal"");
-  }
-*/
   uchar hmacsha512_result[64] = { 0 };
   //extended_public_key_t pub;
   //public_from_private(parent, &pub);

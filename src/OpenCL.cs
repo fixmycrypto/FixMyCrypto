@@ -74,7 +74,12 @@ namespace FixMyCrypto {
             commandQueue = null;
         }
 
-        public void Init_Sha512(int dklen = 64) {
+        public enum Mode {
+            opencl_brute,
+            bip39_solver
+        }
+
+        public void Init_Sha512(int dklen = 64, Mode mode = Mode.bip39_solver) {
             if (program_pbkdf2_ready && dklen == usingDkLen) return;
 
             program_pbkdf2_ready = false;
@@ -85,8 +90,13 @@ namespace FixMyCrypto {
 
             // Creates a program and then the kernel from it
             
-            string code = OpenCL_Bufferstructs.buffer_structs_template_cl + OpenCL_Sha512.hmac512_cl + OpenCL_Pbkdf2.pbkdf2_cl + OpenCL_Pbkdf2.pbkdf2_variants;
-            // string code = Bip39_Solver_Sha.sha2_cl + Bip39_Solver.int_to_address_cl;
+            string code;
+            if (mode == Mode.opencl_brute) {
+                code = OpenCL_Bufferstructs.buffer_structs_template_cl + OpenCL_Sha512.hmac512_cl + OpenCL_Pbkdf2.pbkdf2_cl + OpenCL_Pbkdf2.pbkdf2_variants;
+            }
+            else {
+                code = Bip39_Solver_Sha.sha2_cl + Bip39_Solver.int_to_address_cl;
+            }
             
             code = code.Replace("<hashBlockSize_bits>", "1024");
             code = code.Replace("<hashDigestSize_bits>", "512");
