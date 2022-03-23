@@ -158,6 +158,7 @@ namespace FixMyCrypto {
         ";
 
         public static string address_cl = @"
+/*
 #define BITCOIN_MAINNET 0
 #define BITCOIN_TESTNET 1
 
@@ -189,6 +190,7 @@ typedef struct {
   uchar chain_code[32];
   public_key_t public_key;
 } extended_public_key_t;
+*/
 
 void hmac_sha512(uchar *key, int key_length_bytes, uchar *message, int message_length_bytes, uchar *output) {
   uchar ipad_key[128];
@@ -224,6 +226,7 @@ void hmac_sha512(uchar *key, int key_length_bytes, uchar *message, int message_l
   sha512(&inner_concat, 192, output);
 }
 
+/*
 void new_master_from_seed(uchar network, uchar *seed, extended_private_key_t * master) {
   uchar key[12] = { 0x42, 0x69, 0x74, 0x63, 0x6f, 0x69, 0x6e, 0x20, 0x73, 0x65, 0x65, 0x64 };
   uchar hmacsha512_result[64] = { 0 };
@@ -268,7 +271,7 @@ void sha256d(uchar *input, int input_len,char * output) {
 void hash160(uchar *input, int input_len, char * output) {
   uchar sha256_result[32] = { 0 };
   sha256((__private uchar*)input, input_len, (__private uchar*)&sha256_result);
-  ripemd160(&sha256_result, 32, output);
+  // ripemd160(&sha256_result, 32, output);
 }
 
 void identifier_for_public_key(extended_public_key_t *pub, uchar *identifier) {
@@ -366,7 +369,7 @@ void hardened_private_child_from_private(extended_private_key_t *parent, extende
   child->private_key = sk;
   memcpy_offset(&child->chain_code, &hmacsha512_result, 32, 32);
 }
-
+*/
 typedef struct {
     uchar key[32];
     uchar cc[32];

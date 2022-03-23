@@ -47,17 +47,57 @@ namespace FixMyCrypto {
         private Device chosenDevice;
 
         private int maxPassphraseLength;
+        private int platformId, deviceId;
 
         public OpenCL(int platformId = 0, int deviceId = 0, int maxPassphraseLength = 32) {
-            LogOpenCLInfo();
+            // LogOpenCLInfo();
             if (platformId < 0 || deviceId < 0) throw new ArgumentException();
 
             IEnumerable<Platform> platforms = Platform.GetPlatforms();
             chosenDevice = platforms.ToList()[platformId].GetDevices(DeviceType.All).ToList()[deviceId];
-            Log.Info($"Selected device ({platformId}, {deviceId}): {chosenDevice.Name} ({chosenDevice.Vendor})");
+            // Log.Info($"Selected device ({platformId}, {deviceId}): {chosenDevice.Name} ({chosenDevice.Vendor})");
             context = Context.CreateContext(chosenDevice);            
             commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevice);
             this.maxPassphraseLength = Math.Max(maxPassphraseLength, 32);   //  "mnemonic" + passphrase
+            this.platformId = platformId;
+            this.deviceId = deviceId;
+        }
+
+        public string GetDeviceInfo() {
+            return $"Selected device ({platformId}, {deviceId}): {chosenDevice.Name} ({chosenDevice.Vendor})";
+        }
+
+        public static int GetPlatformCount() {
+            return Platform.GetPlatforms().Count();
+        }
+
+        public static int GetDeviceCount(int platform) {
+            return Platform.GetPlatforms().ToList()[platform].GetDevices(DeviceType.All).ToList().Count;
+        }
+
+        public static void BenchmarkDevices(int count = 4096) {
+            ConsoleTable table = new ConsoleTable("Device", "phrases/s", "passphrases/s", "Secp256k1 keys/s");
+            for (int p = 0; p < GetPlatformCount(); p++) {
+                Platform platform = Platform.GetPlatforms().ToList()[p];
+
+                for (int d = 0; d < GetDeviceCount(p); d++) {
+                    OpenCL ocl = new(p, d);
+                    Dictionary<string, int> results = new();
+                    ocl.Benchmark_Pbkdf2(count, results);
+                    ocl.Benchmark_Bip32Derive(PathNode.Harden(0), count, results);
+                    ocl.Benchmark_Bip32Derive(0, count, results);
+
+                    if (p == 0 && d == 0) {
+                        table.AddRow("CPU", results["cpuPhrases"], results["cpuPassphrases"], results["cpuSecDerives"]);
+                    }
+
+                    Device dev = platform.GetDevices(DeviceType.All).ToList()[d];
+
+                    table.AddRow($"{dev.Name} ({p}:{d})", results["oclPhrases"], results["oclPassphrases"], results["oclSecDerives"]);
+                }
+            }
+            Log.Info("Benchmark Results:");
+            Log.Info(table.ToStringAlternative());
         }
 
         ~OpenCL() {
@@ -110,7 +150,7 @@ namespace FixMyCrypto {
             foreach (var k in pbkdf2_kernels.Values) k?.Dispose();
             pbkdf2_kernels.Clear();
             program_pbkdf2?.Dispose();
-            program_pbkdf2 = context.CreateAndBuildProgramFromString(code);
+            program_pbkdf2 = context.CreateAndBuildProgramFromString(code, "-cl-std=CL2.0");
             // Log.Debug(code);
             Log.Info("OpenCL Compiled");
             program_pbkdf2_ready = true;
@@ -327,7 +367,7 @@ namespace FixMyCrypto {
             foreach (var k in bip32_kernels.Values) k?.Dispose();
             bip32_kernels.Clear();
             program_bip32derive?.Dispose();
-            program_bip32derive = context.CreateAndBuildProgramFromString(code);
+            program_bip32derive = context.CreateAndBuildProgramFromString(code, "-cl-std=CL2.0");
             Log.Info("OpenCL Compiled");
             program_bip32derive_ready = true;
         }
@@ -415,9 +455,9 @@ namespace FixMyCrypto {
             }
         }
 
-        public void Benchmark_Bip32Derive(uint path, int count = 10240)
+        public void Benchmark_Bip32Derive(uint path, int count = 4096, Dictionary<string, int> results = null)
         {
-            Log.Info($"Benchmark_Bip32Derive path={path}");
+            Log.Debug($"Benchmark_Bip32Derive({PathNode.GetPath(path)})");
             Cryptography.Key[] src = new Cryptography.Key[count];
             ExtKey[] ex = new ExtKey[count];
             ExtKey[] child = new ExtKey[count];
@@ -449,23 +489,29 @@ namespace FixMyCrypto {
             for (int i = 0; i < count; i++) {
                 if (keys[i].data.ToHexString() != child[i].PrivateKey.ToBytes().ToHexString()) {
                     badkey++;
-                    Log.Error($"SK{i} OCL {keys[i].data.ToHexString()} != ExtKey {child[i].PrivateKey.ToBytes().ToHexString()}");
+                    // Log.Error($"SK{i} OCL {keys[i].data.ToHexString()} != ExtKey {child[i].PrivateKey.ToBytes().ToHexString()}");
                 }
                 if (keys[i].cc.ToHexString() != child[i].ChainCode.ToHexString()) {
                     badcc++;
-                    Log.Error($"CC{i} OCL {keys[i].cc.ToHexString()} != ExtKey {child[i].ChainCode.ToHexString()}");
+                    // Log.Error($"CC{i} OCL {keys[i].cc.ToHexString()} != ExtKey {child[i].ChainCode.ToHexString()}");
                 }
             }
-            Log.Info($"Benchmark_Bip32Derive() cputime={cpu} ocltime={ocl} badkey={badkey} badcc={badcc}");
+            Log.Debug($"Benchmark_Bip32Derive({path}) P:{platformId} D:{deviceId} cputime={cpu} ocltime={ocl} badkey={badkey} badcc={badcc}");
             if (badkey > 0 || badcc > 0) throw new Exception("bad results in Benchmark_Bip32Derive()");
+            Log.Debug($"CPU derives/s: {count/(cpu/1000.0):F0}");
+            Log.Debug($"P:{platformId} D:{deviceId} derives/s: {count/(ocl/1000.0):F0}");
+            if (results != null) {
+                results["cpuSecDerives"] = (int)(count/(cpu/1000.0));
+                results["oclSecDerives"] = (int)(count/(ocl/1000.0));
+            }
         }
 
-        public void Benchmark_Pbkdf2(int tcount = 1024)
+        public void Benchmark_Pbkdf2(int tcount = 4096, Dictionary<string, int> results = null)
         {
             Wordlists.Initialize();
 
             {
-                Log.Info("Benchmark OpenCL phrases...");
+                Log.Debug($"Benchmark OpenCL phrases...");
                 Init_Sha512();
                 Phrase[] ph = new Phrase[tcount];
                 byte[][] passwords = new byte[tcount][];
@@ -496,12 +542,18 @@ namespace FixMyCrypto {
                         badcount++;
                     }
                 }
-                Log.Info($"Benchmark_Pbkdf2() phrases cputime={cputime} ocltime={ocltime} badcount={badcount}");
+                Log.Debug($"Benchmark_Pbkdf2() phrases P:{platformId} D:{deviceId} cputime={cputime} ocltime={ocltime} badcount={badcount}");
                 if (badcount > 0) throw new SystemException("failed Benchmark_Pbkdf2() phrases");
+                Log.Debug($"CPU phrases/s: {tcount/(cputime/1000.0):F0}");
+                Log.Debug($"P:{platformId} D:{deviceId} phrases/s: {tcount/(ocltime/1000.0):F0}");
+                if (results != null) {
+                    results["cpuPhrases"] = (int)(tcount/(cputime/1000.0));
+                    results["oclPhrases"] = (int)(tcount/(ocltime/1000.0));
+                }
             }
 
             {
-                Log.Info("Benchmark OpenCL passphrases...");
+                Log.Debug($"Benchmark OpenCL passphrases...");
                 Init_Sha512();
                 Phrase ph = new Phrase(12);
                 string phrase = ph.ToPhrase();
@@ -536,8 +588,14 @@ namespace FixMyCrypto {
                         badcount++;
                     }
                 }
-                Log.Info($"Benchmark_Pbkdf2() passphrases cputime={cputime} ocltime={ocltime} badcount={badcount}");
+                Log.Debug($"Benchmark_Pbkdf2() P:{platformId} D:{deviceId} passphrases cputime={cputime} ocltime={ocltime} badcount={badcount}");
                 if (badcount > 0) throw new SystemException("failed Benchmark_Pbkdf2() passphrases");
+                Log.Debug($"CPU passphrases/s: {tcount/(cputime/1000.0):F0}");
+                Log.Debug($"P:{platformId} D:{deviceId} passphrases/s: {tcount/(ocltime/1000.0):F0}");
+                if (results != null) {
+                    results["cpuPassphrases"] = (int)(tcount/(cputime/1000.0));
+                    results["oclPassphrases"] = (int)(tcount/(ocltime/1000.0));
+                }
             }
 
         }

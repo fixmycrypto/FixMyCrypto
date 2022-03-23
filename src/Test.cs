@@ -234,7 +234,9 @@ namespace FixMyCrypto {
         public static void TestAddressDerivation(dynamic secrets, bool useOpenCL) {
             OpenCL ocl = null;
             if (useOpenCL) {
+                OpenCL.LogOpenCLInfo();
                 ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevice);
+                Log.Info(ocl.GetDeviceInfo());
                 ocl.Benchmark_Pbkdf2(ocl.GetBatchSize());
                 ocl.Benchmark_Bip32Derive(PathNode.Harden(44));
                 ocl.Benchmark_Bip32Derive(1);

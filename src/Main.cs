@@ -34,6 +34,7 @@ namespace FixMyCrypto {
 
             if (args.Length > 0 && args[0] == "-opencl") {
                 OpenCL.LogOpenCLInfo();
+                OpenCL.BenchmarkDevices();
                 PauseAndExit(0);
             }
 
@@ -182,7 +183,9 @@ namespace FixMyCrypto {
             OpenCL ocl = null;
             if (Settings.OpenCLPlatform >= 0 && Settings.OpenCLDevice >= 0) {
                 try {
+                    OpenCL.LogOpenCLInfo();
                     ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevice, maxPassphraseLength);
+                    Log.Info(ocl.GetDeviceInfo());
                     ocl.Init_Sha512(p2at.GetKeyLength());
                     ocl.Init_Bip32Derive();
                 }
