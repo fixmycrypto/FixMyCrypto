@@ -180,6 +180,18 @@ namespace FixMyCrypto {
 
             return s;
         }
+
+        public PathNode GetLongestPathFromRoot() {
+            PathNode node = Root;
+
+            while (node.Children.Count <= 1) {
+                if (node.Children.Count == 0) break;
+                if (node.End == true) break;
+                node = node.Children[0];
+            }
+
+            return node;
+        }
     }
 
     class PathNode {
@@ -240,6 +252,18 @@ namespace FixMyCrypto {
             else {
                 return "m";
             }
+        }
+
+        public uint[] GetPathValues() {
+            Stack<uint> stack = new();
+            PathNode node = this;
+
+            while (node != null) {
+                stack.Push(node.Value);
+                node = node.Parent;
+            }
+
+            return stack.ToArray();
         }
         public static string GetPath(uint index) {
             if (IsHardened(index)) {

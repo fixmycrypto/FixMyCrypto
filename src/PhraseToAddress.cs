@@ -82,7 +82,7 @@ namespace FixMyCrypto {
             return 64;
         }
 
-        private class Batch {
+        private abstract class Batch {
             public PathTree tree;
 
             public ProduceAddress produceAddress;
@@ -90,6 +90,10 @@ namespace FixMyCrypto {
             public long id;
 
             public long count;
+
+            public abstract Phrase[] GetPhrases();
+
+            public abstract string[] GetPassphrases();
 
             public Batch(long id, PathTree tree, ProduceAddress produceAddress) {
                 this.tree = tree;
@@ -106,6 +110,14 @@ namespace FixMyCrypto {
                 this.phrases = phrases;
                 this.passphrase = passphrase;
             }
+
+            public override Phrase[] GetPhrases() {
+                return phrases;
+            }
+
+            public override string[] GetPassphrases() {
+                return new string[] { passphrase };
+            }
         }
         private class PassphraseBatch : Batch {
             public Phrase phrase;
@@ -114,6 +126,14 @@ namespace FixMyCrypto {
                 this.phrase = phrase;
                 this.passphrases = passphrases;
             }
+            public override Phrase[] GetPhrases() {
+                return new Phrase[] { phrase };
+            }
+
+            public override string[] GetPassphrases() {
+                return passphrases;
+            }
+
         }
         private BlockingCollection<Batch> batchQueue = new BlockingCollection<Batch>(Settings.Threads);
 
@@ -170,6 +190,25 @@ namespace FixMyCrypto {
                 keys[i] = DeriveChildKey(parents[i], index);
             });
             return keys;
+        }
+        private Cryptography.Key[] DerivePath_Batch(Cryptography.Key[] parents, uint[] path) {
+            Cryptography.Key[] keys = parents;
+            foreach (uint index in path) {
+                keys = DeriveChildKey_Batch(keys, index);
+            }
+            return keys;
+        }
+        protected virtual Cryptography.Key[] DeriveRootLongestPath(Phrase[] phrases, string[] passphrases, PathTree tree) {
+            Cryptography.Key[] keys;
+            if (phrases.Length == 1) {
+                keys = DeriveRootKey_BatchPassphrases(phrases[0], passphrases);
+            }
+            else {
+                keys = DeriveRootKey_BatchPhrases(phrases, passphrases[0]);
+            }
+
+            PathNode node = tree.GetLongestPathFromRoot();
+            return DerivePath_Batch(keys, node.GetPathValues().Slice(1));
         }
         protected abstract Address DeriveAddress(PathNode node, int keyIndex);
         public abstract void ValidateAddress(string address);
@@ -258,6 +297,9 @@ namespace FixMyCrypto {
             //  Create path tree
             PathTree tree = CreateTree(paths, accounts, indices);
 
+            PathNode path = tree.GetLongestPathFromRoot();
+            Log.Debug($"longest root path: {path.GetPath()} - {String.Join(',', path.GetPathValues())}");
+
             //  Derive descendent keys
 
             List<Address> addresses = new();
@@ -265,10 +307,11 @@ namespace FixMyCrypto {
             foreach (string passphrase in passphrases) {
                 if (Global.Done) break;
 
-                // tree.Root.Key = key.key;
-                tree.Root.Keys = DeriveRootKey_BatchPhrases(new Phrase[] { phrase }, passphrase);
+                //  Derive the longest straight branch from root in one go
+                path.Keys = DeriveRootLongestPath(new Phrase[] { phrase }, passphrases, tree);
 
-                foreach (PathNode child in tree.Root.Children) {
+                //  Derive all sub-paths from there
+                foreach (PathNode child in path.Children) {
                     DeriveChildKeys_Batch(child);
                 }
 
@@ -313,16 +356,19 @@ namespace FixMyCrypto {
 
                 if (batch == null) continue;
 
+                PathTree t = new PathTree(batch.tree);
+                //  Derive the longest straight branch from root in one go
+                PathNode path = t.GetLongestPathFromRoot();
+                path.Keys = DeriveRootLongestPath(batch.GetPhrases(), batch.GetPassphrases(), t);
+
+                //  Derive all sub-paths from there
+                foreach (PathNode child in path.Children) {
+                    DeriveChildKeys_Batch(child);
+                }
+
                 if (batch is PhraseBatch) {
                     PhraseBatch pb = batch as PhraseBatch;
                     // Log.Debug($"PhraseBatch {pb.phrases.Length}");
-
-                    PathTree t = new PathTree(pb.tree);
-                    t.Root.Keys = DeriveRootKey_BatchPhrases(pb.phrases, pb.passphrase);
-
-                    foreach (PathNode child in t.Root.Children) {
-                        DeriveChildKeys_Batch(child);
-                    }
 
                     Parallel.For(0, pb.phrases.Length, i => {
                         if (Global.Done) return;
@@ -339,13 +385,6 @@ namespace FixMyCrypto {
                 else if (batch is PassphraseBatch) {
                     PassphraseBatch pb = batch as PassphraseBatch;
                     // Log.Debug($"PassphraseBatch {pb.passphrases.Length}");
-
-                    PathTree t = new PathTree(pb.tree);
-                    t.Root.Keys = DeriveRootKey_BatchPassphrases(pb.phrase, pb.passphrases);
-
-                    foreach (PathNode child in t.Root.Children) {
-                        DeriveChildKeys_Batch(child);
-                    }
 
                     Parallel.For(0, pb.passphrases.Length, i => {
                         if (Global.Done) return;
@@ -456,6 +495,8 @@ namespace FixMyCrypto {
             Log.Debug("P2A start");
 
             PathTree tree = CreateTree(Settings.Paths, Settings.Accounts, Settings.Indices);
+            PathNode end = tree.GetLongestPathFromRoot();
+            Log.Debug($"longest root path: {end.GetPath()} - {String.Join(',', end.GetPathValues())}");
 
             MultiPassphrase p;
             long passphraseCount;
