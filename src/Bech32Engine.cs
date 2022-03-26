@@ -105,7 +105,7 @@ namespace Bech32
 	        // find the last "1" and split there
             var splitLoc = adr.LastIndexOf("1");
 	        if (splitLoc == -1) {
-                Debug.WriteLine("1 separator not present in address");
+                // Debug.WriteLine("1 separator not present in address");
                 data = null; hrp = null; return;
 	        }
 
@@ -120,7 +120,7 @@ namespace Bech32
 
 	        // make sure checksum works
 	        if(!VerifyChecksum(hrp, squashed)) {
-                Debug.WriteLine("Checksum invalid");
+                // Debug.WriteLine("Checksum invalid");
                 data = null; return;
 	        }
 
@@ -140,7 +140,7 @@ namespace Bech32
             // if there's mixed case, that's not OK
             if (adr != lowAdr && adr != highAdr)
             {
-                Debug.WriteLine("mixed case address");
+                // Debug.WriteLine("mixed case address");
                 return null;
             }
 
@@ -167,7 +167,7 @@ namespace Bech32
                 var buffer = icharset[c];
 		        if (buffer == -1)
                 {
-                    Debug.WriteLine("contains invalid character " + c);
+                    // Debug.WriteLine("contains invalid character " + c);
                     return null;
                 }
                 squashed[i] = (byte)buffer;
@@ -254,7 +254,7 @@ namespace Bech32
                 var c = input[i];
                 if ((c & 0xe0) != 0)
                 {
-                    Debug.WriteLine("high bits set at position {0}: {1}", i, c);
+                    // Debug.WriteLine("high bits set at position {0}: {1}", i, c);
                     return null;
                 }
                 s += charset[c];
@@ -290,7 +290,7 @@ namespace Bech32
                 var c = input[i];
                 if (c >> inputWidth != 0)
                 {
-                    Debug.WriteLine("byte {0} ({1}) high bits set", i, c);
+                    // Debug.WriteLine("byte {0} ({1}) high bits set", i, c);
                     return null;
                 }
                 accumulator = (accumulator << inputWidth) | c;
@@ -313,7 +313,7 @@ namespace Bech32
             else if (bitstash >= inputWidth || ((accumulator << (outputWidth - bitstash)) & maxOutputValue) != 0)
             {
                 // no pad from 5 to 8 allowed
-                Debug.WriteLine("invalid padding from {0} to {1} bits", inputWidth, outputWidth);
+                // Debug.WriteLine("invalid padding from {0} to {1} bits", inputWidth, outputWidth);
                 return null;
             }
             return output.ToArray();
