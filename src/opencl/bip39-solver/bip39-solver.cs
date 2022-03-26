@@ -370,6 +370,7 @@ void hardened_private_child_from_private(extended_private_key_t *parent, extende
   memcpy_offset(&child->chain_code, &hmacsha512_result, 32, 32);
 }
 */
+
 typedef struct {
     uchar key[32];
     uchar cc[32];
@@ -423,7 +424,190 @@ __kernel void bip32_derive_normal(__global keyBuffer *parent, __global keyBuffer
   memcpy_offset(child[idx].cc, &hmacsha512_result, 32, 32);
 }
 
-        ";
+#define inBufferSize <inBufferSize_bytes>
+#define outBufferSize <outBufferSize_bytes>
+#define saltBufferSize <saltBufferSize_bytes>
+#define hashlength 64
+
+typedef struct {
+    <word_type> length; // in bytes
+    uchar buffer[inBufferSize];
+} inbuf;
+
+typedef struct {
+    uchar buffer[outBufferSize];
+} outbuf;
+
+// Salt buffer, used by pbkdf2 & pbe
+typedef struct {
+    <word_type> length; // in bytes
+    uchar buffer[saltBufferSize];
+} saltbuf;
+
+typedef struct {
+  uint count;
+  uint index[8];
+} pathsBuffer;
+
+__kernel void bip32_derive_path(__global const inbuf *inbuffer, __global const saltbuf *saltbuffer, __global const pathsBuffer *pathbuf, __global const int *mode, __global outbuf *outbuffer) {
+
+    ulong idx = get_global_id(0);
+    uchar ipad_key[128] = { 0 };
+    uchar opad_key[128] = { 0 };
+    uchar pwd_hash[hashlength] = { 0 };
+
+    __global uchar *pwd;
+    __global uchar *salt;
+    uint pwdLen;
+    uint saltLen;
+
+    if (mode[0] == 0)
+    {
+        pwd = inbuffer[idx].buffer;
+        salt = saltbuffer[0].buffer;
+        pwdLen = inbuffer[idx].length;
+        saltLen = saltbuffer[0].length;
+    }
+    else
+    {
+        pwd = inbuffer[0].buffer;
+        salt = saltbuffer[idx].buffer;
+        pwdLen = inbuffer[0].length;
+        saltLen = saltbuffer[idx].length;
+    }
+
+    //printf(""bip32_derive_path idx=%lu\n"", idx);
+    //printf(""mode=%d pwdLen=%u saltLen=%u word_type=<word_type>\n"", mode[0], pwdLen, saltLen);
+    //printf(""pwd: %s\n"", pwd);
+    //printf(""salt: %s\n"", salt);
+    //printf(""pwd: %lx\n"", pwd);
+    //printf(""&pwd: %lx\n"", &pwd);
+
+    int blocks = outBufferSize / hashlength;
+    //printf(""pwd_hash: %lx\n"", pwd_hash);
+    //printf(""&pwd_hash: %lx\n"", &pwd_hash);
+
+    if (pwdLen > 128) {
+        //printf(""sha512 pwd: %s\n"", pwd);
+        sha512(pwd, pwdLen, pwd_hash);
+        //printf(""sha512 result: "");
+        //print_byte_array_hex(&pwd_hash, hashlength);
+    }
+
+    uchar seed_buf[outBufferSize] = { 0 };
+    uchar *seed = seed_buf;
+
+    for (int block = 1; block <= blocks; block++) {
+        //printf(""block=%d\n"", block);
+        for(int x=0;x<128;x++){
+            ipad_key[x] = 0x36;
+            opad_key[x] = 0x5c;
+        }
+
+        if (pwdLen > 128) {
+            for(uint x=0;x<64;x++){
+                ipad_key[x] = ipad_key[x] ^ pwd_hash[x];
+                opad_key[x] = opad_key[x] ^ pwd_hash[x];
+            }
+        }
+        else {
+            for(uint x=0;x<pwdLen;x++){
+                ipad_key[x] = ipad_key[x] ^ pwd[x];
+                opad_key[x] = opad_key[x] ^ pwd[x];
+            }
+        }
+
+        uchar sha512_result[64] = { 0 };
+        uchar key_previous_concat[256] = { 0 };
+        int x = 0;
+        for(;x<128;x++){
+            key_previous_concat[x] = ipad_key[x];
+        }
+        for(int i=0;i<saltLen;i++){
+            key_previous_concat[x++] = salt[i];
+        }
+        key_previous_concat[x++] = (block >> 24) & 0xff;
+        key_previous_concat[x++] = (block >> 16) & 0xff;
+        key_previous_concat[x++] = (block >> 8) & 0xff;
+        key_previous_concat[x++] = (uchar)block & 0xff;
+
+        sha512(&key_previous_concat, x, &sha512_result);
+        copy_pad_previous(&opad_key, &sha512_result, &key_previous_concat);
+        sha512(&key_previous_concat, 192, &sha512_result);
+        xor_seed_with_round(seed, &sha512_result);
+
+        //printf(""bip32_derive_path begin iters\n"");
+
+        for(int x=1;x<2048;x++){
+            copy_pad_previous(&ipad_key, &sha512_result, &key_previous_concat);
+            sha512(&key_previous_concat, 192, &sha512_result);
+            copy_pad_previous(&opad_key, &sha512_result, &key_previous_concat);
+            sha512(&key_previous_concat, 192, &sha512_result);
+            xor_seed_with_round(seed, &sha512_result);
+        }
+
+        seed += hashlength;
+    }
+
+    //printf(""bip32_derive_path hmac on seed\n"");
+
+    //  hmac512 on seed -> parent
+    uchar parent[64] = { 0 };
+    uchar key[12] = { 0x42, 0x69, 0x74, 0x63, 0x6f, 0x69, 0x6e, 0x20, 0x73, 0x65, 0x65, 0x64 };
+    uchar hmacsha512_result[64] = { 0 };
+    hmac_sha512(key, 12, seed_buf, 64, parent);
+
+    //  derive paths
+
+    uint pathCount = pathbuf[0].count;
+    //printf(""pathCount=%u\n"", pathCount);
+
+    for (int i = 0; i < pathCount; i++) {
+      uint path = pathbuf[0].index[i];
+      uchar child[64] = { 0 };
+ 
+      if (path & (1 << 31)) {
+        //printf(""bip32_derive_path hard path=%u\n"", path);
+        uchar hmacsha512_result[64] = { 0 };
+        uchar hmac_input[37] = { 0 };
+        for(int x=0;x<32;x++){
+          hmac_input[x+1] = parent[x];
+        }
+        hmac_input[33] = path >> 24;
+        hmac_input[34] = (path & 0x00FF0000) >> 16;
+        hmac_input[35] = (path & 0x0000FF00) >> 8;
+        hmac_input[36] = (path & 0x000000FF);
+        
+        hmac_sha512(parent + 32, 32, &hmac_input, 37, &hmacsha512_result);
+        
+        memcpy(child, &hmacsha512_result, 32);
+        secp256k1_ec_seckey_tweak_add(child, parent);
+        memcpy_offset(child + 32, &hmacsha512_result, 32, 32);
+      }
+      else {
+        //printf(""bip32_derive_path soft path=%u\n"", path);
+        uchar hmacsha512_result[64] = { 0 };
+        uchar pub[32] = { 0 };
+        secp256k1_ec_pubkey_create(&pub, parent);
+        uchar hmac_input[37] = {0};
+        secp256k1_ec_pubkey_serialize(&hmac_input, 33, &pub, SECP256K1_EC_COMPRESSED);
+        hmac_input[33] = path >> 24;
+        hmac_input[34] = (path & 0x00FF0000) >> 16;
+        hmac_input[35] = (path & 0x0000FF00) >> 8;
+        hmac_input[36] = (path & 0x000000FF);
+        hmac_sha512(parent + 32, 32, &hmac_input, 37, &hmacsha512_result);
+
+        memcpy(child, &hmacsha512_result, 32);
+        secp256k1_ec_seckey_tweak_add(child, parent);
+        memcpy_offset(child + 32, &hmacsha512_result, 32, 32);
+      }
+
+      memcpy(parent, child, outBufferSize);
+    }
+
+    for (int i = 0; i < outBufferSize; i++) outbuffer[idx].buffer[i] = parent[i];
+}
+";
 
         public static string common_cl = @"
 #define uint32_t uint

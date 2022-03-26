@@ -187,7 +187,7 @@ namespace FixMyCrypto {
                     ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevice, maxPassphraseLength);
                     Log.Info(ocl.GetDeviceInfo());
                     ocl.Init_Sha512(p2at.GetKeyLength());
-                    ocl.Init_Bip32Derive();
+                    ocl.Init_Bip32Derive(p2at.GetKeyLength());
                 }
                 catch (Exception e) {
                     Log.Error(e.ToString());

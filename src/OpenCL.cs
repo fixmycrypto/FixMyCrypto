@@ -25,7 +25,6 @@ namespace FixMyCrypto {
         private Program program_pbkdf2;
 
         private Program program_bip32derive;
-
         private CommandQueue commandQueue;
         private ConcurrentDictionary<string, Kernel> pbkdf2_kernels = new();
 
@@ -124,7 +123,7 @@ namespace FixMyCrypto {
 
             program_pbkdf2_ready = false;
             outBufferSize = (dklen > 64) ? 128 : 64;
-            wordSize = (dklen > 32) ? 8 : 4;
+            wordSize = 8;
             saltBufferSize = maxPassphraseLength + 8;   //  +8 for "mnemonic"
             if (saltBufferSize % wordSize != 0) saltBufferSize += wordSize - (saltBufferSize % wordSize);
 
@@ -160,7 +159,7 @@ namespace FixMyCrypto {
         public int GetBatchSize() {
             //  TODO: improve this
                         
-            return 4096;
+            return 0x40000 / outBufferSize;
         }
 
         public Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, int iters = 2048, int dklen = 64) {
@@ -358,10 +357,130 @@ namespace FixMyCrypto {
             return retval;
         }
 
-        public void Init_Bip32Derive() {
+        public Cryptography.Key[] Bip32DeriveFromRoot(byte[][] passwords, byte[][] salts, uint[] paths, int iters = 2048, int dklen = 64) {
+            Init_Bip32Derive();
+            // Log.Debug($"salt batch size={salts.Length}");
+
+            int count = Math.Max(passwords.Length, salts.Length);
+
+            byte[] data = new byte[passwords.Length * (wordSize + inBufferSize)];
+            BinaryWriter w = new(new MemoryStream(data));
+            for (int i = 0; i < passwords.Length; i++) {
+                byte[] pb = passwords[i];
+                if (pb.Length > inBufferSize) {
+                        throw new Exception("phrase exceeds max length");
+                }
+                if (wordSize == 8) {
+                    w.Write((ulong)pb.Length);
+                }
+                else {
+                    w.Write((uint)pb.Length);
+                }
+                w.Write(pb);
+                w.BaseStream.Position += inBufferSize - pb.Length;
+                }
+            w.Close();
+
+            byte[] saltData = new byte[salts.Length * (wordSize + saltBufferSize)];
+            BinaryWriter w2 = new(new MemoryStream(saltData));
+            for (int i = 0; i < salts.Length; i++) {
+                if (salts[i].Length > saltBufferSize) {
+                    throw new Exception($"passphrase length {salts[i].Length}, max length {saltBufferSize} set incorrectly");
+                }
+                if (wordSize == 8) {
+                    w2.Write((ulong)salts[i].Length);
+                }
+                else {
+                    w2.Write((uint)salts[i].Length);
+                }
+                w2.Write(salts[i]);
+                w2.BaseStream.Position += saltBufferSize - salts[i].Length;
+            }
+            w2.Close();
+
+            byte[] pathData = new byte[wordSize + 8 * 4];
+            BinaryWriter w3 = new(new MemoryStream(pathData));
+            w3.Write((uint)paths.Length);
+            for (int i = 0; i < paths.Length; i++) {
+                w3.Write((uint)paths[i]);
+            }
+            w3.Close();
+
+            // Log.Debug($"data: {data.ToHexString()}");
+            // Log.Debug($"saltData: {saltData.ToHexString()}");
+            // Log.Debug($"pathData: {pathData.ToHexString()}");
+
+            if (Global.Done) return null;
+            // Console.WriteLine($"ocl: {result.ToHexString()}");
+
+            string kernelName = "bip32_derive_path";
+
+            try {
+                
+                Kernel kernel;
+                if (bip32_kernels.ContainsKey(kernelName)) {
+                    kernel = bip32_kernels[kernelName];
+                }
+                else {
+                    kernel = program_bip32derive.CreateKernel(kernelName);
+                    bip32_kernels[kernelName] = kernel;
+                }
+                
+                if (Global.Done) return null;
+
+                int outSize = dklen * count;
+                int[] mode = { (passwords.Length > 1 ? 0 : 1) };
+                using MemoryBuffer inBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, data);
+                using MemoryBuffer saltBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, saltData);
+                using MemoryBuffer pathBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, pathData);
+                using MemoryBuffer modeBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, mode);
+                using MemoryBuffer outBuffer = context.CreateBuffer<byte>(MemoryFlag.WriteOnly, outSize);
+
+                lock (kernel) {
+                    kernel.SetKernelArgument(0, inBuffer);
+                    kernel.SetKernelArgument(1, saltBuffer);
+                    kernel.SetKernelArgument(2, pathBuffer);
+                    kernel.SetKernelArgument(3, modeBuffer);
+                    kernel.SetKernelArgument(4, outBuffer);
+                    commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
+                }
+                byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+
+                if (Global.Done) return null;
+
+                Cryptography.Key[] ret = new Cryptography.Key[count];
+                BinaryReader r = new BinaryReader(new MemoryStream(result));
+                for (int i = 0; i < count; i++) {
+                    ret[i] = new Cryptography.Key(r.ReadBytes(32), r.ReadBytes(32));
+                }
+                return ret;
+            }
+            catch (Exception e) {
+                if (Global.Done) return null;
+
+                Log.Error(e.ToString());
+                throw;
+            }
+        }
+
+        public void Init_Bip32Derive(int dklen = 64) {
             if (program_bip32derive_ready) return;
 
+            program_bip32derive_ready = false;
+            outBufferSize = (dklen > 64) ? 128 : 64;
+            wordSize = 8;
+            saltBufferSize = maxPassphraseLength + 8;   //  +8 for "mnemonic"
+            if (saltBufferSize % wordSize != 0) saltBufferSize += wordSize - (saltBufferSize % wordSize);
+
             string code = Bip39_Solver.common_cl + Bip39_Solver_Secp256k1.secp256k1_common_cl + Bip39_Solver_Secp256k1.secp256k1_scalar_cl + Bip39_Solver_Secp256k1.secp256k1_field_cl + Bip39_Solver_Secp256k1.secp256k1_group_cl + Bip39_Solver_Secp256k1.secp256k1_preq_cl + Bip39_Solver_Secp256k1.secp256k1_cl + Bip39_Solver_Sha.sha2_cl + Bip39_Solver.address_cl;
+
+            code = code.Replace("<hashBlockSize_bits>", "1024");
+            code = code.Replace("<hashDigestSize_bits>", "512");
+            code = code.Replace("<inBufferSize_bytes>", $"{inBufferSize}");
+            code = code.Replace("<outBufferSize_bytes>", $"{outBufferSize}");
+            code = code.Replace("<saltBufferSize_bytes>", $"{saltBufferSize}");
+            code = code.Replace("<word_size>", $"{wordSize}");
+            code = code.Replace("<word_type>", wordSize == 8 ? "ulong" : "uint");
 
             Log.Info("Compiling OpenCL BIP32 Derive scripts...");
             foreach (var k in bip32_kernels.Values) k?.Dispose();
