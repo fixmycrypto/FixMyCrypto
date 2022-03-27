@@ -156,7 +156,7 @@ namespace FixMyCrypto {
                 code = OpenCL_Bufferstructs.buffer_structs_template_cl + OpenCL_Sha512.hmac512_cl + OpenCL_Pbkdf2.pbkdf2_cl + OpenCL_Pbkdf2.pbkdf2_variants;
             }
             else {
-                code = Bip39_Solver_Sha.sha2_cl + Bip39_Solver.int_to_address_cl;
+                code = Bip39_Solver.common_cl + Bip39_Solver_Sha.sha2_cl + Bip39_Solver.int_to_address_cl;
             }
             
             code = code.Replace("<hashBlockSize_bits>", "1024");

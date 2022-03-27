@@ -23,28 +23,6 @@ namespace FixMyCrypto {
         uchar buffer[saltBufferSize];
     } saltbuf;
 
-    void copy_pad_previous(uchar *pad, uchar *previous, uchar *joined) {
-        for(int x=0;x<128;x++){
-            joined[x] = pad[x];
-        }
-        for(int x=0;x<hashlength;x++){
-            joined[x+128] = previous[x];
-        }
-    }
-
-    void xor_seed_with_round(__global uchar *seed, uchar *round) {
-        for(int x=0;x<hashlength;x++){
-            seed[x] = seed[x] ^ round[x];
-        }
-    }
-
-    void print_byte_array_hex(uchar *arr, int len) {
-        for (int i = 0; i < len; i++) {
-            printf(""%02x"", arr[i]);
-        }
-        printf(""\n\n"");
-    }
-
 void hmac_sha512(uchar *key, int key_length_bytes, uchar *message, int message_length_bytes, uchar *output) {
   uchar ipad_key[128];
   uchar opad_key[128];
@@ -174,8 +152,7 @@ void hmac_sha512(uchar *key, int key_length_bytes, uchar *message, int message_l
 
         if (final_hmac == 1) {
           //  hmac512 on seed
-          uchar key[12] = { 0x42, 0x69, 0x74, 0x63, 0x6f, 0x69, 0x6e, 0x20, 0x73, 0x65, 0x65, 0x64 };
-          hmac_sha512(key, 12, outbuffer[idx].buffer, outBufferSize, outbuffer[idx].buffer);
+          hmac_sha512(bitcoin_seed, 12, outbuffer[idx].buffer, outBufferSize, outbuffer[idx].buffer);
         }
     }
 
@@ -600,9 +577,8 @@ __kernel void bip32_derive_path(__global const inbuf *inbuffer, __global const s
 
     //  hmac512 on seed -> parent
     uchar parent[64] = { 0 };
-    uchar key[12] = { 0x42, 0x69, 0x74, 0x63, 0x6f, 0x69, 0x6e, 0x20, 0x73, 0x65, 0x65, 0x64 };
     uchar hmacsha512_result[64] = { 0 };
-    hmac_sha512(key, 12, seed_buf, 64, parent);
+    hmac_sha512(bitcoin_seed, 12, seed_buf, 64, parent);
 
     //  derive paths
 
@@ -661,6 +637,8 @@ __kernel void bip32_derive_path(__global const inbuf *inbuffer, __global const s
 #define uint64_t ulong
 #define uint8_t uchar
 #define NULL 0
+
+static const uchar bitcoin_seed[12] = { 0x42, 0x69, 0x74, 0x63, 0x6f, 0x69, 0x6e, 0x20, 0x73, 0x65, 0x65, 0x64 };
 
 static void memset(uchar *str, int c, size_t n){
   for(int i=0;i<n;i++){
