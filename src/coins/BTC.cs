@@ -191,11 +191,10 @@ namespace FixMyCrypto {
             byte[] salt = Cryptography.PassphraseToSalt(passphrase);
             Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPassword(phrases, new string[] { passphrase }, passwords, salt);
             Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
-            Parallel.For(0, phrases.Length, i => {
-                if (Global.Done) return;
-                byte[] key = Cryptography.HMAC512_Bitcoin(seeds[i].seed);
-                keys[i] = new Cryptography.Key(key.Slice(0, 32), key.Slice(32));
-            });
+            for (int i = 0; i < phrases.Length; i++) {
+                if (Global.Done) break;
+                keys[i] = new Cryptography.Key(seeds[i].seed.Slice(0, 32), seeds[i].seed.Slice(32));
+            }
             return keys;
         }
         public override Cryptography.Key[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
@@ -208,11 +207,10 @@ namespace FixMyCrypto {
             for (int i = 0; i < passphrases.Length; i++) salts[i] = Cryptography.PassphraseToSalt(passphrases[i]);
             Seed[] seeds = ocl.Pbkdf2_Sha512_MultiSalt(new Phrase[] { phrase }, passphrases, password, salts);
             Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
-            Parallel.For(0, passphrases.Length, i => {
-                if (Global.Done) return;
-                byte[] key = Cryptography.HMAC512_Bitcoin(seeds[i].seed);
-                keys[i] = new Cryptography.Key(key.Slice(0, 32), key.Slice(32));
-            });
+            for (int i = 0; i < passphrases.Length; i++) {
+                if (Global.Done) break;
+                keys[i] = new Cryptography.Key(seeds[i].seed.Slice(0, 32), seeds[i].seed.Slice(32));
+            }
             return keys;
         }
 

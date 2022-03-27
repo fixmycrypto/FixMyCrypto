@@ -15,6 +15,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Management;
 using ConsoleTables;
 
 namespace FixMyCrypto {
@@ -74,8 +75,27 @@ namespace FixMyCrypto {
             return Platform.GetPlatforms().ToList()[platform].GetDevices(DeviceType.All).ToList().Count;
         }
 
+        [System.Runtime.Versioning.SupportedOSPlatformGuard("windows")]
+        private static string GetCpuName_Windows() {
+            try {
+#pragma warning disable CA1416
+                var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\CentralProcessor\0\");
+                return key?.GetValue("ProcessorNameString").ToString() ?? "CPU";
+#pragma warning restore CA1416
+            }
+            catch (Exception) {}
+            return "CPU";
+        }
+
+        private static string GetCpuName() {
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows)) {
+                return GetCpuName_Windows();
+            }
+            return "CPU";
+        }
         public static void BenchmarkDevices(int count = 4096) {
             Log.Info("Benchmarking devices...");
+
             ConsoleTable table = new ConsoleTable("Device", "phrases/ms", "passphrases/ms", "Secp256k1 keys/ms", "BIP32 paths/ms");
             for (int p = 0; p < GetPlatformCount(); p++) {
                 Platform platform = Platform.GetPlatforms().ToList()[p];
@@ -89,7 +109,7 @@ namespace FixMyCrypto {
                     ocl.Benchmark_Bip32DerivePath(null, count, results);
 
                     if (p == 0 && d == 0) {
-                        table.AddRow("CPU", $"{results["cpuPhrases"]/1000.0:F1}", $"{results["cpuPassphrases"]/1000.0:F1}", $"{results["cpuSecDerives"]/1000.0:F1}", $"{results["cpuSecPaths"]/1000.0:F1}");
+                        table.AddRow(GetCpuName(), $"{results["cpuPhrases"]/1000.0:F1}", $"{results["cpuPassphrases"]/1000.0:F1}", $"{results["cpuSecDerives"]/1000.0:F1}", $"{results["cpuSecPaths"]/1000.0:F1}");
                     }
 
                     Device dev = platform.GetDevices(DeviceType.All).ToList()[d];
@@ -164,7 +184,7 @@ namespace FixMyCrypto {
             return 0x40000 / outBufferSize;
         }
 
-        public Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, int iters = 2048, int dklen = 64) {
+        public Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, bool final_hmac = true, int iters = 2048, int dklen = 64) {
             Init_Sha512(dklen);
 
             // Log.Debug($"password batch size={passwords.Length}");
@@ -204,7 +224,7 @@ namespace FixMyCrypto {
             // Log.Debug($"data: {data.ToHexString()}");
             // Log.Debug($"saltData: {saltData.ToHexString()}");
 
-            byte[] result = RunKernel($"pbkdf2_{iters}_{dklen}", data, saltData, passwords.Length);
+            byte[] result = RunKernel($"pbkdf2_{iters}_{dklen}{(final_hmac ? "_final_hmac" : "")}", data, saltData, passwords.Length);
 
             if (Global.Done) return null;
 
@@ -284,7 +304,7 @@ namespace FixMyCrypto {
             }
         }
 
-        public Seed[] Pbkdf2_Sha512_MultiSalt(Phrase[] phrases, string[] passphrases, byte[] password, byte[][] salts, int iters = 2048, int dklen = 64) {
+        public Seed[] Pbkdf2_Sha512_MultiSalt(Phrase[] phrases, string[] passphrases, byte[] password, byte[][] salts, bool final_hmac = true, int iters = 2048, int dklen = 64) {
             Init_Sha512(dklen);
             // Log.Debug($"salt batch size={salts.Length}");
 
@@ -322,7 +342,7 @@ namespace FixMyCrypto {
             // Log.Debug($"data: {data.ToHexString()}");
             // Log.Debug($"saltData: {saltData.ToHexString()}");
 
-            byte[] result = RunKernel($"pbkdf2_saltlist_{iters}_{dklen}", data, saltData, salts.Length);
+            byte[] result = RunKernel($"pbkdf2_saltlist_{iters}_{dklen}{(final_hmac ? "_final_hmac" : "")}", data, saltData, salts.Length);
 
             if (Global.Done) return null;
             // Console.WriteLine($"ocl: {result.ToHexString()}");
@@ -694,7 +714,7 @@ namespace FixMyCrypto {
                 byte[] salt = Cryptography.PassphraseToSalt(pp);
                 Stopwatch oclsw = new Stopwatch();
                 oclsw.Start();
-                Seed[] oclseeds = Pbkdf2_Sha512_MultiPassword(ph, new string[] { pp }, passwords, salt);
+                Seed[] oclseeds = Pbkdf2_Sha512_MultiPassword(ph, new string[] { pp }, passwords, salt, false);
                 oclsw.Stop();
                 long ocltime = oclsw.ElapsedMilliseconds;
                 int badcount = 0;
@@ -739,7 +759,7 @@ namespace FixMyCrypto {
                 for (int i = 0; i < tcount; i++) salts[i] = Cryptography.PassphraseToSalt(pp[i]);
                 Stopwatch oclsw = new Stopwatch();
                 oclsw.Start();
-                Seed[] oclseeds = Pbkdf2_Sha512_MultiSalt(new Phrase[] { ph }, pp, password, salts);
+                Seed[] oclseeds = Pbkdf2_Sha512_MultiSalt(new Phrase[] { ph }, pp, password, salts, false);
                 oclsw.Stop();
                 long ocltime = oclsw.ElapsedMilliseconds;
                 int badcount = 0;

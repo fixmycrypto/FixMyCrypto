@@ -45,8 +45,42 @@ namespace FixMyCrypto {
         printf(""\n\n"");
     }
 
+void hmac_sha512(uchar *key, int key_length_bytes, uchar *message, int message_length_bytes, uchar *output) {
+  uchar ipad_key[128];
+  uchar opad_key[128];
+  for(int x=0;x<128;x++){
+    ipad_key[x] = 0x36;
+    opad_key[x] = 0x5C;
+  }
+
+  for(int x=0;x<key_length_bytes;x++){
+    ipad_key[x] = ipad_key[x] ^ key[x];
+    opad_key[x] = opad_key[x] ^ key[x];
+  }
+
+  uchar inner_concat[256] = { 0 };
+
+  for(int x=0;x<128;x++){
+    inner_concat[x] = ipad_key[x];
+  }
+  for(int x=0;x<message_length_bytes;x++){
+    inner_concat[x+128] = message[x];
+  }
+
+  sha512(&inner_concat, 128+message_length_bytes, output);
+
+  for(int x=0;x<128;x++){
+    inner_concat[x] = opad_key[x];
+  }
+  for(int x=0;x<64;x++){
+    inner_concat[x+128] = output[x];
+  }
+
+  sha512(&inner_concat, 192, output);
+}
+
     __kernel void pbkdf2(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer,
-    __private unsigned int iters, __private unsigned int dkLen_bytes, uchar mode) {
+    __private unsigned int iters, __private unsigned int dkLen_bytes, uchar mode, uchar final_hmac) {
 
         ulong idx = get_global_id(0);
         uchar ipad_key[128];
@@ -137,25 +171,38 @@ namespace FixMyCrypto {
 
             seed += hashlength;
         }
+
+        if (final_hmac == 1) {
+          //  hmac512 on seed
+          uchar key[12] = { 0x42, 0x69, 0x74, 0x63, 0x6f, 0x69, 0x6e, 0x20, 0x73, 0x65, 0x65, 0x64 };
+          hmac_sha512(key, 12, outbuffer[idx].buffer, outBufferSize, outbuffer[idx].buffer);
+        }
     }
 
     __kernel void pbkdf2_2048_64(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer) {
-        pbkdf2(inbuffer, saltbuffer, outbuffer, 2048, 64, 0);
+        pbkdf2(inbuffer, saltbuffer, outbuffer, 2048, 64, 0, 0);
     }
 
     __kernel void pbkdf2_saltlist_2048_64(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer) {
-        pbkdf2(inbuffer, saltbuffer, outbuffer, 2048, 64, 1);
+        pbkdf2(inbuffer, saltbuffer, outbuffer, 2048, 64, 1, 0);
     }
 
    __kernel void pbkdf2_4096_96(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer) {
-        pbkdf2(inbuffer, saltbuffer, outbuffer, 4096, 96, 0);
+        pbkdf2(inbuffer, saltbuffer, outbuffer, 4096, 96, 0, 0);
     }
 
     __kernel void pbkdf2_saltlist_4096_96(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer) {
-        pbkdf2(inbuffer, saltbuffer, outbuffer, 4096, 96, 1);
+        pbkdf2(inbuffer, saltbuffer, outbuffer, 4096, 96, 1, 0);
     }
 
-        ";
+    __kernel void pbkdf2_2048_64_final_hmac(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer) {
+        pbkdf2(inbuffer, saltbuffer, outbuffer, 2048, 64, 0, 1);
+    }
+
+    __kernel void pbkdf2_saltlist_2048_64_final_hmac(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer) {
+        pbkdf2(inbuffer, saltbuffer, outbuffer, 2048, 64, 1, 1);
+    }
+";
 
         public static string address_cl = @"
 /*

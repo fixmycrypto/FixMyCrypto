@@ -47,7 +47,7 @@ namespace FixMyCrypto {
                 byte[][] salts = new byte[phrases.Length][];
                 for (int i = 0; i < phrases.Length; i++) salts[i] = phrases[i].Indices.ElevenToEight();
                 byte[] password = passphrase.ToUTF8Bytes();
-                Seed[] seeds = ocl.Pbkdf2_Sha512_MultiSalt(phrases, new string[] { passphrase }, password, salts, 4096, 96);
+                Seed[] seeds = ocl.Pbkdf2_Sha512_MultiSalt(phrases, new string[] { passphrase }, password, salts, false, 4096, 96);
                 Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
                 Parallel.For(0, phrases.Length, i => {
                     if (Global.Done) return;
@@ -66,7 +66,7 @@ namespace FixMyCrypto {
                 byte[] salt = phrase.Indices.ElevenToEight();
                 byte[][] passwords = new byte[passphrases.Length][];
                 for (int i = 0; i < passphrases.Length; i++) passwords[i] = passphrases[i].ToUTF8Bytes();
-                Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPassword(new Phrase[] { phrase }, passphrases, passwords, salt, 4096, 96);
+                Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPassword(new Phrase[] { phrase }, passphrases, passwords, salt, false, 4096, 96);
                 Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
                 Parallel.For(0, passphrases.Length, i => {
                     if (Global.Done) return;
