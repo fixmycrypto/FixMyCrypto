@@ -39,7 +39,7 @@ namespace FixMyCrypto {
 
         private int inBufferSize = 256; //  max char length of a phrase
 
-        private int outBufferSize;
+        private int outBufferSize = 64;
 
         private int wordSize;
 
@@ -75,7 +75,8 @@ namespace FixMyCrypto {
         }
 
         public static void BenchmarkDevices(int count = 4096) {
-            ConsoleTable table = new ConsoleTable("Device", "phrases/ms", "passphrases/ms", "Secp256k1 keys/ms");
+            Log.Info("Benchmarking devices...");
+            ConsoleTable table = new ConsoleTable("Device", "phrases/ms", "passphrases/ms", "Secp256k1 keys/ms", "BIP32 paths/ms");
             for (int p = 0; p < GetPlatformCount(); p++) {
                 Platform platform = Platform.GetPlatforms().ToList()[p];
 
@@ -85,14 +86,15 @@ namespace FixMyCrypto {
                     ocl.Benchmark_Pbkdf2(count, results);
                     ocl.Benchmark_Bip32Derive(PathNode.Harden(0), count, results);
                     ocl.Benchmark_Bip32Derive(0, count, results);
+                    ocl.Benchmark_Bip32DerivePath(null, count, results);
 
                     if (p == 0 && d == 0) {
-                        table.AddRow("CPU", $"{results["cpuPhrases"]/1000.0:F1}", $"{results["cpuPassphrases"]/1000.0:F1}", $"{results["cpuSecDerives"]/1000.0:F1}");
+                        table.AddRow("CPU", $"{results["cpuPhrases"]/1000.0:F1}", $"{results["cpuPassphrases"]/1000.0:F1}", $"{results["cpuSecDerives"]/1000.0:F1}", $"{results["cpuSecPaths"]/1000.0:F1}");
                     }
 
                     Device dev = platform.GetDevices(DeviceType.All).ToList()[d];
 
-                    table.AddRow($"{dev.Name} ({p}:{d})", $"{results["oclPhrases"]/1000.0:F1}", $"{results["oclPassphrases"]/1000.0:F1}", $"{results["oclSecDerives"]/1000.0:F1}");
+                    table.AddRow($"{dev.Name} ({p}:{d})", $"{results["oclPhrases"]/1000.0:F1}", $"{results["oclPassphrases"]/1000.0:F1}", $"{results["oclSecDerives"]/1000.0:F1}", $"{results["oclSecPaths"]/1000.0:F1}");
                 }
             }
             Log.Info("Benchmark Results:");
@@ -358,7 +360,7 @@ namespace FixMyCrypto {
         }
 
         public Cryptography.Key[] Bip32DeriveFromRoot(byte[][] passwords, byte[][] salts, uint[] paths, int iters = 2048, int dklen = 64) {
-            Init_Bip32Derive();
+            Init_Bip32Derive(dklen);
             // Log.Debug($"salt batch size={salts.Length}");
 
             int count = Math.Max(passwords.Length, salts.Length);
@@ -622,6 +624,58 @@ namespace FixMyCrypto {
             if (results != null) {
                 results["cpuSecDerives"] = (int)(count/(cpu/1000.0));
                 results["oclSecDerives"] = (int)(count/(ocl/1000.0));
+            }
+        }
+
+        public void Benchmark_Bip32DerivePath(string path = null, int count = 4096, Dictionary<string, int> results = null)
+        {
+            Log.Debug($"Benchmark_Bip32DerivePath()");
+            if (path == null) path = "m/44'/0'/0'/0/0";
+            Phrase phrase = new Phrase(12);
+            string[] passphrases = new string[count];
+            for (int i = 0; i < count; i++) {
+                passphrases[i] = $"passphrase{i}";
+            }
+            PhraseToAddress p2a = PhraseToAddress.Create(CoinType.BTC, null, null);
+            Stopwatch sw = new Stopwatch();
+
+            p2a.SetOpenCL(null);
+            List<Address>[] addressesC = new List<Address>[Settings.Threads];
+            sw.Start();
+            Parallel.For(0, addressesC.Length, i => {
+                addressesC[i] = p2a.GetAddressesList(phrase, passphrases, new string[] { path }, new int[] { 0 }, new int[] { 0 });
+            });
+            sw.Stop();
+            long cpu = sw.ElapsedMilliseconds;
+
+            p2a.SetOpenCL(this);
+            Init_Bip32Derive();
+            List<Address>[] addressesO = new List<Address>[addressesC.Length];
+            sw.Restart();
+            Parallel.For(0, addressesC.Length, i => {
+                addressesO[i] = p2a.GetAddressesList(phrase, passphrases, new string[] { path }, new int[] { 0 }, new int[] { 0 });
+            });
+            sw.Stop();
+            long ocl = sw.ElapsedMilliseconds;
+
+            int badaddr = 0;
+            count = 0;
+            for (int i = 0; i < addressesC.Length; i++) {
+                for (int j = 0; j < addressesC[i].Count; j++) {
+                    count++;
+                    if (!addressesC[i][j].Equals(addressesO[i][j])) {
+                        badaddr++;
+                        Log.Debug($"cpu={addressesC[i][j]} != ocl={addressesO[i][j]}");
+                    }
+                }
+            }
+            Log.Debug($"Benchmark_Bip32DerivePath({path}) P:{platformId} D:{deviceId} cputime={cpu} ocltime={ocl} badaddr={badaddr}");
+            if (badaddr > 0) throw new Exception("bad results in Benchmark_Bip32DerivePath()");
+            Log.Debug($"CPU path/s: {count/(cpu/1000.0):F0}");
+            Log.Debug($"P:{platformId} D:{deviceId} path/s: {count/(ocl/1000.0):F0}");
+            if (results != null) {
+                results["cpuSecPaths"] = (int)(count/(cpu/1000.0));
+                results["oclSecPaths"] = (int)(count/(ocl/1000.0));
             }
         }
 

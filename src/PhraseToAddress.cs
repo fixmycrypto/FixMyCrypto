@@ -198,7 +198,7 @@ namespace FixMyCrypto {
             }
             return keys;
         }
-        protected virtual PathNode DeriveRootLongestPath(Phrase[] phrases, string[] passphrases, PathTree tree) {
+        protected virtual void DeriveRootLongestPath(Phrase[] phrases, string[] passphrases, PathNode node) {
             Cryptography.Key[] keys;
             if (phrases.Length == 1) {
                 keys = DeriveRootKey_BatchPassphrases(phrases[0], passphrases);
@@ -207,10 +207,7 @@ namespace FixMyCrypto {
                 keys = DeriveRootKey_BatchPhrases(phrases, passphrases[0]);
             }
 
-            PathNode node = tree.GetLongestPathFromRoot();
-            // Log.Debug($"DeriveRootLongestPath: {node.GetPath()}");
             node.Keys = DerivePath_Batch(keys, node.GetPathValues().Slice(1));
-            return node;
         }
         protected abstract Address DeriveAddress(PathNode node, int keyIndex);
         public abstract void ValidateAddress(string address);
@@ -302,24 +299,23 @@ namespace FixMyCrypto {
             PathNode path = tree.GetLongestPathFromRoot();
             // Log.Debug($"longest root path: {path.GetPath()} - {String.Join(',', path.GetPathValues())}");
 
+            //  Derive the longest straight branch from root in one go
+            DeriveRootLongestPath(new Phrase[] { phrase }, passphrases, path);
+            //  Derive all sub-paths from there
+            foreach (PathNode child in path.Children) {
+                DeriveChildKeys_Batch(child);
+            }
+
             //  Derive descendent keys
 
             List<Address> addresses = new();
 
-            foreach (string passphrase in passphrases) {
+            for (int i = 0; i < passphrases.Length; i++) {
                 if (Global.Done) break;
-
-                //  Derive the longest straight branch from root in one go
-                PathNode node = DeriveRootLongestPath(new Phrase[] { phrase }, passphrases, tree);
-
-                //  Derive all sub-paths from there
-                foreach (PathNode child in node.Children) {
-                    DeriveChildKeys_Batch(child);
-                }
 
                 List<Address> addrs = new();
 
-                DeriveAddressesBatch(tree.Root, 0, phrase, passphrase, addrs);
+                DeriveAddressesBatch(tree.Root, i, phrase, passphrases[i], addrs);
 
                 bool found = false;
 
@@ -360,7 +356,8 @@ namespace FixMyCrypto {
 
                 PathTree t = new PathTree(batch.tree);
                 //  Derive the longest straight branch from root in one go
-                PathNode path = DeriveRootLongestPath(batch.GetPhrases(), batch.GetPassphrases(), t);
+                PathNode path = t.GetLongestPathFromRoot();
+                DeriveRootLongestPath(batch.GetPhrases(), batch.GetPassphrases(), path);
 
                 //  Derive all sub-paths from there
                 foreach (PathNode child in path.Children) {

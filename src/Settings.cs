@@ -35,7 +35,7 @@ namespace FixMyCrypto {
             } 
         }
 
-        public static string[] KnownAddresses { get { return result.knownAddresses.ToObject<string[]>(); } }
+        public static string[] KnownAddresses { get { return result?.knownAddresses?.ToObject<string[]>(); } }
 
         public static CoinType CoinType { get { return GetCoinType(result.coin.Value); } }
 

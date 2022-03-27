@@ -216,9 +216,10 @@ namespace FixMyCrypto {
             return keys;
         }
 
-        protected override PathNode DeriveRootLongestPath(Phrase[] phrases, string[] passphrases, PathTree tree) {
+        protected override void DeriveRootLongestPath(Phrase[] phrases, string[] passphrases, PathNode node) {
             if (!IsUsingOpenCL()) {
-                return base.DeriveRootLongestPath(phrases, passphrases, tree);
+                base.DeriveRootLongestPath(phrases, passphrases, node);
+                return;
             }
 
             byte[][] passwords = new byte[phrases.Length][];
@@ -226,11 +227,8 @@ namespace FixMyCrypto {
             byte[][] salts = new byte[passphrases.Length][];
             for (int i = 0; i < passphrases.Length; i++) salts[i] = Cryptography.PassphraseToSalt(passphrases[i]);
 
-            PathNode node = tree.GetLongestPathFromRoot();
-            // Log.Debug($"DeriveRootLongestPath (BTC): {node.GetPath()}");
             uint[] paths = node.GetPathValues();
             node.Keys = ocl.Bip32DeriveFromRoot(passwords, salts, paths.Slice(1));
-            return node;
         }
 
         protected override Cryptography.Key DeriveChildKey(Cryptography.Key parentKey, uint index) {
