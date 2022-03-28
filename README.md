@@ -25,7 +25,7 @@
     * Need another coin? Let us know!
 * [GPU acceleration](#GPU-Acceleration)
     * PBKDF2 hashing for all cryptos
-    * Secp256k1 ECC for BTC & ETH (and their altcoins), XRP, ATOM
+    * Secp256k1 ECC full path derivation for BTC & ETH (and their altcoins), XRP, ATOM
     * Currently working on NVIDIA GPUs only
 * Smart typo detection drastically reduces the search time
     * Phrase words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
@@ -79,7 +79,7 @@ If you want to be extra careful, you can run the software in an amnesiac environ
 
 GPU acceleration greatly increases the speed of the search, especially if you have a CPU with a lower core count, e.g. a quad core CPU paired with a fast gaming GPU. This currently works on NVIDIA GPUs only. 
 
-To verify that OpenCL is installed (it should be automatically instaleld by the NVIDIA drivers), you can run this command to see a list of available GPUs:
+To verify that OpenCL is installed (it should be automatically instaleld by the NVIDIA drivers), you can run this command to see a list of available GPUs and benchmark them:
 
     FixMyCrypto -opencl
 
