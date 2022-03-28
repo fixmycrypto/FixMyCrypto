@@ -57,10 +57,11 @@ namespace FixMyCrypto {
             byte[] salt = Cryptography.PassphraseToSalt(passphrase);
             Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPassword(phrases, new string[] { passphrase }, passwords, salt, false);
             Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
-            Parallel.For(0, phrases.Length, i => {
-                if (Global.Done) return;
+            // Parallel.For(0, phrases.Length, i => {
+            for (int i = 0; i < phrases.Length; i++) {
+                if (Global.Done) break;
                 keys[i] = SeedToKey(seeds[i].seed);
-            });
+            }
             return keys;
         }
         public override Cryptography.Key[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
@@ -73,10 +74,11 @@ namespace FixMyCrypto {
             for (int i = 0; i < passphrases.Length; i++) salts[i] = Cryptography.PassphraseToSalt(passphrases[i]);
             Seed[] seeds = ocl.Pbkdf2_Sha512_MultiSalt(new Phrase[] { phrase }, passphrases, password, salts, false);
             Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
-            Parallel.For(0, passphrases.Length, i => {
-                if (Global.Done) return;
+            // Parallel.For(0, passphrases.Length, i => {
+            for (int i = 0; i < passphrases.Length; i++) {
+                if (Global.Done) break;
                 keys[i] = SeedToKey(seeds[i].seed);
-            });
+            }
             return keys;
         }
         

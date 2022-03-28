@@ -165,30 +165,33 @@ namespace FixMyCrypto {
         public virtual Cryptography.Key[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase)
         {
             Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
-            Parallel.For(0, phrases.Length, i => {
-                if (Global.Done) return;
+            // Parallel.For(0, phrases.Length, i => {
+            for (int i = 0; i < phrases.Length; i++) {
+                if (Global.Done) break;
                 keys[i] = DeriveRootKey(phrases[i], passphrase);
-            });
+            }
             return keys;
         }
 
         public virtual Cryptography.Key[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases)
         {
             Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
-            Parallel.For(0, passphrases.Length, i => {
-                if (Global.Done) return;
+            // Parallel.For(0, passphrases.Length, i => {
+            for (int i = 0; i < passphrases.Length; i++) {
+                if (Global.Done) break;
                 keys[i] = DeriveRootKey(phrase, passphrases[i]);
-            });
+            }
             return keys;
         }
         protected abstract Cryptography.Key DeriveChildKey(Cryptography.Key parentKey, uint index);
 
         protected virtual Cryptography.Key[] DeriveChildKey_Batch(Cryptography.Key[] parents, uint index) {
             Cryptography.Key[] keys = new Cryptography.Key[parents.Length];
-            Parallel.For(0, parents.Length, i => {
-                if (Global.Done) return;
+            // Parallel.For(0, parents.Length, i => {
+            for (int i = 0; i < parents.Length; i++) {
+                if (Global.Done) break;
                 keys[i] = DeriveChildKey(parents[i], index);
-            });
+            }
             return keys;
         }
         private Cryptography.Key[] DerivePath_Batch(Cryptography.Key[] parents, uint[] path) {
@@ -368,8 +371,9 @@ namespace FixMyCrypto {
                     PhraseBatch pb = batch as PhraseBatch;
                     // Log.Debug($"PhraseBatch {pb.phrases.Length}");
 
-                    Parallel.For(0, pb.phrases.Length, i => {
-                        if (Global.Done) return;
+                    // Parallel.For(0, pb.phrases.Length, i => {
+                    for (int i = 0; i < pb.phrases.Length; i++) {
+                        if (Global.Done) break;
 
                         List<Address> addrs = new();
 
@@ -378,14 +382,15 @@ namespace FixMyCrypto {
                         if (Produce != null) Produce(addrs);
 
                         pb.count += addrs.Count;
-                    });
+                    }
                 }
                 else if (batch is PassphraseBatch) {
                     PassphraseBatch pb = batch as PassphraseBatch;
                     // Log.Debug($"PassphraseBatch {pb.passphrases.Length}");
 
-                    Parallel.For(0, pb.passphrases.Length, i => {
-                        if (Global.Done) return;
+                    // Parallel.For(0, pb.passphrases.Length, i => {
+                    for (int i = 0; i < pb.passphrases.Length; i++) {
+                        if (Global.Done) break;
 
                         List<Address> addrs = new();
 
@@ -394,7 +399,7 @@ namespace FixMyCrypto {
                         if (pb.produceAddress != null) pb.produceAddress(addrs);
 
                         pb.count += addrs.Count;
-                    });
+                    }
                 }
 
                 batchFinished.TryAdd(batch.id, batch);
@@ -430,7 +435,7 @@ namespace FixMyCrypto {
             if (Global.Done && IsUsingOpenCL()) ocl.Stop();
         }
 
-        protected virtual int GetTaskCount() { return IsUsingOpenCL() ? Settings.Threads / 2 : 1; }
+        protected virtual int GetTaskCount() { return Settings.Threads; } // IsUsingOpenCL() ? Settings.Threads / 2 : 1; }
 
         public void GetAddressesBatchPassphrases(Phrase phrase, string[] passphrases, PathTree tree, ProduceAddress Produce) {
 
@@ -521,7 +526,7 @@ namespace FixMyCrypto {
                 ocl.Init_Sha512(GetKeyLength());
             }
 
-            int batchSize = IsUsingOpenCL() ? ocl.GetBatchSize() : 1024;
+            int batchSize = IsUsingOpenCL() ? ocl.GetBatchSize() : 256;
             Queue<Phrase> phraseBatch = new(batchSize);
             Queue<string> passphraseBatch = new(batchSize);
 

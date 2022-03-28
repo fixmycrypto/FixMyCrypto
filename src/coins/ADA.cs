@@ -49,11 +49,12 @@ namespace FixMyCrypto {
                 byte[] password = passphrase.ToUTF8Bytes();
                 Seed[] seeds = ocl.Pbkdf2_Sha512_MultiSalt(phrases, new string[] { passphrase }, password, salts, false, 4096, 96);
                 Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
-                Parallel.For(0, phrases.Length, i => {
-                    if (Global.Done) return;
+                // Parallel.For(0, phrases.Length, i => {
+                for (int i = 0; i < phrases.Length; i++) {
+                    if (Global.Done) break;
                     byte[] key = Cryptography.TweakBits(seeds[i].seed);
                     keys[i] = new Cryptography.Key(key.Slice(0, 64), key.Slice(64));
-                });
+                }
                 return keys;
             }
         }
@@ -68,11 +69,12 @@ namespace FixMyCrypto {
                 for (int i = 0; i < passphrases.Length; i++) passwords[i] = passphrases[i].ToUTF8Bytes();
                 Seed[] seeds = ocl.Pbkdf2_Sha512_MultiPassword(new Phrase[] { phrase }, passphrases, passwords, salt, false, 4096, 96);
                 Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
-                Parallel.For(0, passphrases.Length, i => {
-                    if (Global.Done) return;
+                // Parallel.For(0, passphrases.Length, i => {
+                for (int i = 0; i < passphrases.Length; i++) {
+                    if (Global.Done) break;
                     byte[] key = Cryptography.TweakBits(seeds[i].seed);
                     keys[i] = new Cryptography.Key(key.Slice(0, 64), key.Slice(64));
-                });
+                }
                 return keys;
             }
         }
@@ -146,20 +148,22 @@ namespace FixMyCrypto {
         public override Cryptography.Key[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
             //  No OpenCL yet
             Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
-            Parallel.For(0, phrases.Length, i => {
-                if (Global.Done) return;
+            // Parallel.For(0, phrases.Length, i => {
+            for (int i = 0; i < phrases.Length; i++) {
+                if (Global.Done) break;
                 keys[i] = DeriveRootKey(phrases[i], passphrase);
-            });
+            }
             return keys;
         }
 
         public override Cryptography.Key[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
             //  No OpenCL yet
             Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
-            Parallel.For(0, passphrases.Length, i => {
-                if (Global.Done) return;
+            // Parallel.For(0, passphrases.Length, i => {
+            for (int i = 0; i < passphrases.Length; i++) {
+                if (Global.Done) break;
                 keys[i] = DeriveRootKey(phrase, passphrases[i]);
-            });
+            }
             return keys;
         }
     }
@@ -179,23 +183,23 @@ namespace FixMyCrypto {
         public override Cryptography.Key[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase) {
             //  No OpenCL yet
             Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
-            Parallel.For(0, phrases.Length, i => {
-                if (Global.Done) return;
+            // Parallel.For(0, phrases.Length, i => {
+            for (int i = 0; i < phrases.Length; i++) {
+                if (Global.Done) break;
                 keys[i] = DeriveRootKey(phrases[i], passphrase);
-            });
+            }
             return keys;
         }
 
         public override Cryptography.Key[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases) {
             //  No OpenCL yet
             Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
-            Parallel.For(0, passphrases.Length, i => {
-                if (Global.Done) return;
+            // Parallel.For(0, passphrases.Length, i => {
+            for (int i = 0; i < passphrases.Length; i++) {
+                if (Global.Done) break;
                 keys[i] = DeriveRootKey(phrase, passphrases[i]);
-            });
+            }
             return keys;
         }
     }
-
-
 }
