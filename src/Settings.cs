@@ -96,6 +96,7 @@ namespace FixMyCrypto {
                 case CoinType.DOT:
                 case CoinType.DOTLedger:
                 case CoinType.ATOM:
+                case CoinType.CRO:
                 return null;
 
                 default:

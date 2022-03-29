@@ -26,7 +26,8 @@ namespace FixMyCrypto
         SOL,
         ALGO,
         DOT,
-        DOTLedger
+        DOTLedger,
+        CRO
     }
 
     static class CoinTypeExtensions {
@@ -254,7 +255,8 @@ namespace FixMyCrypto
             { CoinType.ALGO, "EPQZU6GMEMKKEQH4CP7U2U2NTQE2ZVMOYAS7F5WMCUYIAYUKNJVUHW5W5A" },
             { CoinType.DOT, "14jUHiE429X8HwPRmj2Sy4Xvo5Z9ewJJJ273ctvmQgxgTJ4b" },
             { CoinType.XRP, "rJtr6VfAP5Qmp2abKUfdJEGtHEckRpcKHk" },
-            { CoinType.ATOM, "cosmos159zgwcx454uqrtrva8nk3sdrlegdxxln2w20s3" }
+            { CoinType.ATOM, "cosmos159zgwcx454uqrtrva8nk3sdrlegdxxln2w20s3" },
+            { CoinType.CRO, "cro1yk3yuul2f60mfqy93fs8dcf3flt40xv9mtqef6" }
         };
 
         public static void DoFoundResult(CoinType coin, Address addr) {

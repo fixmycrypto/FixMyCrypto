@@ -4,13 +4,13 @@ using NBitcoin;
 using Bech32;
 
 namespace FixMyCrypto {
-    class PhraseToAddressAtom : PhraseToAddressBitAltcoin {
-        public PhraseToAddressAtom(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses, CoinType.ATOM) {
+    class PhraseToAddressCRO : PhraseToAddressBitAltcoin {
+        public PhraseToAddressCRO(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses, CoinType.CRO) {
         }
-        public override CoinType GetCoinType() { return CoinType.ATOM; }
+        public override CoinType GetCoinType() { return CoinType.CRO; }
         public override string[] GetDefaultPaths(string[] knownAddresses) {
             string[] p = { 
-                            "m/44'/118'/{account}'/0/{index}"
+                            "m/44'/394'/{account}'/0/{index}"
                          };
             return p;
         }
@@ -21,7 +21,7 @@ namespace FixMyCrypto {
             byte[] h1 = Cryptography.SHA256Hash(pub);
             byte[] h2 = Cryptography.RipeMD160Hash(h1);
 
-            string addr = Bech32Engine.Encode("cosmos", h2);
+            string addr = Bech32Engine.Encode("cro", h2);
 
             return addr;
         }
@@ -37,7 +37,7 @@ namespace FixMyCrypto {
         public override void ValidateAddress(string address) {
             Bech32Engine.Decode(address, out var hrp, out var data);
             if (data == null) throw new Exception("invalid address");
-            if (hrp != "cosmos") throw new Exception("incorrect ATOM address format");
+            if (hrp != "cro") throw new Exception("incorrect CRO address format");
         }
     }
 }

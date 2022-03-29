@@ -1,0 +1,21 @@
+{
+    "phrase": "quantum spice equal rapid soon pair express suit nuclear turkey fence parade man crucial broccoli illegal uniform prose struggle lizard symptom pulp area canvas",
+
+    "passphrase": "",
+
+    "paths": [
+
+    ],
+
+    "knownAddresses":  [
+        "cro1gtf3amgr9sek3a92ufgmu43lgqvfn7ajrjpedh"
+    ],
+
+    "accounts": "0",
+
+    "indices": "0",
+
+    "coin": "CRO",  //  "BTC", "ADA", "ETH", "DOGE", "LTC"
+
+    "logLevel": 5      //  Debug = 5, Info = 4, Warning = 3, Error = 2, None = 0,
+}

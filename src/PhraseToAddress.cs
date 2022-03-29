@@ -58,6 +58,10 @@ namespace FixMyCrypto {
 
                 return new PhraseToAddressAtom(phrases, addresses);
 
+                case CoinType.CRO:
+
+                return new PhraseToAddressCRO(phrases, addresses);
+
                 default:
 
                 throw new NotSupportedException();
