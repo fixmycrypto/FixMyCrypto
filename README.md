@@ -22,10 +22,11 @@
     * DOT (Polkadot)
     * XRP (Ripple)
     * ATOM (Cosmos)
+    * Crypto.org chain (Cronos / CRO)
     * Need another coin? Let us know!
 * [GPU acceleration](#GPU-Acceleration)
     * PBKDF2 hashing for all cryptos
-    * Secp256k1 ECC full path derivation for BTC & ETH (and their altcoins), XRP, ATOM
+    * Secp256k1 ECC full path derivation for BTC & ETH (and their altcoins), XRP, ATOM, CRO
     * Currently working on NVIDIA GPUs only
 * Smart typo detection drastically reduces the search time
     * Phrase words are prioritized based on spelling and pronunciation similarity as well as keyboard distance (most likely typos)
@@ -53,6 +54,7 @@ Please consider donating to fund future development.
 * DOT: 14jUHiE429X8HwPRmj2Sy4Xvo5Z9ewJJJ273ctvmQgxgTJ4b
 * XRP: rJtr6VfAP5Qmp2abKUfdJEGtHEckRpcKHk
 * ATOM: cosmos159zgwcx454uqrtrva8nk3sdrlegdxxln2w20s3
+* CRO: cro1yk3yuul2f60mfqy93fs8dcf3flt40xv9mtqef6
 
 # How to use
 
@@ -108,7 +110,7 @@ Alternatively, you can specify the platform & device on the command line:
 
 ### Required
 
-Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`, `LTC`, `SOL`, `ALGO`, `DOT`, `XRP`, `ATOM`, etc.). (For ADA or DOT used with a Ledger or Trezor hardware wallet, see the relevant [special use cases](#special-use-cases) section.)
+Specify which cryptocurrency you are searching for. (`BTC`, `ETH`, `ADA`, `DOGE`, `LTC`, `SOL`, `ALGO`, `DOT`, `XRP`, `ATOM`, `CRO`, etc.). (For ADA or DOT used with a Ledger or Trezor hardware wallet, see the relevant [special use cases](#special-use-cases) section.)
 
     "coin": "BTC",
 
@@ -498,5 +500,5 @@ To use blockchain search mode, leave the knownAddresses field blank. You must sp
 * Only English BIP39 wordlist and QWERTY keyboard layouts are currently implemented
 * BCH only supports legacy (1...) style addresses
 * SOL deprecated derivation path `m/501'/{account}'/0/{index}` not supported
-* SOL/ALGO/DOT/XRP/ATOM blockchain search not implemented
+* SOL/ALGO/DOT/XRP/ATOM/CRO blockchain search not implemented
 
