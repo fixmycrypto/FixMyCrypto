@@ -188,13 +188,13 @@ If you think you may have done this AND also possibly made a typo when setting t
 
 ## Passphrase Fuzzing
 
-Fuzzing is used when you may have made typos in your passphrase when you created the wallet or wrote down the passphrase. Fuzzing will test all possible typo mistakes, including: insertions, deletions, substitutions, and transpositions.
+Fuzzing is used when you may have made typos in your passphrase when you created the wallet or wrote down the passphrase. Fuzzing will test all possible typo mistakes, including: insertions, deletions, substitutions, transpositions, and all upper/lower case (e.g. caps lock left on).
 
 To use passphrase fuzzing, surround the passphrase (or a part of it) with curly braces `{` and `}`:
 
     "passphrase": "{ThePassphrase!}",
 
-This will test e.g. "ThePass**hp**rase!" and all other single typos of "ThePassphrase!" (2,846 permutations).
+This will test e.g. "ThePass**hp**rase!" and all other single typos of "ThePassphrase!" (2,848 permutations).
 
 ### Fuzz Multiple Passphrases
 
@@ -207,7 +207,7 @@ You can fuzz multiple passphrases if you're not sure which one you used:
         "{SecondPossibility}
     ],
 
-This will perform a fuzzy match of all possible typos of "FirstPossibility" and "SecondPossibility" (6,716 permutations).
+This will perform a fuzzy match of all possible typos of "FirstPossibility" and "SecondPossibility" (6,720 permutations).
 
 ### Fuzz Partial Passphrase
 
@@ -291,7 +291,8 @@ You're certain that your passphrase is supposed to be "CorrectHorseBatteryStaple
 This would match all possible single typos:
 * "CorrectHorseBatterySta**b**le42!"
 * "Co**r**ectHorseBatteryStaple42!"
-* "CorrectHo**o**rseBatteryStaple42!", etc. (5,793 permutations)
+* "CorrectHo**o**rseBatteryStaple42!"
+* "correcthorsebatterystaple42!", "CORRECTHORSEBATTERYSTAPLE42!" etc. (5,795 permutations)
 
 ### Example 4
 
@@ -309,7 +310,7 @@ You're certain your passphrase was either "MyUsualPassword", "MyOtherPassword", 
 This will match typos of any of those passphrases, e.g.:
 * "MyUsualPassw**a**rd"
 * "MyOt**t**erPassword"
-* "4**23**1", etc. (6961 permutations)
+* "4**23**1", etc. (6965 permutations)
 
 ---
 

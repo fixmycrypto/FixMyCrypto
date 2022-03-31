@@ -335,18 +335,18 @@ namespace FixMyCrypto {
             TestPassphrase("((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]", new string[] { "CorrectHorseBatteryStaple1!", "horseStaplebatteryCorrect42?", "batterystaplecorrectHorse99@" }, 16 * Utils.Factorial(4) * 10 * 10 * 33);
             TestPassphrase("(a&&b)?c", new string[] { "abc", "bac", "c" }, 3);
             //  fuzzing
-            TestPassphrase("{Foo92!}", new string[] { "Foo93!", "Foo92", "Foo9!", "Food92!", "Foo92!a" }, 1250);
-            TestPassphrase("{Food92?}", new string[] { "Foo92?" }, 1446);
-            TestPassphrase("{ThePassphrase!}", new string[] { "ThePasshprase!", "thePassphrase!" }, 2846);
-            TestPassphrase("{CorrectHorseBatteryStaple42!}", new string[] { "CorrectHorseBatteryStable42!", "CorectHorseBatteryStaple42!", "CorrectHoorseBatteryStaple42!" }, 5793);
-            TestPassphrase("{(Correct||Horse)}", new string[] { "Corect", "Corrrect", "Herse", "Hoesr" }, 2501);
-            TestPassphrase("{Correct}?[0-9]", new string[] { "Correct5", "correct0", "Corrrect1", "Corect7", "Cortecr1", "9" }, 14470);
+            TestPassphrase("{Foo92!}", new string[] { "Foo93!", "Foo92", "Foo9!", "Food92!", "Foo92!a", "FOO92!" }, 1252);
+            TestPassphrase("{Food92?}", new string[] { "Foo92?", "food92?" }, 1448);
+            TestPassphrase("{ThePassphrase!}", new string[] { "ThePasshprase!", "thePassphrase!" }, 2848);
+            TestPassphrase("{CorrectHorseBatteryStaple42!}", new string[] { "CorrectHorseBatteryStable42!", "CorectHorseBatteryStaple42!", "CorrectHoorseBatteryStaple42!", "CORRECTHORSEBATTERYSTAPLE42!", "correcthorsebatterystaple42!" }, 5795);
+            TestPassphrase("{(Correct||Horse)}", new string[] { "Corect", "Corrrect", "Herse", "Hoesr", "correct", "HORSE" }, 2505);
+            TestPassphrase("{Correct}?[0-9]", new string[] { "Correct5", "correct0", "Corrrect1", "Corect7", "Cortecr1", "9" }, 14490);
             //  fuzz depth 2
-            TestPassphrase("{{Foo92!}}", new string[] { "Foo93!", "Foo92", "Foo9!", "Food92!", "Foo92!a", "Foo83!", "Fo92", "food92!", "Foo92!ab" }, expectCount: 1691670 );
-            TestPassphrase("{{ThePassphrase!}}", new string[] { "ThePasshprase!", "thePassphrase!", "ThePasshprase1" }, expectCount: 8387574);
+            TestPassphrase("{{Foo92!}}", new string[] { "Foo93!", "Foo92", "Foo9!", "Food92!", "Foo92!a", "Foo83!", "Fo92", "food92!", "Foo92!ab" }, expectCount: 1696602 );
+            TestPassphrase("{{ThePassphrase!}}", new string[] { "ThePasshprase!", "thePassphrase!", "ThePasshprase1", "thepassphrase!", "THEPASSPHRASE1" }, expectCount: 8398960);
             //  multi
-            TestPassphrase(new string[] { "{MyUsualPassward}", "{MyOtterPassword}", "{4231}" }, new string[] { "MyUsualPassword", "MyOtherPassword", "4321" }, 6961);
-            TestPassphrase(new string[] { "{FirstPossibility}", "{SecondPossibility}" }, new string[] { "SecondPossability" }, 6716);
+            TestPassphrase(new string[] { "{MyUsualPassward}", "{MyOtterPassword}", "{4231}" }, new string[] { "MyUsualPassword", "MyOtherPassword", "4321", "myusualpassward", "MYOTTERPASSWORD" }, 6965);
+            TestPassphrase(new string[] { "{FirstPossibility}", "{SecondPossibility}" }, new string[] { "SecondPossability" }, 6720);
 
             //  random passphrase testing
             Parallel.For(0, 1000000, i => TestRandomPassphrase());

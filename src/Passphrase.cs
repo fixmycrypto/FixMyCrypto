@@ -329,6 +329,13 @@ namespace FixMyCrypto {
             
             if (this.fuzz) {
                 foreach (string r in parts[0]) {
+
+                    //  CAPS / lower case
+
+                    if (r.ToUpper() != r) yield return r.ToUpper();
+
+                    if (r.ToLower() != r) yield return r.ToLower();
+
                     //  Deletions
                     for (int i = 0; i < r.Length; i++) {
                         yield return r.Substring(0, i) + r.Substring(i + 1);
