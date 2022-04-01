@@ -506,6 +506,7 @@ __kernel void bip32_derive_path(__global const inbuf *inbuffer, __global const s
     //printf(""salt: %s\n"", salt);
     //printf(""pwd: %lx\n"", pwd);
     //printf(""&pwd: %lx\n"", &pwd);
+    // printf(""local_size: %ld\n"", get_local_size(0));
 
     int blocks = outBufferSize / hashlength;
     //printf(""pwd_hash: %lx\n"", pwd_hash);
@@ -529,7 +530,7 @@ __kernel void bip32_derive_path(__global const inbuf *inbuffer, __global const s
         }
 
         if (pwdLen > 128) {
-            for(uint x=0;x<64;x++){
+            for(uint x=0;x<hashlength;x++){
                 ipad_key[x] = ipad_key[x] ^ pwd_hash[x];
                 opad_key[x] = opad_key[x] ^ pwd_hash[x];
             }
@@ -541,7 +542,7 @@ __kernel void bip32_derive_path(__global const inbuf *inbuffer, __global const s
             }
         }
 
-        uchar sha512_result[64] = { 0 };
+        uchar sha512_result[hashlength] = { 0 };
         uchar key_previous_concat[256] = { 0 };
         int x = 0;
         for(;x<128;x++){
@@ -576,9 +577,8 @@ __kernel void bip32_derive_path(__global const inbuf *inbuffer, __global const s
     //printf(""bip32_derive_path hmac on seed\n"");
 
     //  hmac512 on seed -> parent
-    uchar parent[64] = { 0 };
-    uchar hmacsha512_result[64] = { 0 };
-    hmac_sha512(bitcoin_seed, 12, seed_buf, 64, parent);
+    uchar parent[hashlength] = { 0 };
+    hmac_sha512(bitcoin_seed, 12, seed_buf, hashlength, parent);
 
     //  derive paths
 
@@ -587,11 +587,11 @@ __kernel void bip32_derive_path(__global const inbuf *inbuffer, __global const s
 
     for (int i = 0; i < pathCount; i++) {
       uint path = pathbuf[0].index[i];
-      uchar child[64] = { 0 };
+      uchar child[hashlength] = { 0 };
  
       if (path & (1 << 31)) {
         //printf(""bip32_derive_path hard path=%u\n"", path);
-        uchar hmacsha512_result[64] = { 0 };
+        uchar hmacsha512_result[hashlength] = { 0 };
         uchar hmac_input[37] = { 0 };
         for(int x=0;x<32;x++){
           hmac_input[x+1] = parent[x];
@@ -609,7 +609,7 @@ __kernel void bip32_derive_path(__global const inbuf *inbuffer, __global const s
       }
       else {
         //printf(""bip32_derive_path soft path=%u\n"", path);
-        uchar hmacsha512_result[64] = { 0 };
+        uchar hmacsha512_result[hashlength] = { 0 };
         uchar pub[32] = { 0 };
         secp256k1_ec_pubkey_create(&pub, parent);
         uchar hmac_input[37] = {0};

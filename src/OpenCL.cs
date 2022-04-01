@@ -38,7 +38,7 @@ namespace FixMyCrypto {
 
         private int saltBufferSize;     //  max char length of a passphrase
 
-        private int inBufferSize = 256; //  max char length of a phrase
+        private int inBufferSize = 256 - 8; //  max char length of a phrase
 
         private int outBufferSize = 64;
 
@@ -48,6 +48,8 @@ namespace FixMyCrypto {
 
         private int maxPassphraseLength;
         private int platformId, deviceId;
+        object mutex = new();
+        int kernelsRunning = 0;
 
         public OpenCL(int platformId = 0, int deviceId = 0, int maxPassphraseLength = 32) {
             // LogOpenCLInfo();
@@ -61,6 +63,12 @@ namespace FixMyCrypto {
             this.maxPassphraseLength = Math.Max(maxPassphraseLength, 32);   //  "mnemonic" + passphrase
             this.platformId = platformId;
             this.deviceId = deviceId;
+
+            System.Timers.Timer passphraseLogger = new System.Timers.Timer(5 * 1000);
+            passphraseLogger.Elapsed += (StringReader, args) => {
+                Log.Debug($"kernelsRunning={kernelsRunning}");
+            };
+            passphraseLogger.Start();
         }
 
         public string GetDeviceInfo() {
@@ -181,7 +189,11 @@ namespace FixMyCrypto {
         public int GetBatchSize() {
             //  TODO: improve this
                         
-            return 0x40000 / outBufferSize;
+            // return 0x40000 / outBufferSize;
+            // return 48 * 1024;
+            int batchSize = 256 * chosenDevice.MaximumComputeUnits;
+            Log.Debug($"batchSize={batchSize}, out buffer size={batchSize*outBufferSize}");
+            return batchSize;
         }
 
         public Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, bool final_hmac = true, int iters = 2048, int dklen = 64) {
@@ -190,7 +202,7 @@ namespace FixMyCrypto {
             // Log.Debug($"password batch size={passwords.Length}");
 
             byte[] data = new byte[passwords.Length * (wordSize + inBufferSize)];
-            BinaryWriter w = new(new MemoryStream(data));
+            using BinaryWriter w = new(new MemoryStream(data));
             for (int i = 0; i < passwords.Length; i++) {
                 byte[] pb = passwords[i];
                 if (pb.Length > inBufferSize) {
@@ -211,7 +223,7 @@ namespace FixMyCrypto {
                 throw new Exception($"passphrase length {salt.Length}, max length {saltBufferSize} set incorrectly");
             }
             byte[] saltData = new byte[wordSize + saltBufferSize];
-            BinaryWriter w2 = new(new MemoryStream(saltData));
+            using BinaryWriter w2 = new(new MemoryStream(saltData));
             if (wordSize == 8) {
                 w2.Write((ulong)salt.Length);
             }
@@ -231,7 +243,7 @@ namespace FixMyCrypto {
             // Console.WriteLine($"ocl: {result.ToHexString()}");
 
             Seed[] retval = new Seed[passwords.Length];
-            BinaryReader r = new BinaryReader(new MemoryStream(result));
+            using BinaryReader r = new BinaryReader(new MemoryStream(result));
             for (int i = 0; i < passwords.Length; i++) {
                 byte[] seed = r.ReadBytes(dklen);
                 if (outBufferSize > dklen) r.BaseStream.Position += (outBufferSize - dklen);
@@ -294,7 +306,11 @@ namespace FixMyCrypto {
                     kernel.SetKernelArgument(2, outBuffer);
                     commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
                 }
-                return commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                Interlocked.Increment(ref kernelsRunning);
+                byte[] r = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                Interlocked.Decrement(ref kernelsRunning);
+
+                return r;
             }
             catch (Exception e) {
                 if (Global.Done) return null;
@@ -309,7 +325,7 @@ namespace FixMyCrypto {
             // Log.Debug($"salt batch size={salts.Length}");
 
             byte[] data = new byte[wordSize + inBufferSize];
-            BinaryWriter w = new(new MemoryStream(data));
+            using BinaryWriter w = new(new MemoryStream(data));
             if (password.Length > inBufferSize) {
                 throw new Exception("phrase exceeds max length");
             }
@@ -323,7 +339,7 @@ namespace FixMyCrypto {
             w.Close();
 
             byte[] saltData = new byte[salts.Length * (wordSize + saltBufferSize)];
-            BinaryWriter w2 = new(new MemoryStream(saltData));
+            using BinaryWriter w2 = new(new MemoryStream(saltData));
             for (int i = 0; i < salts.Length; i++) {
                 if (salts[i].Length > saltBufferSize) {
                     throw new Exception($"passphrase length {salts[i].Length}, max length {saltBufferSize} set incorrectly");
@@ -348,7 +364,7 @@ namespace FixMyCrypto {
             // Console.WriteLine($"ocl: {result.ToHexString()}");
 
             Seed[] retval = new Seed[salts.Length];
-            BinaryReader r = new BinaryReader(new MemoryStream(result));
+            using BinaryReader r = new BinaryReader(new MemoryStream(result));
             for (int i = 0; i < salts.Length; i++) {
                 byte[] seed = r.ReadBytes(dklen);
                 if (outBufferSize > dklen) r.BaseStream.Position += (outBufferSize - dklen);
@@ -386,7 +402,7 @@ namespace FixMyCrypto {
             int count = Math.Max(passwords.Length, salts.Length);
 
             byte[] data = new byte[passwords.Length * (wordSize + inBufferSize)];
-            BinaryWriter w = new(new MemoryStream(data));
+            using BinaryWriter w = new(new MemoryStream(data));
             for (int i = 0; i < passwords.Length; i++) {
                 byte[] pb = passwords[i];
                 if (pb.Length > inBufferSize) {
@@ -404,7 +420,7 @@ namespace FixMyCrypto {
             w.Close();
 
             byte[] saltData = new byte[salts.Length * (wordSize + saltBufferSize)];
-            BinaryWriter w2 = new(new MemoryStream(saltData));
+            using BinaryWriter w2 = new(new MemoryStream(saltData));
             for (int i = 0; i < salts.Length; i++) {
                 if (salts[i].Length > saltBufferSize) {
                     throw new Exception($"passphrase length {salts[i].Length}, max length {saltBufferSize} set incorrectly");
@@ -421,7 +437,7 @@ namespace FixMyCrypto {
             w2.Close();
 
             byte[] pathData = new byte[wordSize + 8 * 4];
-            BinaryWriter w3 = new(new MemoryStream(pathData));
+            using BinaryWriter w3 = new(new MemoryStream(pathData));
             w3.Write((uint)paths.Length);
             for (int i = 0; i < paths.Length; i++) {
                 w3.Write((uint)paths[i]);
@@ -466,12 +482,14 @@ namespace FixMyCrypto {
                     kernel.SetKernelArgument(4, outBuffer);
                     commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
                 }
+                Interlocked.Increment(ref kernelsRunning);
                 byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                Interlocked.Decrement(ref kernelsRunning);
 
                 if (Global.Done) return null;
 
                 Cryptography.Key[] ret = new Cryptography.Key[count];
-                BinaryReader r = new BinaryReader(new MemoryStream(result));
+                using BinaryReader r = new BinaryReader(new MemoryStream(result));
                 for (int i = 0; i < count; i++) {
                     ret[i] = new Cryptography.Key(r.ReadBytes(32), r.ReadBytes(32));
                 }
@@ -519,7 +537,7 @@ namespace FixMyCrypto {
             int length = keyLen + ccLen;
             int count = keys.Length;
             byte[] data = new byte[count * length];
-            BinaryWriter w = new(new MemoryStream(data));
+            using BinaryWriter w = new(new MemoryStream(data));
             for (int i = 0; i < count; i++) {
                 w.Write(keys[i].data);
                 w.Write(keys[i].cc);
@@ -561,12 +579,14 @@ namespace FixMyCrypto {
                     kernel.SetKernelArgument(2, pathBuffer);
                     commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
                 }
+                Interlocked.Increment(ref kernelsRunning);
                 byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                Interlocked.Decrement(ref kernelsRunning);
 
                 if (Global.Done) return null;
 
                 Cryptography.Key[] ret = new Cryptography.Key[count];
-                BinaryReader r = new BinaryReader(new MemoryStream(result));
+                using BinaryReader r = new BinaryReader(new MemoryStream(result));
                 for (int i = 0; i < count; i++) {
                     ret[i] = new Cryptography.Key(r.ReadBytes(keyLen), r.ReadBytes(ccLen));
 
