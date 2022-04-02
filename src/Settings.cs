@@ -67,6 +67,8 @@ namespace FixMyCrypto {
 
         public static string TopologyFile { get { if (result != null) return result.topologyFile; else return null; } }
 
+        public static bool NoETA { get { if (result?.noETA != null) return result.noETA; return false; }}
+
         private static int platform = -1;
         public static int OpenCLPlatform {get { return platform; } }
         private static int device = -1;

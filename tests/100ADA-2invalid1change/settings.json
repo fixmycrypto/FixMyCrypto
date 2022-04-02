@@ -17,5 +17,9 @@
 
     "coin": "ADA",  //  "BTC", "ADA", "ETH", "DOGE", "LTC"
 
-    "logLevel": 5      //  Debug = 5, Info = 4, Warning = 3, Error = 2, None = 0,
+    "logLevel": 5,      //  Debug = 5, Info = 4, Warning = 3, Error = 2, None = 0,
+
+    "difficulty": 1,
+
+    "noETA": true
 }

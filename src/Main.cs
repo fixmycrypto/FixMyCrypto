@@ -118,8 +118,8 @@ namespace FixMyCrypto {
                 PauseAndExit(1);
             }
 
-            BlockingCollection<Work> phraseQueue = new BlockingCollection<Work>(Settings.Threads * 2);
-            BlockingCollection<Work> addressQueue = new BlockingCollection<Work>(Settings.Threads * 2);
+            BlockingCollection<Work> phraseQueue = new BlockingCollection<Work>(Settings.Threads);
+            BlockingCollection<Work> addressQueue = new BlockingCollection<Work>(Settings.Threads);
 
             int phraseProducerCount = 1,
                 phraseToAddressCount = 1,
@@ -147,15 +147,23 @@ namespace FixMyCrypto {
                     Log.All($"passphrase: \"{passphrase}\"");
                 }
 
-                Log.All("Enumerating passphrase...");
                 p = new MultiPassphrase(Settings.Passphrases);
-                (passphraseCount, maxPassphraseLength) = p.GetCountAndMaxLength();
-                Log.All($"passphrase permutations: {passphraseCount}, max length: {maxPassphraseLength}");
 
-                if (!String.IsNullOrEmpty(Settings.TopologyFile)) {
-                    p.WriteTopologyFile(Settings.TopologyFile);
-                    Log.All($"Passphrase topology written to: {Settings.TopologyFile}");
+                if (resumeFromCheckpoint) {
+                    passphraseCount = checkpoint.GetPassphraseTotal();
+                    maxPassphraseLength = checkpoint.GetPassphraseMaxLength();
                 }
+                else {
+                    Log.All("Enumerating passphrase...");
+                    (passphraseCount, maxPassphraseLength) = p.GetCountAndMaxLength();
+
+                    if (!String.IsNullOrEmpty(Settings.TopologyFile)) {
+                        p.WriteTopologyFile(Settings.TopologyFile);
+                        Log.All($"Passphrase topology written to: {Settings.TopologyFile}");
+                    }
+                }
+
+                Log.All($"passphrase permutations: {passphraseCount:n0}, max length: {maxPassphraseLength}");
             }
             
             if (Settings.Paths != null) {
@@ -186,8 +194,8 @@ namespace FixMyCrypto {
                     OpenCL.LogOpenCLInfo();
                     ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevice, maxPassphraseLength);
                     Log.Info(ocl.GetDeviceInfo());
-                    ocl.Init_Sha512(p2at.GetKeyLength());
-                    ocl.Init_Bip32Derive(p2at.GetKeyLength());
+                    ocl.Init_Sha512(p2at.GetKeyLength(), Settings.Phrase.Split(' ').Length);
+                    ocl.Init_Bip32Derive(p2at.GetKeyLength(), Settings.Phrase.Split(' ').Length);
                 }
                 catch (Exception e) {
                     Log.Error(e.ToString());
@@ -195,11 +203,11 @@ namespace FixMyCrypto {
                 }
             }
 
-            System.Timers.Timer timer = new System.Timers.Timer(30 * 1000);
-            timer.Elapsed += (StringReader, args) => { 
-                if (phraseQueue.Count > 0 || addressQueue.Count > 0) Log.Debug($"Queue status: phrases {phraseQueue.Count} addresses {addressQueue.Count}");
-            };
-            timer.Start();
+            // System.Timers.Timer timer = new System.Timers.Timer(30 * 1000);
+            // timer.Elapsed += (StringReader, args) => { 
+            //     if (phraseQueue.Count > 0 || addressQueue.Count > 0) Log.Debug($"Queue status: phrases {phraseQueue.Count} addresses {addressQueue.Count}");
+            // };
+            // timer.Start();
 
             LookupAddress[] la = new LookupAddress[addressLookupCount];
             List<Thread> laThreads = new List<Thread>();
@@ -219,7 +227,7 @@ namespace FixMyCrypto {
 
                 if (i == 0) checkpoint.SetPhraseToAddress(p2a[i]);
 
-                if (p != null) p2a[i].SetPassphrase(p, passphraseCount);
+                if (p != null) p2a[i].SetPassphrase(p, passphraseCount, maxPassphraseLength);
 
                 p2a[i].SetOpenCL(ocl);
 
@@ -247,7 +255,24 @@ namespace FixMyCrypto {
             for (int i = 0; i < phraseProducerCount; i++) {
                 phrasers[i] = new PhraseProducer(phraseQueue, phraseArray);
 
-                if (i == 0) checkpoint.SetPhraseProducer(phrasers[i]);
+                if (i == 0) {
+                    checkpoint.SetPhraseProducer(phrasers[i]);
+                    
+                    long totalPhrases;
+                    if (resumeFromCheckpoint) {
+                        totalPhrases = checkpoint.GetPhraseTotal();
+                    }
+                    else if (!Settings.NoETA) {
+                        Log.All("Enumerating phrases...");
+                        totalPhrases = phrasers[i].GetTotalCount();
+                        Log.All($"Phrase count: {totalPhrases:n0}");
+                        checkpoint.SetPhraseTotal(totalPhrases);
+                    }
+                    else {
+                        totalPhrases = 0;
+                        checkpoint.SetPhraseTotal(totalPhrases);
+                    }
+                }
 
                 Thread thread = new Thread (phrasers[i].ProduceWork);
                 thread.Name = "PP" + i;
@@ -270,7 +295,7 @@ namespace FixMyCrypto {
             }
 
             checkpoint.Stop();
-            timer.Stop();
+            // timer.Stop();
             stopWatch.Stop();
 
             Log.Info("Program Finished in " + stopWatch.ElapsedMilliseconds/1000 + "s");

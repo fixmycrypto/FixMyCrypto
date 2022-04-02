@@ -9,6 +9,9 @@ namespace FixMyCrypto {
         private string passphrase = null;
 
         private long passphraseNum = -1;
+        private long passphraseTotal = 0;
+        private long phraseTotal = 0;
+        private int passphraseMaxLength = 0;
 
         private PhraseProducer pp;
 
@@ -56,6 +59,22 @@ namespace FixMyCrypto {
             return (this.passphrase, this.passphraseNum);
         }
 
+        public long GetPassphraseTotal() {
+            return this.passphraseTotal;
+        }
+
+        public long GetPhraseTotal() {
+            return this.phraseTotal;
+        }
+
+        public void SetPhraseTotal(long phraseTotal) {
+            this.phraseTotal = phraseTotal;
+        }
+
+        public int GetPassphraseMaxLength() {
+            return this.passphraseMaxLength;
+        }
+
         public void ClearPassphrase() {
             this.passphrase = null;
             this.passphraseNum = -1;
@@ -66,7 +85,7 @@ namespace FixMyCrypto {
 
             try {
                 lock(mutex) {
-                    (Phrase phrase, string passphrase, long passphraseNum) = p2a.GetLastTested();
+                    (Phrase phrase, string passphrase, long passphraseNum, long passphraseTotal, int maxLength) = p2a.GetLastTested();
 
                     if (phrase == null || passphrase == null || passphraseNum < 0) return;
 
@@ -75,8 +94,11 @@ namespace FixMyCrypto {
                     var checkpoint = new {
                         phrase = phrase.ToPhrase(),
                         phraseNum = phrase.SequenceNum,
+                        phraseTotal = phraseTotal,
                         passphrase = passphrase,
-                        passphraseNum = passphraseNum
+                        passphraseNum = passphraseNum,
+                        passphraseTotal = passphraseTotal,
+                        passphraseMaxLength = maxLength
                     };
 
                     string json = JsonConvert.SerializeObject(checkpoint, Formatting.Indented);
@@ -99,8 +121,11 @@ namespace FixMyCrypto {
                     string str = File.ReadAllText("checkpoint.json");
                     dynamic result = JsonConvert.DeserializeObject(str);
                     this.phrase = new Phrase((string)result.phrase, (long)result.phraseNum.Value);
+                    this.phraseTotal = result.phraseTotal.Value;
                     this.passphrase = result.passphrase;
                     this.passphraseNum = result.passphraseNum.Value;
+                    this.passphraseTotal = result.passphraseTotal.Value;
+                    this.passphraseMaxLength = (int)result.passphraseMaxLength.Value;
                     Log.Info($"Restoring from checkpoint:\n\tphrase: {this.phrase.ToPhrase()}\n\tpassphrase: {this.passphrase}");
                     return true;
                 }
