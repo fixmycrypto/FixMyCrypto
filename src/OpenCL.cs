@@ -34,7 +34,7 @@ namespace FixMyCrypto {
         private bool program_pbkdf2_ready = false;
 
         private bool program_bip32derive_ready = false;
-        private int usingDkLen;
+        private int usingDkLen, usingPhraseLen;
 
         private int saltBufferSize;     //  max char length of a passphrase
 
@@ -50,6 +50,7 @@ namespace FixMyCrypto {
         private int platformId, deviceId;
         object mutex = new();
         int kernelsRunning = 0;
+        System.Timers.Timer logger;
 
         public OpenCL(int platformId = 0, int deviceId = 0, int maxPassphraseLength = 32) {
             // LogOpenCLInfo();
@@ -64,11 +65,10 @@ namespace FixMyCrypto {
             this.platformId = platformId;
             this.deviceId = deviceId;
 
-            System.Timers.Timer passphraseLogger = new System.Timers.Timer(5 * 1000);
-            passphraseLogger.Elapsed += (StringReader, args) => {
+            logger = new(5 * 1000);
+            logger.Elapsed += (StringReader, args) => {
                 Log.Debug($"kernelsRunning={kernelsRunning}");
             };
-            passphraseLogger.Start();
         }
 
         public string GetDeviceInfo() {
@@ -148,12 +148,31 @@ namespace FixMyCrypto {
             bip39_solver
         }
 
-        public void Init_Sha512(int dklen = 64, Mode mode = Mode.bip39_solver) {
-            if (program_pbkdf2_ready && dklen == usingDkLen) return;
+        public void Init_Sha512(int dklen = 64, int phraseLen = 24, Mode mode = Mode.bip39_solver) {
+            if (program_pbkdf2_ready && dklen == usingDkLen && phraseLen == usingPhraseLen) return;
 
             program_pbkdf2_ready = false;
-            outBufferSize = (dklen > 64) ? 128 : 64;
             wordSize = 8;
+            switch (phraseLen) {
+                case 12:
+                inBufferSize = 128 - wordSize;
+                break;
+
+                case 15:
+                case 18:
+                inBufferSize = 192 - wordSize;
+                break;
+
+                case 21:
+                case 24:
+                inBufferSize = 256 - wordSize;
+                break;
+
+                default:
+                throw new Exception($"invalid phraseLen={phraseLen}");
+
+            }
+            outBufferSize = (dklen > 64) ? 128 : 64;
             saltBufferSize = maxPassphraseLength + 8;   //  +8 for "mnemonic"
             if (saltBufferSize % wordSize != 0) saltBufferSize += wordSize - (saltBufferSize % wordSize);
 
@@ -175,15 +194,16 @@ namespace FixMyCrypto {
             code = code.Replace("<word_size>", $"{wordSize}");
             code = code.Replace("<word_type>", wordSize == 8 ? "ulong" : "uint");
 
-            Log.Info($"Compiling OpenCL PBKDF2 scripts (keylen={dklen})...");
+            Log.Info($"Compiling OpenCL PBKDF2 scripts (keylen={dklen} phraseLen={phraseLen})...");
             foreach (var k in pbkdf2_kernels.Values) k?.Dispose();
             pbkdf2_kernels.Clear();
             program_pbkdf2?.Dispose();
             program_pbkdf2 = context.CreateAndBuildProgramFromString(code, "-cl-std=CL2.0");
             // Log.Debug(code);
             Log.Info("OpenCL Compiled");
-            program_pbkdf2_ready = true;
             usingDkLen = dklen;
+            usingPhraseLen = phraseLen;
+            program_pbkdf2_ready = true;
         }
 
         public int GetBatchSize() {
@@ -191,13 +211,13 @@ namespace FixMyCrypto {
                         
             // return 0x40000 / outBufferSize;
             // return 48 * 1024;
-            int batchSize = 256 * chosenDevice.MaximumComputeUnits;
-            Log.Debug($"batchSize={batchSize}, out buffer size={batchSize*outBufferSize}");
+            int batchSize = 128 * chosenDevice.MaximumComputeUnits;
+            Log.Debug($"batchSize={batchSize}, inBuffer={batchSize*inBufferSize}, outBuffer={batchSize*outBufferSize}");
             return batchSize;
         }
 
         public Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, bool final_hmac = true, int iters = 2048, int dklen = 64) {
-            Init_Sha512(dklen);
+            Init_Sha512(dklen, phrases[0].Length);
 
             // Log.Debug($"password batch size={passwords.Length}");
 
@@ -294,6 +314,8 @@ namespace FixMyCrypto {
             
             if (Global.Done) return null;
 
+            logger.Start();
+
             try {
                 int outSize = outBufferSize * count;
                 using MemoryBuffer inBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, data);
@@ -304,9 +326,9 @@ namespace FixMyCrypto {
                     kernel.SetKernelArgument(0, inBuffer);
                     kernel.SetKernelArgument(1, saltBuffer);
                     kernel.SetKernelArgument(2, outBuffer);
+                    Interlocked.Increment(ref kernelsRunning);
                     commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
                 }
-                Interlocked.Increment(ref kernelsRunning);
                 byte[] r = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
                 Interlocked.Decrement(ref kernelsRunning);
 
@@ -321,7 +343,7 @@ namespace FixMyCrypto {
         }
 
         public Seed[] Pbkdf2_Sha512_MultiSalt(Phrase[] phrases, string[] passphrases, byte[] password, byte[][] salts, bool final_hmac = true, int iters = 2048, int dklen = 64) {
-            Init_Sha512(dklen);
+            Init_Sha512(dklen, phrases[0].Length);
             // Log.Debug($"salt batch size={salts.Length}");
 
             byte[] data = new byte[wordSize + inBufferSize];
@@ -395,8 +417,8 @@ namespace FixMyCrypto {
             return retval;
         }
 
-        public Cryptography.Key[] Bip32DeriveFromRoot(byte[][] passwords, byte[][] salts, uint[] paths, int iters = 2048, int dklen = 64) {
-            Init_Bip32Derive(dklen);
+        public Cryptography.Key[] Bip32DeriveFromRoot(byte[][] passwords, byte[][] salts, uint[] paths, int iters = 2048, int dklen = 64, int phraseLen = 24) {
+            Init_Bip32Derive(dklen, phraseLen);
             // Log.Debug($"salt batch size={salts.Length}");
 
             int count = Math.Max(passwords.Length, salts.Length);
@@ -466,6 +488,8 @@ namespace FixMyCrypto {
                 
                 if (Global.Done) return null;
 
+                logger.Start();
+
                 int outSize = dklen * count;
                 int[] mode = { (passwords.Length > 1 ? 0 : 1) };
                 using MemoryBuffer inBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, data);
@@ -480,9 +504,9 @@ namespace FixMyCrypto {
                     kernel.SetKernelArgument(2, pathBuffer);
                     kernel.SetKernelArgument(3, modeBuffer);
                     kernel.SetKernelArgument(4, outBuffer);
+                    Interlocked.Increment(ref kernelsRunning);
                     commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
                 }
-                Interlocked.Increment(ref kernelsRunning);
                 byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
                 Interlocked.Decrement(ref kernelsRunning);
 
@@ -503,12 +527,31 @@ namespace FixMyCrypto {
             }
         }
 
-        public void Init_Bip32Derive(int dklen = 64) {
-            if (program_bip32derive_ready) return;
+        public void Init_Bip32Derive(int dklen = 64, int phraseLen = 24) {
+            if (program_bip32derive_ready && dklen == usingDkLen && phraseLen == usingPhraseLen) return;
 
             program_bip32derive_ready = false;
             outBufferSize = (dklen > 64) ? 128 : 64;
             wordSize = 8;
+            switch (phraseLen) {
+                case 12:
+                inBufferSize = 128 - wordSize;
+                break;
+
+                case 15:
+                case 18:
+                inBufferSize = 192 - wordSize;
+                break;
+
+                case 21:
+                case 24:
+                inBufferSize = 256 - wordSize;
+                break;
+
+                default:
+                throw new Exception($"invalid phraseLen={phraseLen}");
+
+            }
             saltBufferSize = maxPassphraseLength + 8;   //  +8 for "mnemonic"
             if (saltBufferSize % wordSize != 0) saltBufferSize += wordSize - (saltBufferSize % wordSize);
 
@@ -522,17 +565,19 @@ namespace FixMyCrypto {
             code = code.Replace("<word_size>", $"{wordSize}");
             code = code.Replace("<word_type>", wordSize == 8 ? "ulong" : "uint");
 
-            Log.Info("Compiling OpenCL BIP32 Derive scripts...");
+            Log.Info($"Compiling OpenCL BIP32 Derive scripts (keylen={dklen} phraseLen={phraseLen})...");
             foreach (var k in bip32_kernels.Values) k?.Dispose();
             bip32_kernels.Clear();
             program_bip32derive?.Dispose();
             program_bip32derive = context.CreateAndBuildProgramFromString(code, "-cl-std=CL2.0");
             Log.Info("OpenCL Compiled");
+            usingDkLen = dklen;
+            usingPhraseLen = phraseLen;
             program_bip32derive_ready = true;
         }
 
         public Cryptography.Key[] Bip32_Derive(Cryptography.Key[] keys, uint path, int keyLen = 32, int ccLen = 32) {
-            Init_Bip32Derive();
+            Init_Bip32Derive(keyLen + ccLen, usingPhraseLen);
 
             int length = keyLen + ccLen;
             int count = keys.Length;
@@ -568,6 +613,8 @@ namespace FixMyCrypto {
                 
                 if (Global.Done) return null;
 
+                logger.Start();
+
                 int outSize = length * count;
                 using MemoryBuffer inBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, data);
                 using MemoryBuffer pathBuffer = context.CreateBuffer(MemoryFlag.ReadOnly | MemoryFlag.CopyHostPointer, paths);
@@ -577,9 +624,9 @@ namespace FixMyCrypto {
                     kernel.SetKernelArgument(0, inBuffer);
                     kernel.SetKernelArgument(1, outBuffer);
                     kernel.SetKernelArgument(2, pathBuffer);
+                    Interlocked.Increment(ref kernelsRunning);
                     commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
                 }
-                Interlocked.Increment(ref kernelsRunning);
                 byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
                 Interlocked.Decrement(ref kernelsRunning);
 
@@ -640,7 +687,7 @@ namespace FixMyCrypto {
 
             Cryptography.Key[] keys;
             
-            Init_Bip32Derive();
+            Init_Bip32Derive(64, 12);
             sw.Restart();
             keys = Bip32_Derive(src, path);
             sw.Stop();
@@ -689,7 +736,7 @@ namespace FixMyCrypto {
             long cpu = sw.ElapsedMilliseconds;
 
             p2a.SetOpenCL(this);
-            Init_Bip32Derive();
+            Init_Bip32Derive(64, 12);
             List<Address>[] addressesO = new List<Address>[addressesC.Length];
             sw.Restart();
             Parallel.For(0, addressesC.Length, i => {
@@ -725,7 +772,7 @@ namespace FixMyCrypto {
 
             {
                 Log.Debug($"Benchmark OpenCL phrases...");
-                Init_Sha512();
+                Init_Sha512(64, 12);
                 Phrase[] ph = new Phrase[tcount];
                 byte[][] passwords = new byte[tcount][];
                 for (int i = 0; i < tcount; i++) ph[i] = new Phrase(12);
@@ -767,7 +814,7 @@ namespace FixMyCrypto {
 
             {
                 Log.Debug($"Benchmark OpenCL passphrases...");
-                Init_Sha512();
+                Init_Sha512(64, 12);
                 Phrase ph = new Phrase(12);
                 string phrase = ph.ToPhrase();
                 byte[] password = phrase.ToUTF8Bytes();

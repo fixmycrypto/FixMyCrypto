@@ -227,7 +227,7 @@ namespace FixMyCrypto {
             for (int i = 0; i < passphrases.Length; i++) salts[i] = Cryptography.PassphraseToSalt(passphrases[i]);
 
             uint[] paths = node.GetPathValues();
-            node.Keys = ocl.Bip32DeriveFromRoot(passwords, salts, paths.Slice(1));
+            node.Keys = ocl.Bip32DeriveFromRoot(passwords, salts, paths.Slice(1), 2048, 64, phrases[0].Length);
         }
 
         protected override Cryptography.Key DeriveChildKey(Cryptography.Key parentKey, uint index) {
