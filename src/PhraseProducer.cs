@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace FixMyCrypto {
@@ -41,7 +42,7 @@ namespace FixMyCrypto {
 
         private void TestPhrase(short[] phraseArray) {
             if (countOnly) {
-                totalPhraseCount++;
+                Interlocked.Increment(ref totalPhraseCount);
                 return;
             }
 
@@ -425,11 +426,11 @@ namespace FixMyCrypto {
 
             //  Try inserting every word into every position
 
-            // ParallelOptions po = new ParallelOptions();
-            // po.MaxDegreeOfParallelism = threads;
+            ParallelOptions po = new ParallelOptions();
+            po.MaxDegreeOfParallelism = countOnly ? Settings.Threads : 1;
 
-            // Parallel.For(0, Wordlists.OriginalWordlist.Count, po, word => {
-            for (int i = 0; i <= phrase.Length; i++) {
+            Parallel.For(0, phrase.Length + 1, po, i => {
+            // for (int i = 0; i <= phrase.Length; i++) {
                 if (Global.Done) return;
                 // if (missing == totalMissing) Log.Debug($"Insert missing word into {i}");
                 for (int word = 0; word < Wordlists.OriginalWordlist.Count; word++) {
@@ -445,7 +446,7 @@ namespace FixMyCrypto {
 
                     FixMissing(copy, missing - 1, totalMissing, wrong, runAlgorithms, difficulty);
                 }
-            };
+            });
         }
 
         private void FixInvalid(short[] phrase, int depth, int maxDepth, bool runAlgorithms, SwapMode mode, int difficulty) {
@@ -477,13 +478,11 @@ namespace FixMyCrypto {
 
             int attempt = 0;
 
-            // ParallelOptions po = new ParallelOptions();
-            // po.MaxDegreeOfParallelism = threads;
+            ParallelOptions po = new ParallelOptions();
+            po.MaxDegreeOfParallelism = countOnly ? Settings.Threads : 1;
 
-            // Log.Info($"PP{threadNum}: Replace invalid word #{depth} ({words.Count})");
-
-            // Parallel.ForEach(words, po, replacement => {
-            foreach (short replacement in words) {
+            Parallel.ForEach(words, po, replacement => {
+            // foreach (short replacement in words) {
                 attempt++;
 
                 if (Global.Done) return;
@@ -495,7 +494,7 @@ namespace FixMyCrypto {
                 fix[indexToReplace] = replacement;
 
                 FixInvalid(fix, depth - 1, maxDepth, runAlgorithms, mode, difficulty);
-            };
+            });
         }
         private void RunAlgorithms(short[] phrase, int difficulty) {
             // Log.Debug($"RunAlgorithms on phrase: {String.Join(' ', phrase)}");
