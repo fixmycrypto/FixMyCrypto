@@ -387,7 +387,7 @@ namespace FixMyCrypto {
 
                         DeriveAddressesBatch(t.Root, i, pb.phrases[i], pb.passphrase, addrs);
 
-                        if (Produce != null) Produce(addrs);
+                        if (pb.produceAddress != null) pb.produceAddress(addrs);
 
                         pb.count += addrs.Count;
                     }
@@ -410,16 +410,19 @@ namespace FixMyCrypto {
                     }
                 }
 
+                if (!Global.Done) Log.Debug($"{Thread.CurrentThread.Name} finished batch {batch.id} with count={batch.count}");
+                
                 batchFinished.TryAdd(batch.id, batch);
 
                 //  Update finished results, keeping the sequence
 
-                while (batchFinished.Count > 0) {
+                while (batchFinished.Count > 0 && !Global.Done) {
+                   
                     batchFinished.TryRemove(lastBatchFinished, out Batch b);
 
                     if (b == null) break;
 
-                    // Log.Debug($"{Thread.CurrentThread.Name} finished batch {lastBatchFinished} with count={b.count}");
+                    Log.Debug($"Retire batch {b.id} with count={b.count}");
 
                     lock (mutex) {
                         count += b.count;
