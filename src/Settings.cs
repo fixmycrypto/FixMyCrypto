@@ -74,6 +74,9 @@ namespace FixMyCrypto {
         private static int device = -1;
         public static int OpenCLDevice {get { return device; } }
 
+        private static bool ignoreResults = false;
+        public static bool IgnoreResults {get { return ignoreResults; } }
+
         public static string GetApiPath(CoinType coin) {
             switch (coin) {
                 case CoinType.ADA:
@@ -135,6 +138,12 @@ namespace FixMyCrypto {
                         case "-d":
 
                         Int32.TryParse(args[i + 1], out device);
+
+                        break;
+
+                        case "-ignoreResults":
+
+                        ignoreResults = true;
 
                         break;
                     }

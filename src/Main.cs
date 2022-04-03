@@ -77,7 +77,7 @@ namespace FixMyCrypto {
 
             //  Ensure we have write permissions
             try {
-                if (File.Exists("results.json")) {
+                if (!Settings.IgnoreResults && File.Exists("results.json")) {
                     Log.Error("results.json file already exists on disk. If you want to start a new run, please rename or delete this file first.");
                     PauseAndExit(1);
                 }
