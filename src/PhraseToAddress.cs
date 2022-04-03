@@ -514,7 +514,9 @@ namespace FixMyCrypto {
                 ppLogTotal = phraseTested;
             }
             if (passphraseTested > p2aLogTotal) {
-                Log.Info($"Passphrases tested {passphraseTested:n0} / {passphraseTotal:n0} ({100.0*passphraseTested/passphraseTotal:F2}%), passphrases/s: {1000*(passphraseTested - passphraseStart)/stopWatch.ElapsedMilliseconds:n0}");
+                long ppps = 1000*(passphraseTested - passphraseStart)/stopWatch.ElapsedMilliseconds;
+                TimeSpan eta = TimeSpan.FromSeconds((passphraseTotal-passphraseTested)/ppps);
+                Log.Info($"Passphrases tested {passphraseTested:n0} / {passphraseTotal:n0} ({100.0*passphraseTested/passphraseTotal:F2}%), passphrases/s: {ppps:n0}, ETA: {eta}");
                 p2aLogTotal = passphraseTested;
             }
         }
