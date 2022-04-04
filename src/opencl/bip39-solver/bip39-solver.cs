@@ -66,7 +66,8 @@ void hmac_sha512(uchar *key, int key_length_bytes, uchar *message, int message_l
         uchar pwd_hash[hashlength] = { 0 };
 
         __global uchar *pwd;
-        __global uchar *seed = outbuffer[idx].buffer;
+        uchar seed_buf[outBufferSize] = { 0 };
+        uchar *seed = seed_buf;
         __global uchar *salt;
         <word_type> pwdLen;
         <word_type> saltLen;
@@ -143,8 +144,10 @@ void hmac_sha512(uchar *key, int key_length_bytes, uchar *message, int message_l
 
         if (final_hmac == 1) {
           //  hmac512 on seed
-          hmac_sha512(bitcoin_seed, 12, outbuffer[idx].buffer, outBufferSize, outbuffer[idx].buffer);
+          hmac_sha512(bitcoin_seed, 12, seed_buf, outBufferSize, seed_buf);
         }
+
+        for (int i = 0; i < outBufferSize; i++) outbuffer[idx].buffer[i] = seed_buf[i];
     }
 
     __kernel void pbkdf2_2048_64(__global inbuf *inbuffer, __global const saltbuf *saltbuffer, __global outbuf *outbuffer) {
