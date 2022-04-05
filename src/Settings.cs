@@ -125,12 +125,13 @@ namespace FixMyCrypto {
             if (result.device != null) device = (int)result.device.Value;
 
             try {
-                for (int i = 0; i + 1 < args.Length; i++) {
+                for (int i = 0; i < args.Length; i++) {
                     switch (args[i]) {
                         case "-platform":
                         case "-p":
 
                         Int32.TryParse(args[i + 1], out platform);
+                        i++;
 
                         break;
 
@@ -138,6 +139,7 @@ namespace FixMyCrypto {
                         case "-d":
 
                         Int32.TryParse(args[i + 1], out device);
+                        i++;
 
                         break;
 
