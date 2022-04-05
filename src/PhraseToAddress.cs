@@ -410,7 +410,7 @@ namespace FixMyCrypto {
                     }
                 }
 
-                if (!Global.Done) Log.Debug($"{Thread.CurrentThread.Name} finished batch {batch.id} with count={batch.count}");
+                // if (!Global.Done) Log.Debug($"{Thread.CurrentThread.Name} finished batch {batch.id} with count={batch.count}");
                 
                 batchFinished.TryAdd(batch.id, batch);
 
@@ -422,7 +422,7 @@ namespace FixMyCrypto {
 
                     if (b == null) break;
 
-                    Log.Debug($"Retire batch {b.id} with count={b.count}");
+                    // Log.Debug($"Retire batch {b.id} with count={b.count}");
 
                     lock (mutex) {
                         count += b.count;

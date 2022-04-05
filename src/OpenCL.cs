@@ -62,7 +62,7 @@ namespace FixMyCrypto {
 
             logger = new(5 * 1000);
             logger.Elapsed += (StringReader, args) => {
-                Log.Debug($"kernelsRunning={kernelsRunning}");
+                // Log.Debug($"kernelsRunning={kernelsRunning}");
             };
         }
 
