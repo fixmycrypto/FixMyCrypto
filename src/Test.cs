@@ -235,7 +235,7 @@ namespace FixMyCrypto {
             OpenCL ocl = null;
             if (useOpenCL) {
                 OpenCL.LogOpenCLInfo();
-                ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevice);
+                ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevices);
                 Log.Info(ocl.GetDeviceInfo());
                 ocl.Benchmark_Pbkdf2(ocl.GetBatchSize());
                 ocl.Benchmark_Bip32Derive(PathNode.Harden(44));
@@ -489,7 +489,7 @@ namespace FixMyCrypto {
             //  CPU
             TestAddressDerivation(secrets, false);
             //  OpenCL
-            if (Settings.OpenCLDevice >= 0 && Settings.OpenCLPlatform >= 0) {
+            if (Settings.OpenCLDevices != null && Settings.OpenCLPlatform >= 0) {
                 TestAddressDerivation(secrets, true);
             }
 

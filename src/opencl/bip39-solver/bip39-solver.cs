@@ -1,6 +1,6 @@
 namespace FixMyCrypto {
     class Bip39_Solver {
-        public static string int_to_address_cl = @"
+        public static string pbkdf2_cl = @"
 
 #define inBufferSize <inBufferSize_bytes>
 #define outBufferSize <outBufferSize_bytes>
@@ -175,7 +175,7 @@ void hmac_sha512(uchar *key, int key_length_bytes, uchar *message, int message_l
     }
 ";
 
-        public static string address_cl = @"
+        public static string derive_cl = @"
 /*
 #define BITCOIN_MAINNET 0
 #define BITCOIN_TESTNET 1
@@ -208,7 +208,7 @@ typedef struct {
   uchar chain_code[32];
   public_key_t public_key;
 } extended_public_key_t;
-*/
+
 
 void hmac_sha512(uchar *key, int key_length_bytes, uchar *message, int message_length_bytes, uchar *output) {
   uchar ipad_key[128];
@@ -243,6 +243,7 @@ void hmac_sha512(uchar *key, int key_length_bytes, uchar *message, int message_l
 
   sha512(&inner_concat, 192, output);
 }
+*/
 
 /*
 void new_master_from_seed(uchar network, uchar *seed, extended_private_key_t * master) {
@@ -438,26 +439,6 @@ __kernel void bip32_derive_normal(__global keyBuffer *parent, __global keyBuffer
   secp256k1_ec_seckey_tweak_add(child[idx].key, parent[idx].key);
   memcpy_offset(child[idx].cc, &hmacsha512_result, 32, 32);
 }
-
-#define inBufferSize <inBufferSize_bytes>
-#define outBufferSize <outBufferSize_bytes>
-#define saltBufferSize <saltBufferSize_bytes>
-#define hashlength 64
-
-typedef struct {
-    <word_type> length; // in bytes
-    uchar buffer[inBufferSize];
-} inbuf;
-
-typedef struct {
-    uchar buffer[outBufferSize];
-} outbuf;
-
-// Salt buffer, used by pbkdf2 & pbe
-typedef struct {
-    <word_type> length; // in bytes
-    uchar buffer[saltBufferSize];
-} saltbuf;
 
 typedef struct {
   uint count;

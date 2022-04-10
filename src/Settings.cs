@@ -71,8 +71,8 @@ namespace FixMyCrypto {
 
         private static int platform = -1;
         public static int OpenCLPlatform {get { return platform; } }
-        private static int device = -1;
-        public static int OpenCLDevice {get { return device; } }
+        private static int[] devices = null;
+        public static int[] OpenCLDevices {get { return devices; } }
 
         private static bool ignoreResults = false;
         public static bool IgnoreResults {get { return ignoreResults; } }
@@ -122,7 +122,7 @@ namespace FixMyCrypto {
             Indices = ParseRanges((string)result.indices);
             Accounts = ParseRanges((string)result.accounts);
             if (result.platform != null) platform = (int)result.platform.Value;
-            if (result.device != null) device = (int)result.device.Value;
+            if (result.devices != null) devices = result.devices.ToObject<int[]>();
 
             try {
                 for (int i = 0; i < args.Length; i++) {
@@ -136,9 +136,10 @@ namespace FixMyCrypto {
                         break;
 
                         case "-device":
+                        case "-devices":
                         case "-d":
 
-                        Int32.TryParse(args[i + 1], out device);
+                        devices = ParseRanges(args[i + 1]);
                         i++;
 
                         break;

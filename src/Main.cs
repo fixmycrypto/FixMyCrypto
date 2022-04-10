@@ -189,13 +189,13 @@ namespace FixMyCrypto {
 
             //  OpenCL
             OpenCL ocl = null;
-            if (Settings.OpenCLPlatform >= 0 && Settings.OpenCLDevice >= 0) {
+            if (Settings.OpenCLPlatform >= 0 && Settings.OpenCLDevices != null) {
                 try {
                     OpenCL.LogOpenCLInfo();
-                    ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevice, maxPassphraseLength);
+                    ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevices, maxPassphraseLength);
                     Log.Info(ocl.GetDeviceInfo());
-                    ocl.Init_Sha512(p2at.GetKeyLength(), Settings.Phrase.Split(' ').Length);
-                    ocl.Init_Bip32Derive(p2at.GetKeyLength(), Settings.Phrase.Split(' ').Length);
+                    ocl.Init(p2at.GetKeyLength(), Settings.Phrase.Split(' ').Length);
+                    // ocl.Init_Bip32Derive(p2at.GetKeyLength(), Settings.Phrase.Split(' ').Length);
                 }
                 catch (Exception e) {
                     Log.Error(e.ToString());
