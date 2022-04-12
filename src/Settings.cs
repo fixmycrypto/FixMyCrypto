@@ -122,6 +122,7 @@ namespace FixMyCrypto {
             Indices = ParseRanges((string)result.indices);
             Accounts = ParseRanges((string)result.accounts);
             if (result.platform != null) platform = (int)result.platform.Value;
+            if (result.device != null) devices = new int[] { (int)result.device.Value };
             if (result.devices != null) devices = result.devices.ToObject<int[]>();
 
             try {
