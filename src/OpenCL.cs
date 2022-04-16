@@ -1,5 +1,4 @@
 using NBitcoin;
-using OpenCl.DotNetCore;
 using OpenCl.DotNetCore.CommandQueues;
 using OpenCl.DotNetCore.Contexts;
 using OpenCl.DotNetCore.Devices;
@@ -10,12 +9,10 @@ using OpenCl.DotNetCore.Programs;
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using System.Management;
 using ConsoleTables;
 
 namespace FixMyCrypto {
@@ -25,11 +22,9 @@ namespace FixMyCrypto {
         private Context context;
         private Program program_pbkdf2;
 
-        // private Program program_bip32derive;
 
         private bool program_pbkdf2_ready = false;
 
-        // private bool program_bip32derive_ready = false;
         private int usingDkLen, usingPhraseLen;
 
         private int saltBufferSize;     //  max char length of a passphrase
@@ -46,7 +41,7 @@ namespace FixMyCrypto {
         private int platformId;
         private int[] deviceIds;
         object mutex = new();
-        int kernelsRunning = 0;
+        int[] kernelsRunning;
         System.Timers.Timer logger;
 
         public OpenCL(int platformId = 0, int[] deviceIds = null, int maxPassphraseLength = 32) {
@@ -65,10 +60,11 @@ namespace FixMyCrypto {
             this.maxPassphraseLength = Math.Max(maxPassphraseLength, 32);   //  "mnemonic" + passphrase
             this.platformId = platformId;
             this.deviceIds = deviceIds;
+            this.kernelsRunning = new int[deviceIds.Length];
 
             logger = new(5 * 1000);
             logger.Elapsed += (StringReader, args) => {
-                // Log.Debug($"kernelsRunning={kernelsRunning}");
+                Log.Debug($"kernelsRunning={String.Join(',', kernelsRunning)}");
             };
         }
 
@@ -137,7 +133,6 @@ namespace FixMyCrypto {
 
         ~OpenCL() {
             program_pbkdf2?.Dispose();
-            // program_bip32derive?.Dispose();
             context?.Dispose();
             foreach (Device d in chosenDevices) d?.Dispose();
         }
@@ -201,11 +196,23 @@ namespace FixMyCrypto {
 
         public int GetBatchSize() {
             //  TODO: improve this
-            int cus = 0;
-            foreach (Device d in chosenDevices) cus += d.MaximumComputeUnits;
+
+            //  Use device with smallest number of CUs
+            int cus = int.MaxValue;
+            foreach (Device d in chosenDevices) cus = Math.Min(cus, d.MaximumComputeUnits);
+
             int batchSize = 128 * cus;
-            Log.Debug($"batchSize={batchSize}, inBuffer={batchSize*inBufferSize}, outBuffer={batchSize*outBufferSize}");
+            Log.Debug($"batchSize={batchSize}, CUs={cus} inBuffer={batchSize*inBufferSize}, outBuffer={batchSize*outBufferSize}");
             return batchSize;
+        }
+
+        public int GetAvailableDevice() {
+            int minRunning = kernelsRunning.Min();
+            for (int i = 0; i < kernelsRunning.Length; i++) {
+                if (kernelsRunning[i] <= minRunning) return i;
+            }
+
+            return 0;
         }
 
         public Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, bool final_hmac = true, int iters = 2048, int dklen = 64) {
@@ -260,23 +267,6 @@ namespace FixMyCrypto {
                 byte[] seed = r.ReadBytes(dklen);
                 if (outBufferSize > dklen) r.BaseStream.Position += (outBufferSize - dklen);
 
-                
-                //  debug
-                // #if DEBUG
-                bool allZero = true;
-                for (int j = 0; j < seed.Length; j++) {
-                    if (seed[j] != 0) {
-                        allZero = false;
-                        break;
-                    }
-                }
-                if (allZero) {
-                    throw new Exception($"seed {i} is all zero");
-                }
-                // #endif
-                
-
-                // Console.WriteLine($"seed: {seed.ToHexString()}");
                 if (phrases.Length == passwords.Length) {
                     retval[i] = new Seed(seed, phrases[i], passphrases[0]);
                 }
@@ -303,11 +293,12 @@ namespace FixMyCrypto {
                 kernel.SetKernelArgument(0, inBuffer);
                 kernel.SetKernelArgument(1, saltBuffer);
                 kernel.SetKernelArgument(2, outBuffer);
-                using CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevices[0]);
-                Interlocked.Increment(ref kernelsRunning);
+                int device = GetAvailableDevice();
+                using CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevices[device]);
+                Interlocked.Increment(ref kernelsRunning[device]);
                 commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
                 byte[] r = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
-                Interlocked.Decrement(ref kernelsRunning);
+                Interlocked.Decrement(ref kernelsRunning[device]);
 
                 return r;
             }
@@ -367,22 +358,6 @@ namespace FixMyCrypto {
             for (int i = 0; i < salts.Length; i++) {
                 byte[] seed = r.ReadBytes(dklen);
                 if (outBufferSize > dklen) r.BaseStream.Position += (outBufferSize - dklen);
-
-                
-                //  debug
-                // #if DEBUG
-                bool allZero = true;
-                for (int j = 0; j < seed.Length; j++) {
-                    if (seed[j] != 0) {
-                        allZero = false;
-                        break;
-                    }
-                }
-                if (allZero) {
-                    throw new Exception($"seed {i} is all zero");
-                }
-                // #endif
-                
 
                 if (phrases.Length == salts.Length) {
                     retval[i] = new Seed(seed, phrases[i], passphrases[0]);
@@ -473,11 +448,12 @@ namespace FixMyCrypto {
                 kernel.SetKernelArgument(2, pathBuffer);
                 kernel.SetKernelArgument(3, modeBuffer);
                 kernel.SetKernelArgument(4, outBuffer);
-                using CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevices[0]);
-                Interlocked.Increment(ref kernelsRunning);
+                int device = GetAvailableDevice();
+                using CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevices[device]);
+                Interlocked.Increment(ref kernelsRunning[device]);
                 commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
                 byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
-                Interlocked.Decrement(ref kernelsRunning);
+                Interlocked.Decrement(ref kernelsRunning[device]);
 
                 if (Global.Done) return null;
 
@@ -495,56 +471,6 @@ namespace FixMyCrypto {
                 throw;
             }
         }
-
-/*
-        public void Init_Bip32Derive(int dklen = 64, int phraseLen = 24) {
-            if (program_pbkdf2_ready && dklen == usingDkLen && phraseLen == usingPhraseLen) return;
-
-            program_bip32derive_ready = false;
-            outBufferSize = (dklen > 64) ? 128 : 64;
-            wordSize = 8;
-            switch (phraseLen) {
-                case 12:
-                inBufferSize = 128 - wordSize;
-                break;
-
-                case 15:
-                case 18:
-                inBufferSize = 192 - wordSize;
-                break;
-
-                case 21:
-                case 24:
-                case 25:
-                inBufferSize = 256 - wordSize;
-                break;
-
-                default:
-                throw new Exception($"invalid phraseLen={phraseLen}");
-
-            }
-            saltBufferSize = maxPassphraseLength + 8;   //  +8 for "mnemonic"
-            if (saltBufferSize % wordSize != 0) saltBufferSize += wordSize - (saltBufferSize % wordSize);
-
-            string code = Bip39_Solver.common_cl + Bip39_Solver_Secp256k1.secp256k1_common_cl + Bip39_Solver_Secp256k1.secp256k1_scalar_cl + Bip39_Solver_Secp256k1.secp256k1_field_cl + Bip39_Solver_Secp256k1.secp256k1_group_cl + Bip39_Solver_Secp256k1.secp256k1_preq_cl + Bip39_Solver_Secp256k1.secp256k1_cl + Bip39_Solver_Sha.sha2_cl + Bip39_Solver.address_cl;
-
-            code = code.Replace("<hashBlockSize_bits>", "1024");
-            code = code.Replace("<hashDigestSize_bits>", "512");
-            code = code.Replace("<inBufferSize_bytes>", $"{inBufferSize}");
-            code = code.Replace("<outBufferSize_bytes>", $"{outBufferSize}");
-            code = code.Replace("<saltBufferSize_bytes>", $"{saltBufferSize}");
-            code = code.Replace("<word_size>", $"{wordSize}");
-            code = code.Replace("<word_type>", wordSize == 8 ? "ulong" : "uint");
-
-            Log.Info($"Compiling OpenCL BIP32 Derive scripts (keylen={dklen} phraseLen={phraseLen})...");
-            program_bip32derive?.Dispose();
-            program_bip32derive = context.CreateAndBuildProgramFromString(code, "-cl-std=CL2.0");
-            Log.Info("OpenCL Compiled");
-            usingDkLen = dklen;
-            usingPhraseLen = phraseLen;
-            program_bip32derive_ready = true;
-        }
-        */
 
         public Cryptography.Key[] Bip32_Derive(Cryptography.Key[] keys, uint path, int keyLen = 32, int ccLen = 32) {
             Init(keyLen + ccLen, usingPhraseLen);
@@ -585,11 +511,12 @@ namespace FixMyCrypto {
                 kernel.SetKernelArgument(0, inBuffer);
                 kernel.SetKernelArgument(1, outBuffer);
                 kernel.SetKernelArgument(2, pathBuffer);
-                using CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevices[0]);
-                Interlocked.Increment(ref kernelsRunning);
+                int device = GetAvailableDevice();
+                using CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevices[device]);
+                Interlocked.Increment(ref kernelsRunning[device]);
                 commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
                 byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
-                Interlocked.Decrement(ref kernelsRunning);
+                Interlocked.Decrement(ref kernelsRunning[device]);
 
                 if (Global.Done) return null;
 
@@ -597,22 +524,6 @@ namespace FixMyCrypto {
                 using BinaryReader r = new BinaryReader(new MemoryStream(result));
                 for (int i = 0; i < count; i++) {
                     ret[i] = new Cryptography.Key(r.ReadBytes(keyLen), r.ReadBytes(ccLen));
-
-                    
-                    //  debug
-                    // #if DEBUG
-                    bool allZero = true;
-                    for (int j = 0; j < 32; j++) {
-                        if (ret[i].data[j] != 0) {
-                            allZero = false;
-                            break;
-                        }
-                    }
-                    if (allZero) {
-                        throw new Exception($"key {i} is all zero");
-                    }
-                    // #endif
-                    
                 }
                 return ret;
             }
