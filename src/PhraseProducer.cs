@@ -109,6 +109,11 @@ namespace FixMyCrypto {
             }
         }
 
+        private void Swap<T>(ref T lhs, ref T rhs) {
+            T temp = lhs;
+            lhs = rhs;
+            rhs = temp;
+        }
         private void SwapTwo(short[] phrase) {
             for (int i = 0; i < phrase.Length - 1; i++) {
             // Parallel.For(0, phrase.Length - 1, this.parallelOptions, i => {
@@ -496,6 +501,22 @@ namespace FixMyCrypto {
                 FixInvalid(fix, depth - 1, maxDepth, runAlgorithms, mode, difficulty);
             });
         }
+
+        private void Scramble(short[] phrase, int start) {
+            if (start == phrase.Length - 1) {
+                TestPhrase(phrase);
+                return;
+            }
+
+            for (var i = start; i < phrase.Length; i++) {
+                if (Global.Done) return;
+
+                short[] swap = phrase.Copy();
+
+                Swap(ref swap[start], ref swap[i]);
+                Scramble(swap, start + 1);
+            }
+        }
         private void RunAlgorithms(short[] phrase, int difficulty) {
             // Log.Debug($"RunAlgorithms on phrase: {String.Join(' ', phrase)}");
 
@@ -600,6 +621,14 @@ namespace FixMyCrypto {
             sw2.Stop();
             // Log.Debug($"PP: Change 3 words (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
+
+            //  All permutations
+            if (phrase.Length == 12) {
+                sw2.Restart();
+                Scramble(phrase, 0);
+                sw2.Stop();
+                if (Global.Done) return;
+            }
             
             if (difficulty < 2) return;
 
