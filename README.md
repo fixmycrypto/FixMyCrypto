@@ -91,7 +91,7 @@ You should see a table that looks like this:
 | --- | --- | --- | --- | --- |
 | 0: NVIDIA CUDA | 0: NVIDIA GeForce RTX 3060 Ti | 8 GiB         | 48 KiB       | 38  |
 
-If you have a single GPU, it will probably be Platform 0, Device 0 (unless you have other OpenCL drivers installed such as the Intel ICD). If you have multiple devices, you should choose the best platform & device. (Future versions will support multiple GPUs running together.)
+If you have a single GPU, it will probably be Platform 0, Device 0 (unless you have other OpenCL drivers installed such as the Intel ICD). If you have multiple devices, you should choose the best platform and then 1 or more devices from that platform. (You cannot simultaneously use more than 1 platform.)
 
 To run the search in GPU mode, you can either set the platform & device in your `settings.json` file:
 
@@ -101,6 +101,15 @@ To run the search in GPU mode, you can either set the platform & device in your 
 Alternatively, you can specify the platform & device on the command line:
 
     FixMyCrypto -platform 0 -device 0
+
+Multiple devices:
+
+    "platform": 0,
+    "devices": [ 0, 1, 2 ]
+
+Or:
+
+    FixMyCrypto -platform 0 -devices 0,1,2
 
 ---
 
@@ -465,6 +474,8 @@ Other address formats (e.g. secp256k signatures) or custom derivation paths are 
 * `wordDistance` (default 2.0, range 0 - 10) controls the sensitivity to typos. Increasing this setting will allow more substitute words to be tested, at a substantial increase in run time. If you think you made multiple or unlikely typos in your phrase, you can try increasing this value.
 
 * `logLevel` (default = "Info") sets the log verbosity level. From least to most verbose: `None`, `Error`, `Warning`, `Info`, `Debug` (0-5)
+
+* `noETA` (default = false) When set to true, disables ETA calculation. If you have a very difficult phrase or passphrase to brute force, just calculating the ETA can take a long time. Setting `noETA` to true will skip this step, but you won't see a ETA on the progress meter.
 
 # Blockchain Search Mode
 

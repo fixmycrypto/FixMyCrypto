@@ -8,7 +8,7 @@
     <AssemblyName>FixMyCrypto</AssemblyName>
     <NoWarn>NU1701</NoWarn>
     <!--<Nullable>enable</Nullable>-->
-    <AssemblyVersion>2.2.0.0</AssemblyVersion>
+    <AssemblyVersion>2.3.0.0</AssemblyVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);lib\**</DefaultItemExcludes>
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
@@ -45,6 +45,7 @@
     <PackageReference Include="Json.NET" Version="1.0.25" />
     <PackageReference Include="NBitcoin" Version="6.0.18" />
     <PackageReference Include="NBitcoin.Altcoins" Version="3.0.8" />
+    <PackageReference Include="NBitcoin.Secp256k1" Version="3.0.1" />
     <None Update="README.md" CopyToOutputDirectory="Always" />
     <None Update="LICENSE" CopyToOutputDirectory="Always" />
     <ProjectReference Include="lib\sr25519-dotnet\sr25519-dotnet.lib\sr25519-dotnet.lib.csproj" />
