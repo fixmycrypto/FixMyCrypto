@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using NBitcoin;
 using Bech32;
 
 namespace FixMyCrypto {
@@ -15,8 +14,8 @@ namespace FixMyCrypto {
             return p;
         }
 
-        private string SkToAddress(ExtKey sk) {
-            byte[] pub = sk.GetPublicKey().ToBytes();
+        private string SkToAddress(Cryptography.Key sk) {
+            byte[] pub = Cryptography.Secp256K_GetPublicKey(sk.data, true);
 
             byte[] h1 = Cryptography.SHA256Hash(pub);
             byte[] h2 = Cryptography.RipeMD160Hash(h1);
@@ -27,10 +26,7 @@ namespace FixMyCrypto {
         }
  
         protected override Address DeriveAddress(PathNode node, int index) {
-            Cryptography.Key key = node.Keys[index];
-            ExtKey sk = new ExtKey(new Key(key.data), key.cc);
-
-            string address = SkToAddress(sk);
+            string address = SkToAddress(node.Keys[index]);
             return new Address(address, node.GetPath());
         }
 

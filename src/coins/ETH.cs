@@ -2,7 +2,6 @@ using System;
 using System.Text;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using NBitcoin;
 
 namespace FixMyCrypto {
     class PhraseToAddressEth : PhraseToAddressBitAltcoin {
@@ -40,12 +39,10 @@ namespace FixMyCrypto {
 
             return new string(ret);
         }
-        private string SkToAddress(ExtKey sk) {
-            //  TODO: Get decompressed pubkey directly?
-            byte[] pkeyBytes = sk.PrivateKey.PubKey.ToBytes();
-            byte[] converted = Cryptography.Secp256KPublicKeyDecompress(pkeyBytes);
+        private string SkToAddress(Cryptography.Key sk) {
+            byte[] pk = Cryptography.Secp256K_GetPublicKey(sk.data, false);
 
-            byte[] hash = Cryptography.KeccakDigest(converted.Slice(1, 64));
+            byte[] hash = Cryptography.KeccakDigest(pk.Slice(1, 64));
 
             string l = hash.ToHexString(12, 20);
 
@@ -61,10 +58,7 @@ namespace FixMyCrypto {
         }
  
         protected override Address DeriveAddress(PathNode node, int index) {
-            Cryptography.Key key = node.Keys[index];
-            ExtKey sk = new ExtKey(new Key(key.data), key.cc);
-
-            string address = SkToAddress(sk);
+            string address = SkToAddress(node.Keys[index]);
             return new Address(address, node.GetPath());
         }
 

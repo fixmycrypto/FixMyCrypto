@@ -3,12 +3,13 @@ using System.Text;
 using System.Security.Cryptography;
 using Cryptography.ECDSA;
 using NBitcoin;
+using NBitcoin.Secp256k1;
 
 namespace FixMyCrypto {
     class Cryptography {
 
         public static byte[] SHA256Hash(ReadOnlySpan<byte> data) {
-            return SHA256.HashData(data);
+            return System.Security.Cryptography.SHA256.HashData(data);
         }
 
         public static byte[] SHA512Hash(ReadOnlySpan<byte> data) {
@@ -62,39 +63,15 @@ namespace FixMyCrypto {
             }
 
             public Key Derive_Bip32(uint index) {
-                //  if (PathNode.IsHardened(index)) {
-                //     return Derive_Bip32_Hardened(index);
-                // }
-                // else {
-                //     return Derive_Bip32_Normal(index);
-                // }
-
-                ExtKey k = new ExtKey(new NBitcoin.Key(this.data), this.cc);
-                ExtKey child = k.Derive(index);
-                return new Key(child.PrivateKey.ToBytes(), child.ChainCode);
- 
+                if (PathNode.IsHardened(index)) {
+                    return Derive_Bip32_Hardened(index);
+                }
+                else {
+                    return Derive_Bip32_Normal(index);
+                }   
             }
 
-            // public Key Derive_Bip32_Hardened(uint index) {
-              /*
-               uint child_number = (1 << 31) | pathBuffer[0].path;
-  uchar hmacsha512_result[64] = { 0 };
-  uchar hmac_input[37] = {0};
-  for(int x=0;x<32;x++){
-    hmac_input[x+1] = parent[idx].key[x];
-  }
-  hmac_input[33] = child_number >> 24;
-  hmac_input[34] = (child_number & 0x00FF0000) >> 16;
-  hmac_input[35] = (child_number & 0x0000FF00) >> 8;
-  hmac_input[36] = (child_number & 0x000000FF);
-  
-  hmac_sha512(parent[idx].cc, 32, &hmac_input, 37, &hmacsha512_result);
-  
-  memcpy(child[idx].key, &hmacsha512_result, 32);
-  secp256k1_ec_seckey_tweak_add(child[idx].key, parent[idx].key);
-  memcpy_offset(child[idx].cc, &hmacsha512_result, 32, 32);
-  */
-/*
+            public Key Derive_Bip32_Hardened(uint index) {
                 byte[] hmac_input = new byte[37];
                 Array.Copy(this.data, 0, hmac_input, 1, 32);
                 hmac_input[33] = (byte)(index >> 24);
@@ -104,13 +81,34 @@ namespace FixMyCrypto {
 
                 using HMACSHA512 HMAC512 = new HMACSHA512(this.cc);
                 byte[] result = HMAC512.ComputeHash(hmac_input);
-*/
-               
-            // }
 
-        //     public Key Derive_Bip32_Normal(uint index) {
-                
-        //     }
+                Scalar sk = new Scalar(result.Slice(0, 32));
+                Scalar parent = new Scalar(this.data);
+                Scalar child = sk.Add(parent);
+                Key r = new Key(child.ToBytes(), result.Slice(32));
+
+                return r;
+            }
+
+            public Key Derive_Bip32_Normal(uint index) {
+                byte[] hmac_input = new byte[37];
+                byte[] pub = Secp256K_GetPublicKey(this.data, true);
+                Array.Copy(pub, 0, hmac_input, 0, 33);
+                hmac_input[33] = (byte)(index >> 24);
+                hmac_input[34] = (byte)((index & 0x00FF0000) >> 16);
+                hmac_input[35] = (byte)((index & 0x0000FF00) >> 8);
+                hmac_input[36] = (byte)((index & 0x000000FF));
+
+                using HMACSHA512 HMAC512 = new HMACSHA512(this.cc);
+                byte[] result = HMAC512.ComputeHash(hmac_input);
+
+                Scalar sk = new Scalar(result.Slice(0, 32));
+                Scalar parent = new Scalar(this.data);
+                Scalar child = sk.Add(parent);
+                Key r = new Key(child.ToBytes(), result.Slice(32));
+
+                return r;
+            }
         }
 
         protected static byte[] ed25519_seed = Encoding.ASCII.GetBytes("ed25519 seed");
@@ -121,7 +119,7 @@ namespace FixMyCrypto {
         }
 
         public static byte[] HMAC256_Edd25519(byte[] data) {
-            using HMACSHA256 HMAC256 = new HMACSHA256(ed25519_seed);
+            using System.Security.Cryptography.HMACSHA256 HMAC256 = new System.Security.Cryptography.HMACSHA256(ed25519_seed);
             return HMAC256.ComputeHash(data);
         }
 
@@ -184,8 +182,8 @@ namespace FixMyCrypto {
             return keypair.Public;
         }
 
-        public static byte[] Secp256KPublicKeyDecompress(byte[] pub) {
-            return Secp256K1Manager.PublicKeyDecompress(pub);
+        public static byte[] Secp256K_GetPublicKey(byte[] sk, bool compressed) {
+            return Secp256K1Manager.GetPublicKey(sk, compressed);
         }
     }
 }
