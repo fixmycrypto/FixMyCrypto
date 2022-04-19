@@ -53,7 +53,7 @@ namespace FixMyCrypto {
             chosenDevices = new Device[deviceIds.Length];
             foreach (int d in deviceIds) {
                 chosenDevices[device] = platforms.ToList()[platformId].GetDevices(DeviceType.All).ToList()[d];
-                Log.Info($"Selected device ({platformId}, {d}): {chosenDevices[device].Name} ({chosenDevices[device].Vendor})");
+                // Log.Info($"Selected device ({platformId}, {d}): {chosenDevices[device].Name} ({chosenDevices[device].Vendor})");
                 device++;
             }
             context = Context.CreateContext(chosenDevices);            
@@ -71,6 +71,7 @@ namespace FixMyCrypto {
         public string GetDeviceInfo() {
             string r = "";
             for (int i = 0; i < deviceIds.Length; i++) {
+                if (r.Length > 0) r += "\n";
                 r += $"Selected device ({platformId}, {deviceIds[i]}): {chosenDevices[i].Name} ({chosenDevices[i].Vendor})";
             }
             return r;
@@ -106,20 +107,22 @@ namespace FixMyCrypto {
             Log.Info("Benchmarking devices...");
 
             ConsoleTable table = new ConsoleTable("Device", "phrases/ms", "passphrases/ms", "Secp256k1 keys/ms", "BIP32 paths/ms");
+            bool first = true;
             for (int p = 0; p < GetPlatformCount(); p++) {
                 Platform platform = Platform.GetPlatforms().ToList()[p];
                 if (!platform.Name.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase)) continue;  //  Intel crashes, Apple M1 fails, AMD bad results
 
                 for (int d = 0; d < GetDeviceCount(p); d++) {
                     OpenCL ocl = new(p, new int[] { d });
+                    Log.Info(ocl.GetDeviceInfo());
                     Dictionary<string, int> results = new();
                     ocl.Benchmark_Pbkdf2(count, results);
-                    ocl.Benchmark_Bip32Derive(PathNode.Harden(0), count, results);
                     ocl.Benchmark_Bip32Derive(0, count, results);
                     ocl.Benchmark_Bip32DerivePath(null, count, results);
 
-                    if (p == 0 && d == 0) {
+                    if (first) {
                         table.AddRow(GetCpuName(), $"{results["cpuPhrases"]/1000.0:F1}", $"{results["cpuPassphrases"]/1000.0:F1}", $"{results["cpuSecDerives"]/1000.0:F1}", $"{results["cpuSecPaths"]/1000.0:F1}");
+                        first = false;
                     }
 
                     Device dev = platform.GetDevices(DeviceType.All).ToList()[d];
@@ -197,22 +200,30 @@ namespace FixMyCrypto {
         public int GetBatchSize() {
             //  TODO: improve this
 
-            //  Use device with smallest number of CUs
-            int cus = int.MaxValue;
-            foreach (Device d in chosenDevices) cus = Math.Min(cus, d.MaximumComputeUnits);
+            //  Optimize for device with most CUs
+            int cus = 0;
+            foreach (Device d in chosenDevices) cus = Math.Max(cus, d.MaximumComputeUnits);
 
             int batchSize = 128 * cus;
             Log.Debug($"batchSize={batchSize}, CUs={cus} inBuffer={batchSize*inBufferSize}, outBuffer={batchSize*outBufferSize}");
             return batchSize;
         }
 
-        public int GetAvailableDevice() {
-            int minRunning = kernelsRunning.Min();
-            for (int i = 0; i < kernelsRunning.Length; i++) {
-                if (kernelsRunning[i] <= minRunning) return i;
+        public int GetNextDevice() {
+            if (chosenDevices.Length == 1) return 0;
+
+            int best = 0;
+            double bestScore = double.MaxValue;
+            for (int i = 0; i < chosenDevices.Length; i++) {
+                double score = (double)kernelsRunning[i] / (chosenDevices[i].MaximumClockFrequency * chosenDevices[i].MaximumComputeUnits);
+                if (score < bestScore) {
+                    best = i;
+                    bestScore = score;
+                }
             }
 
-            return 0;
+            Log.Debug($"next OCL device: {best}");
+            return best;
         }
 
         public Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, bool final_hmac = true, int iters = 2048, int dklen = 64) {
@@ -293,7 +304,7 @@ namespace FixMyCrypto {
                 kernel.SetKernelArgument(0, inBuffer);
                 kernel.SetKernelArgument(1, saltBuffer);
                 kernel.SetKernelArgument(2, outBuffer);
-                int device = GetAvailableDevice();
+                int device = GetNextDevice();
                 using CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevices[device]);
                 Interlocked.Increment(ref kernelsRunning[device]);
                 commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
@@ -448,7 +459,7 @@ namespace FixMyCrypto {
                 kernel.SetKernelArgument(2, pathBuffer);
                 kernel.SetKernelArgument(3, modeBuffer);
                 kernel.SetKernelArgument(4, outBuffer);
-                int device = GetAvailableDevice();
+                int device = GetNextDevice();
                 using CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevices[device]);
                 Interlocked.Increment(ref kernelsRunning[device]);
                 commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
@@ -511,7 +522,7 @@ namespace FixMyCrypto {
                 kernel.SetKernelArgument(0, inBuffer);
                 kernel.SetKernelArgument(1, outBuffer);
                 kernel.SetKernelArgument(2, pathBuffer);
-                int device = GetAvailableDevice();
+                int device = GetNextDevice();
                 using CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevices[device]);
                 Interlocked.Increment(ref kernelsRunning[device]);
                 commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
