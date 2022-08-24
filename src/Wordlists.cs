@@ -83,7 +83,9 @@ namespace FixMyCrypto {
             int originalWordCount = OriginalWordlist.Count;
             int allWordCount = originalWordCount;
             List<string> invalidWords = new List<string>();
-            foreach (string word in phrase) {
+            foreach (string w in phrase) {
+                string word = w;
+                if (word.EndsWith("!")) word = word.Substring(0, word.Length - 1);
                 if (!OriginalWordlist.Contains(word) && !invalidWords.Contains(word)) {
                     invalidWords.Add(word);
                 }
@@ -131,7 +133,10 @@ namespace FixMyCrypto {
                 });
 
                 // Also need distances from invalid words to valid words
-                foreach (string word in phrase) {
+                foreach (string w in phrase) {
+                    string word = w;
+                    if (word.EndsWith("!")) word = word.Substring(0, word.Length - 1);
+                    
                     if (!Wordlist.ContainsKey(word)) {
                         short wordIndex = (short)Wordlist.Count;
                         Wordlist[word] = wordIndex;

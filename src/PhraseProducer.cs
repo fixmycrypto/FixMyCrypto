@@ -12,6 +12,7 @@ namespace FixMyCrypto {
         int internalThreads;
         long valid = 0, invalid = 0, dupes = 0, phraseTotal = 0, totalPhraseCount = 0;
         string[] phrase;
+        bool[] locked;
         private Checkpoint checkpoint = null;
 
         bool countOnly = false;
@@ -116,9 +117,12 @@ namespace FixMyCrypto {
         }
         private void SwapTwo(short[] phrase) {
             for (int i = 0; i < phrase.Length - 1; i++) {
+                if (locked[i]) continue;
             // Parallel.For(0, phrase.Length - 1, this.parallelOptions, i => {
 
                 for (int j = i + 1; j < phrase.Length; j++) {
+                    if (locked[j]) continue;
+
                     short[] p = phrase.Copy();
 
                     short temp = p[i];
@@ -132,13 +136,16 @@ namespace FixMyCrypto {
         }
         private void SwapThree(short[] phrase) {
             for (int i = 0; i < phrase.Length - 1; i++) {
+                if (locked[i]) continue;
             // Parallel.For(0, phrase.Length - 2, this.parallelOptions, i => {
                 for (int j = i + 1; j < phrase.Length - 1; j++) {
+                    if (locked[j]) continue;
                     
                     // Range range = GetRange(j + 1);
 
                     // for (int k = range.Start.Value; k < range.End.Value; k++) {
                     for (int k = j + 1; k < phrase.Length; k++) {
+                        if (locked[k]) continue;
                         short[] p = phrase.Copy();
 
                         //  Swap ijk - jki
@@ -166,14 +173,21 @@ namespace FixMyCrypto {
         }
         private void SwapFour(short[] phrase) {
             for (int i = 0; i < phrase.Length - 1; i++) {
+                if (locked[i]) continue;
+
             // Parallel.For(0, phrase.Length - 3, this.parallelOptions, i => {
                 for (int j = i + 1; j < phrase.Length - 2; j++) {
+                    if (locked[j]) continue;
+
                     for (int k = j + 1; k < phrase.Length - 1; k++) {
+                        if (locked[k]) continue;
 
                         // Range range = GetRange(k + 1);
 
                         // for (int l = range.Start.Value; l < range.End.Value; l++) {
                         for (int l = k + 1; l < phrase.Length; l++) {
+                            if (locked[l]) continue;
+
                             short[] p = phrase.Copy();
 
                             //  Swap ijkl - jkli
@@ -242,6 +256,7 @@ namespace FixMyCrypto {
              for (int i = 0; i < phrase.Length - 1; i++) {
             // Parallel.For(0, phrase.Length - 1, this.parallelOptions, i => {
                 if (Global.Done) return;
+                if (locked[i]) continue;
 
                 // if (i > 0) Log.Debug($"PP S2C1W ({swapMode}) progress: {(100*i/phrase.Length)}%");
                 
@@ -249,6 +264,7 @@ namespace FixMyCrypto {
 
                 // for (int j = range.Start.Value; j < range.End.Value; j++) {
                 for (int j = i + 1; j < phrase.Length; j++) {
+                    if (locked[j]) continue;
                     short[] swapped = phrase.Copy();
 
                     short temp = swapped[i];
@@ -262,6 +278,7 @@ namespace FixMyCrypto {
                     */
 
                     for (int k = 0; k < phrase.Length; k++) {
+                        if (locked[k]) continue;
                         IList<short> words = GetReplacementWords(swapped[k], swapMode);
 
                         foreach (short word in words) {
@@ -288,7 +305,8 @@ namespace FixMyCrypto {
             for (int i = start; i < end; i++) {
             // Parallel.For(start, end, this.parallelOptions, i => {
                 if (Global.Done) return;
-                if (skip != null && skip.Contains(i)) return;
+                if (skip != null && skip.Contains(i)) continue;
+                if (locked[i]) continue;
 
                 // if (i > start && skip == null) Log.Debug($"PP C{depth}W ({swapMode}) progress: {(100*(i-start)/(end-start))}%");
 
@@ -326,7 +344,8 @@ namespace FixMyCrypto {
             for (int i = start; i < end; i++) {
             // Parallel.For(start, end, this.parallelOptions, i => {
                 if (Global.Done) return;
-                if (skip != null && skip.Contains(i)) return;
+                if (skip != null && skip.Contains(i)) continue;
+                if (locked[i]) continue;
 
                 // if (i > start && skip == null) Log.Debug($"PP C{depth}W+S ({swapMode}) progress: {(100*(i-start)/(end-start))}%");
 
@@ -354,7 +373,9 @@ namespace FixMyCrypto {
                         //  plus 1 swap
 
                         for (int j = 0; j < cow.Length - 1; j++) {
+                            if (locked[j]) continue;
                             for (int k = j + 1; k < cow.Length; k++) {
+                                if (locked[k]) continue;
                                 short[] cowswap = cow.Copy();
 
                                 short temp = cowswap[j];
@@ -510,6 +531,7 @@ namespace FixMyCrypto {
 
             for (var i = start; i < phrase.Length; i++) {
                 if (Global.Done) return;
+                if (locked[i] || locked[start]) continue;
 
                 short[] swap = phrase.Copy();
 
@@ -678,25 +700,48 @@ namespace FixMyCrypto {
         public void ProduceWork() {
             Log.Debug("PP start");
 
-            int wrongWords = 0, missingWords = 0;
-            foreach (string word in this.phrase) {
+            locked = new bool[this.phrase.Length];
+            int wrongWords = 0, missingWords = 0, lockedWords = 0;
+            int ix = 0;
+            foreach (string w in this.phrase) {
+                string word = w;
+                if (word.EndsWith("!"))
+                {
+                    locked[ix] = true;
+                    lockedWords++;
+                    word = word.Substring(0, word.Length - 1);
+                }
+
                 if (word == "?") {
                     missingWords++;
                 }
                 else if (!Wordlists.OriginalWordlist.Contains(word)) {
                     wrongWords++;
                     Log.Debug($"invalid word {wrongWords}: {word}");
+
+                    if (locked[ix]) {
+                        Log.Warning($"WARNING! Word {word} locked but invalid! Check BIP39 wordlist");
+                    }
                 }
+
+                ix++;
             }
 
             if (wrongWords > 0 || missingWords > 0) Log.Info($"Phrase contains {missingWords} missing and {wrongWords} invalid/unknown words");
+            if (lockedWords > 0) Log.Info($"Phrase contained {lockedWords} locked words");
 
             Phrase p = new Phrase(this.phrase);
             short[] phrase = p.Indices;
 
             sw1.Restart();
 
-            if (missingWords > 0) {
+            if (lockedWords == phrase.Length)
+            {
+                //  All words locked, don't test other phrases
+
+                TestPhrase(phrase);
+            }
+            else if (missingWords > 0) {
                 Log.Info($"PP replace {missingWords} missing words (no swaps/changes)");
                 FixMissing(phrase.Slice(0, phrase.Length - missingWords), missingWords, missingWords, wrongWords, false, Settings.Difficulty);
 

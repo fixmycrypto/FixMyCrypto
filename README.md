@@ -133,6 +133,16 @@ Enter your recovery phrase ("seed phrase" or "mnemonic phrase") between the quot
 
     "phrase": "apple banana pear watermelon kiwi strawberry apple banana pear watermelon kiwi strawberry",
 
+### Locked Words
+
+If you are certain that some of the phrase words are correct (both the position and the spelling), but not others, you can put a exclamation point (`!`) after the word(s) you're certain are correct. These locked words will not be substituted or swapped, which will speed up the search.
+
+E.g. if you're 100% sure that the first six words are correct, but not certain about the latter six words:
+
+    "phrase": "apple! banana! pear! watermelon! kiwi! strawberry! apple banana pear watermelon kiwi strawberry",
+
+Note: If you lock a word that turns out to be incorrect, the recovery will fail. Only do this for words you're 100% certain are correct!
+
 ### Unknown / Invalid Words
 
 If you know the position of a word but you have no idea what that word is supposed to be, replace it with an asterisk (`*`). For example, if you're certain that you're missing the 2nd word:

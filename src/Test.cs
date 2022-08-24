@@ -379,6 +379,7 @@ namespace FixMyCrypto {
             //  test phrase validation (with unknown/missing/bad lengths/etc) - NOT checksums
             Phrase.Validate("siren bottom inform vehicle else donkey dirt task cook tide general when");
             Phrase.Validate("siren bottom inform vehicle * donkey task cook tide general when ?");
+            Phrase.Validate("fantasy! curious recycle slot tilt forward call jar fashion concert around symbol!");
             
             FailValidatePhrase("siren bottom inform vehicle else donkey dirt task cook tide general");
             FailValidatePhrase("siren bottom inform vehicle else donkey dirt task cook tide general when when");

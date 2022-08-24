@@ -20,7 +20,7 @@ namespace FixMyCrypto {
         }
         public Phrase(string[] phrase) {
             ix = new short[phrase.Length];
-            for (int i = 0; i < phrase.Length; i++) ix[i] = Wordlists.GetWordIndex(phrase[i]);
+            for (int i = 0; i < phrase.Length; i++) ix[i] = Wordlists.GetWordIndex(phrase[i].Replace("!", ""));
             (valid, hash) = VerifyChecksum(ix);
         }
         public Phrase(string phrase, long seq = -1) : this(phrase.Split(' ', StringSplitOptions.RemoveEmptyEntries)) { 
@@ -129,7 +129,9 @@ namespace FixMyCrypto {
             int invalid = 0;
 
             foreach (string word in split) {
-                if (!Wordlists.OriginalWordlist.Contains(word)) invalid++;
+                string w = word;
+                if (w.EndsWith("!")) w = w.Substring(0, w.Length - 1);
+                if (!Wordlists.OriginalWordlist.Contains(w)) invalid++;
             }
 
             if (invalid > 4) throw new Exception("Phrase has too many missing or non-BIP39 words");
