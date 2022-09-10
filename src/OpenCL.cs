@@ -63,9 +63,11 @@ namespace FixMyCrypto {
             this.kernelsRunning = new int[deviceIds.Length];
 
             logger = new(5 * 1000);
+#if DEBUG
             logger.Elapsed += (StringReader, args) => {
                 Log.Debug($"kernelsRunning={String.Join(',', kernelsRunning)}");
             };
+#endif
         }
 
         public string GetDeviceInfo() {

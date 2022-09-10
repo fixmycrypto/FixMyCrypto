@@ -8,7 +8,7 @@
     <AssemblyName>FixMyCrypto</AssemblyName>
     <NoWarn>NU1701</NoWarn>
     <!--<Nullable>enable</Nullable>-->
-    <AssemblyVersion>2.4.0.0</AssemblyVersion>
+    <AssemblyVersion>2.5.0.0</AssemblyVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);lib\**</DefaultItemExcludes>
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>

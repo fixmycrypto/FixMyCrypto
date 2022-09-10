@@ -8,7 +8,30 @@ namespace FixMyCrypto {
     class Settings {
 
         public static int[] Indices = { 0 }, Accounts = { 0 };
-        public static string Phrase { get { return result.phrase; } }
+        public static string[] Phrases { 
+
+            get {
+                if (result == null) {
+                    return null;
+                }
+                else if (result.phrase != null) 
+                {
+                    string[] phrases = null;
+
+                    try {
+                        phrases = result.phrase.ToObject<string[]>(); 
+                    }
+                    catch (Exception) { }
+
+                    if (phrases == null) 
+                        phrases = new string[] { result.phrase.Value };
+
+                    return phrases;
+                }
+                else 
+                    return null; 
+            } 
+        }
 
         public static string[] Passphrases { 
             

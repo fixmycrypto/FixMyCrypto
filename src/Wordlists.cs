@@ -63,7 +63,7 @@ namespace FixMyCrypto {
             return keys;
         }
 
-        public static void Initialize(string[] phrase = null) {
+        public static void Initialize(string[] phrases = null) {
 
             if (Wordlist == null) {
                 Wordlist = new Dictionary<string, short>();
@@ -76,14 +76,20 @@ namespace FixMyCrypto {
                 WordArray = OriginalWordlist.ToArray();
             }
 
-            if (phrase == null) return;
+            if (phrases == null) return;
+
+            List<string> phraseWords = new();
+            foreach (string p in phrases) {
+                string[] words = p.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                phraseWords.AddRange(words);
+            }            
 
             Log.Debug($"Generating word tables...");
 
             int originalWordCount = OriginalWordlist.Count;
             int allWordCount = originalWordCount;
             List<string> invalidWords = new List<string>();
-            foreach (string w in phrase) {
+            foreach (string w in phraseWords) {
                 string word = w;
                 if (word.EndsWith("!")) word = word.Substring(0, word.Length - 1);
                 if (!OriginalWordlist.Contains(word) && !invalidWords.Contains(word)) {
@@ -133,7 +139,7 @@ namespace FixMyCrypto {
                 });
 
                 // Also need distances from invalid words to valid words
-                foreach (string w in phrase) {
+                foreach (string w in phraseWords) {
                     string word = w;
                     if (word.EndsWith("!")) word = word.Substring(0, word.Length - 1);
                     
@@ -189,7 +195,7 @@ namespace FixMyCrypto {
                         words += " " + WordArray[w2] + $"({WordDistances[i][w2]:F2})";
                         total++;
                     }
-                    if (phrase.Contains(WordArray[i])) Log.Debug($"{WordArray[i]}:{words}");
+                    if (phraseWords.Contains(WordArray[i])) Log.Debug($"{WordArray[i]}:{words}");
                 }
                 Log.Debug($"Average # of similar words: {(double)total/WordsByMaxDistance.Length:F1}");
                 

@@ -94,7 +94,7 @@ namespace FixMyCrypto {
 
             //  Validate phrase
             try {
-                Phrase.Validate(Settings.Phrase);
+                foreach (string phrase in Settings.Phrases) Phrase.Validate(phrase);
             }
             catch (Exception e) {
                 Log.Error($"Invalid phrase: {e}");
@@ -102,8 +102,7 @@ namespace FixMyCrypto {
             }
 
             //  Initialize word lists
-            string[] phraseArray = Settings.Phrase.Split(" ", StringSplitOptions.RemoveEmptyEntries);
-            Wordlists.Initialize(phraseArray);
+            Wordlists.Initialize(Settings.Phrases);
 
             Checkpoint checkpoint = new Checkpoint();
             bool resumeFromCheckpoint = false;
@@ -136,7 +135,11 @@ namespace FixMyCrypto {
 
             Log.Info($"thread count {Settings.Threads} PP={phraseProducerCount} P2A={phraseToAddressCount} LA={addressLookupCount}");
             Log.All($"Coin type: {Settings.CoinType}");
-            Log.All($"Phrase to test: \"{Settings.Phrase}\"");
+            int maxPhraseLength = 12;
+            foreach (string phrase in Settings.Phrases) {
+                Log.All($"Phrase to test: \"{phrase}\"");
+                maxPhraseLength = Math.Max(maxPhraseLength, phrase.Split(' ').Length);
+            }
 
             int maxPassphraseLength = 0;
             long passphraseCount = 0;
@@ -194,7 +197,7 @@ namespace FixMyCrypto {
                     OpenCL.LogOpenCLInfo();
                     ocl = new OpenCL(Settings.OpenCLPlatform, Settings.OpenCLDevices, maxPassphraseLength);
                     Log.Info(ocl.GetDeviceInfo());
-                    ocl.Init(p2at.GetKeyLength(), Settings.Phrase.Split(' ').Length);
+                    ocl.Init(p2at.GetKeyLength(), maxPhraseLength);
                     // ocl.Init_Bip32Derive(p2at.GetKeyLength(), Settings.Phrase.Split(' ').Length);
                 }
                 catch (Exception e) {
@@ -253,7 +256,7 @@ namespace FixMyCrypto {
             PhraseProducer[] phrasers = new PhraseProducer[phraseProducerCount];
             List<Thread> phraseThreads = new List<Thread>();
             for (int i = 0; i < phraseProducerCount; i++) {
-                phrasers[i] = new PhraseProducer(phraseQueue, phraseArray);
+                phrasers[i] = new PhraseProducer(phraseQueue, Settings.Phrases);
 
                 if (i == 0) {
                     checkpoint.SetPhraseProducer(phrasers[i]);

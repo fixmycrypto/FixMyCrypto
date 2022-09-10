@@ -3,7 +3,6 @@
   "coin": "CRO",
   "address": "cro1gtf3amgr9sek3a92ufgmu43lgqvfn7ajrjpedh",
   "path": "m/44'/394'/0'/0/0",
-  "wrongPhrase": "quantum! spice! equal! rapid! soon! pair! express suit nuclear turkey fence parade man crucial broccoli illegal uniform prose struggle! lizard! symptom! pulp! area! canvas!",
-  "correctedPhrase": "quantum spice equal rapid soon pair express suit turkey nuclear fence parade man crucial broccoli illegal uniform price struggle lizard symptom pulp area canvas",
+  "phrase": "quantum spice equal rapid soon pair express suit turkey nuclear fence parade man crucial broccoli illegal uniform price struggle lizard symptom pulp area canvas",
   "passphrase": ""
 }

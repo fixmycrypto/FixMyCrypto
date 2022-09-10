@@ -3,7 +3,6 @@
   "coin": "DOTLedger",
   "address": "127G5StyVeXjMsuYR9smKAVZQDPtnBineZ49HyajN5XW2oHD",
   "path": "m/44'/354'/0'/0'/0'",
-  "wrongPhrase": "dutch stuff alien rail dizzy mango uphold safe toddler infant fire viable off home anger popular police harsh zoo shop enroll garbage carry regular",
-  "correctedPhrase": "dutch stuff alien rail dizzy mango uphold safe toddler infant fire viable off home anger popular police harsh zoo shop enroll garbage carry regular",
+  "phrase": "dutch stuff alien rail dizzy mango uphold safe toddler infant fire viable off home anger popular police harsh zoo shop enroll garbage carry regular",
   "passphrase": "Foo92?"
 }

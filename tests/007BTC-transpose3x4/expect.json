@@ -3,7 +3,6 @@
   "coin": "BTC",
   "address": "12k6tq52fh2r8vkBZcCmPyi2gnH1NqDTdT",
   "path": "m/44'/0'/0'/0/4",
-  "wrongPhrase": "siren else cook bottom donkey tide inform dirt general vehicle task when",
-  "correctedPhrase": "siren bottom inform vehicle else donkey dirt task cook tide general when",
+  "phrase": "siren bottom inform vehicle else donkey dirt task cook tide general when",
   "passphrase": ""
 }

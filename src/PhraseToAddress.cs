@@ -499,7 +499,7 @@ namespace FixMyCrypto {
         private long ppLogTotal = 0, p2aLogTotal = 0;
 
         private int GetPhraseMultiplier() {
-            return 1 << (Settings.Phrase.Split(' ').Length / 3);
+            return 1 << (Settings.Phrases[0].Split(' ').Length / 3);
         }
         public void PassphraseLog() {
             if (stopWatch.ElapsedMilliseconds == 0) return;

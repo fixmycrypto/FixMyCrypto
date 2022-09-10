@@ -270,8 +270,7 @@ namespace FixMyCrypto
                 coin = $"{coin}",
                 address = addr.address,
                 path = addr.path,
-                wrongPhrase = Settings.Phrase,
-                correctedPhrase = addr.phrase.ToPhrase(),
+                phrase = addr.phrase.ToPhrase(),
                 passphrase = addr.passphrase
             };
             string result = JsonConvert.SerializeObject(resultData, Formatting.Indented);

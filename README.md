@@ -161,6 +161,18 @@ If you are missing some words and don't know where they go or which position(s) 
 
 A single missing word (one `?`) can be solved quickly, two missing words will take a few hours, but 3 or more missing words can take a VERY long time to solve, since the program must try every possible word in every possible position.
 
+### Multiple Phrases
+
+If you have multiple unrelated recovery phrases and you're not sure which one is associated with your address, you can specify multiple phrases as an array like this:
+
+    "phrase": [
+        "first phrase to test",
+        "second phrase to test",
+        "third phrase to test"
+    ],
+
+Only do this if you're really not sure which phrase is associated with your address, and try to put the most likely phrase first and the least likely phrase last. All likely permutations of the first phrase will be tested first.
+
 ---
 
 ## Passphrase

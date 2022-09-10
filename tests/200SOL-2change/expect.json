@@ -3,7 +3,6 @@
   "coin": "SOL",
   "address": "5LxksmHvtSsBk9pQZ25eqc5Q2L1sq5v4UUoey4zBaBhs",
   "path": "m/44'/501'/1'",
-  "wrongPhrase": "recall lake example diamond region account series museum cabin suggest train badge",
-  "correctedPhrase": "recall lake example diamond region amount cereal museum cabin suggest train badge",
+  "phrase": "recall lake example diamond region amount cereal museum cabin suggest train badge",
   "passphrase": ""
 }

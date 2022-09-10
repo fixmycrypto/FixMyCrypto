@@ -11,7 +11,7 @@ namespace FixMyCrypto {
         public BlockingCollection<Work> queue;
         int internalThreads;
         long valid = 0, invalid = 0, dupes = 0, phraseTotal = 0, totalPhraseCount = 0;
-        string[] phrase;
+        string[][] phrases;
         bool[] locked;
         private Checkpoint checkpoint = null;
 
@@ -25,9 +25,12 @@ namespace FixMyCrypto {
         // private ParallelOptions parallelOptions;
         Stopwatch queueWaitTime = new Stopwatch();
 
-        public PhraseProducer(BlockingCollection<Work> queue, string[] phrase) {
+        public PhraseProducer(BlockingCollection<Work> queue, string[] phrases) {
             this.queue = queue;
-            this.phrase = phrase;
+            this.phrases = new string[phrases.Length][];
+            for (int i = 0; i < phrases.Length; i++) {
+                this.phrases[i] = phrases[i].Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            }
             this.internalThreads = Math.Max(Settings.Threads / 4, 1);
         }
         
@@ -698,13 +701,11 @@ namespace FixMyCrypto {
     
         Stopwatch sw1 = new Stopwatch();
 
-        public void ProduceWork() {
-            Log.Debug("PP start");
-
-            locked = new bool[this.phrase.Length];
+        public void ProduceWork(string[] p) {
+            locked = new bool[p.Length];
             int wrongWords = 0, missingWords = 0, lockedWords = 0;
             int ix = 0;
-            foreach (string w in this.phrase) {
+            foreach (string w in p) {
                 string word = w;
                 if (word.EndsWith("!"))
                 {
@@ -731,8 +732,8 @@ namespace FixMyCrypto {
             if (wrongWords > 0 || missingWords > 0) Log.Info($"Phrase contains {missingWords} missing and {wrongWords} invalid/unknown words");
             if (lockedWords > 0) Log.Info($"Phrase contained {lockedWords} locked words");
 
-            Phrase p = new Phrase(this.phrase);
-            short[] phrase = p.Indices;
+            Phrase ph = new Phrase(p);
+            short[] phrase = ph.Indices;
 
             sw1.Restart();
 
@@ -780,6 +781,16 @@ namespace FixMyCrypto {
                     Log.Info($"PP replace {wrongWords} invalid words with any words + swaps/changes");
                     FixInvalid(phrase, wrongWords, wrongWords, true, SwapMode.AnyLetter, Settings.Difficulty + 1);
                 }
+            }
+        }
+
+        public void ProduceWork() {
+
+            Log.Debug("PP start");
+
+            //  must be deterministic order and not thread safe
+            foreach (string[] p in this.phrases) {
+                ProduceWork(p);
             }
 
             sw1.Stop();
