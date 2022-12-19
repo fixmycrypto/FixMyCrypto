@@ -6,7 +6,7 @@ using CardanoSharp.Wallet.Extensions.Models;
 namespace FixMyCrypto {
     class PhraseToAddressAlgorand : PhraseToAddress {
 
-        public PhraseToAddressAlgorand(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses) {
+        public PhraseToAddressAlgorand(BlockingCollection<Work> phrases) : base(phrases) {
         }
 
         public override CoinType GetCoinType() { return CoinType.ALGO; }

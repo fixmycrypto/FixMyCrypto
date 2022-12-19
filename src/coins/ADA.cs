@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 namespace FixMyCrypto {
     class PhraseToAddressCardano : PhraseToAddress {
         protected AddressService addressService;
-        public PhraseToAddressCardano(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses) {
+        public PhraseToAddressCardano(BlockingCollection<Work> phrases) : base(phrases) {
             this.addressService = new AddressService();
         }
         public override CoinType GetCoinType() { return CoinType.ADA; }
@@ -136,7 +136,7 @@ namespace FixMyCrypto {
     }
 
     class PhraseToAddressCardanoLedger : PhraseToAddressCardano {
-        public PhraseToAddressCardanoLedger(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses) {
+        public PhraseToAddressCardanoLedger(BlockingCollection<Work> phrases) : base(phrases) {
         }
         public override CoinType GetCoinType() { return CoinType.ADALedger; }
         public override Cryptography.Key DeriveRootKey(Phrase phrase, string passphrase) {
@@ -168,7 +168,7 @@ namespace FixMyCrypto {
         }
     }
     class PhraseToAddressCardanoTrezor : PhraseToAddressCardano {
-        public PhraseToAddressCardanoTrezor(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses) {
+        public PhraseToAddressCardanoTrezor(BlockingCollection<Work> phrases) : base(phrases) {
         }
 
         public override CoinType GetCoinType() { return CoinType.ADATrezor; }

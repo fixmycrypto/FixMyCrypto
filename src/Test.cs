@@ -9,39 +9,8 @@ using Newtonsoft.Json;
 namespace FixMyCrypto {
     class Test {
 
-        public static void TestKnownPhrase(string phrase, string passphrase, CoinType coin, string path, int expectTx, double expectCoins) {
-            if (expectTx == 0 && expectCoins == 0) return;
-            Log.Info($"TestKnownPhrase {coin} phrase: {phrase}");
-            try {
-                PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null);
-                List<Address> addresses = p2a.GetAddressList(phrase, passphrase, 0, 0, path);
-                LookupAddress la = LookupAddress.Create(coin, null, 0, 0);
-                foreach (Address address in addresses) {
-                    LookupAddress.LookupResult result = la.GetContents(address.address);
-                    Log.Info($"{coin} known address {address}: {result}");
-                    if (result.coins < expectCoins || result.txCount < expectTx) {
-                        Log.Error($"results did not match expected: txCount: {expectTx} coins: {expectCoins}");
-                        Environment.Exit(1);
-                    }
-
-                    if (result.txCount > 0) {
-                        List<string> txs = Task<List<string>>.Run(async () => await la.GetTransactions(address.address)).Result;
-                        foreach (string tx in txs) {
-                            Log.Debug($"tx: {tx}");
-                        }
-                    }
-
-                    Log.Debug();
-                }
-            }
-            catch (Exception e) {
-                Log.Error(e.ToString());
-                Environment.Exit(1);
-            }
-        }
-
         public static List<Address> TestDerivation(string phrase, string passphrase, CoinType coin, string path, OpenCL ocl) {
-            PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null);
+            PhraseToAddress p2a = PhraseToAddress.Create(coin, null);
             p2a.SetOpenCL(ocl);
 
             int account, index;
@@ -90,7 +59,7 @@ namespace FixMyCrypto {
             throw new Exception($"validation should have failed: {phrase}");
         }
         public static void TestCardanoKeyVector(string name, string phrase, string passphrase, CoinType coin, string expectSK, string expectCC) {
-            PhraseToAddress p = PhraseToAddress.Create(coin, null, null);
+            PhraseToAddress p = PhraseToAddress.Create(coin, null);
             Phrase ph = new Phrase(phrase);
             Cryptography.Key sk = p.DeriveRootKey(ph, passphrase);
             string gotSK = sk.data.ToHexString();
@@ -494,32 +463,6 @@ namespace FixMyCrypto {
                 TestAddressDerivation(secrets, true);
             }
 
-            string[] coins = opts.Split(",");
-            int numCoins = coins.Length;
-
-            //  Test known phrases - requires blockchain API
-            foreach (dynamic coin in secrets) {
-                
-                CoinType ct;
-                try {
-                    string name = (string)coin.Name;
-                    if (name.Contains(",")) name = name.Substring(0, name.IndexOf(","));
-                    ct = Settings.GetCoinType(name);
-                    if (String.IsNullOrEmpty(Settings.GetApiPath(ct))) continue;
-                }
-                catch (Exception) {
-                    continue;
-                }
-
-                dynamic secret = coin.Value;
-
-                //  Validate phrase
-                Phrase.Validate(secret.phrase.Value);
-
-                if (secret.txCount == null || secret.coins == null) continue;
-
-                TestKnownPhrase(secret.phrase.Value, secret.passphrase.Value, ct, secret.path != null ? secret.path.Value : null, (int)secret.txCount.Value, (double)secret.coins.Value);
-            }
         }
     }
 }

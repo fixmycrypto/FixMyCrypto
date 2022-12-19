@@ -608,7 +608,7 @@ namespace FixMyCrypto {
             for (int i = 0; i < count; i++) {
                 passphrases[i] = $"passphrase{i}";
             }
-            PhraseToAddress p2a = PhraseToAddress.Create(CoinType.BTC, null, null);
+            PhraseToAddress p2a = PhraseToAddress.Create(CoinType.BTC, null);
             Stopwatch sw = new Stopwatch();
 
             p2a.SetOpenCL(null);

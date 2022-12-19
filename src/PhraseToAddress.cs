@@ -7,60 +7,60 @@ using System.Threading.Tasks;
 
 namespace FixMyCrypto {
     abstract class PhraseToAddress {
-        protected BlockingCollection<Work> phraseQueue, addressQueue;
+        protected BlockingCollection<Work> phraseQueue;
 
-        public static PhraseToAddress Create(CoinType coin, BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) {
+        public static PhraseToAddress Create(CoinType coin, BlockingCollection<Work> phrases) {
             switch (coin) {
                 case CoinType.ADA:
 
-                return new PhraseToAddressCardano(phrases, addresses);
+                return new PhraseToAddressCardano(phrases);
 
                 case CoinType.ADALedger:
 
-                return new PhraseToAddressCardanoLedger(phrases, addresses);
+                return new PhraseToAddressCardanoLedger(phrases);
 
                 case CoinType.ADATrezor:
 
-                return new PhraseToAddressCardanoTrezor(phrases, addresses);
+                return new PhraseToAddressCardanoTrezor(phrases);
 
                 case CoinType.ETH:
 
-                return new PhraseToAddressEth(phrases, addresses);
+                return new PhraseToAddressEth(phrases);
 
                 case CoinType.BTC:
                 case CoinType.DOGE:
                 case CoinType.LTC:
                 case CoinType.BCH:
 
-                return new PhraseToAddressBitAltcoin(phrases, addresses, coin);
+                return new PhraseToAddressBitAltcoin(phrases, coin);
 
                 case CoinType.SOL:
 
-                return new PhraseToAddressSolana(phrases, addresses);
+                return new PhraseToAddressSolana(phrases);
 
                 case CoinType.ALGO:
 
-                return new PhraseToAddressAlgorand(phrases, addresses);
+                return new PhraseToAddressAlgorand(phrases);
 
                 case CoinType.DOT:
 
-                return new PhraseToAddressPolkadot(phrases, addresses);
+                return new PhraseToAddressPolkadot(phrases);
 
                 case CoinType.DOTLedger:
 
-                return new PhraseToAddressPolkadotLedger(phrases, addresses);
+                return new PhraseToAddressPolkadotLedger(phrases);
 
                 case CoinType.XRP:
 
-                return new PhraseToAddressXrp(phrases, addresses);
+                return new PhraseToAddressXrp(phrases);
 
                 case CoinType.ATOM:
 
-                return new PhraseToAddressAtom(phrases, addresses);
+                return new PhraseToAddressAtom(phrases);
 
                 case CoinType.CRO:
 
-                return new PhraseToAddressCRO(phrases, addresses);
+                return new PhraseToAddressCRO(phrases);
 
                 default:
 
@@ -146,9 +146,8 @@ namespace FixMyCrypto {
         private ConcurrentDictionary<long, Batch> batchFinished = new();
         private long nextBatchId = 0;
         private long lastBatchFinished = 0;
-        protected PhraseToAddress(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) {
+        protected PhraseToAddress(BlockingCollection<Work> phrases) {
             this.phraseQueue = phrases;
-            this.addressQueue = addresses;
         }
         public void SetOpenCL(OpenCL ocl) {
             this.ocl = ocl;
@@ -224,7 +223,7 @@ namespace FixMyCrypto {
         public abstract void ValidateAddress(string address);
 
         public static void ValidateAddress(CoinType coin, string address) {
-            PhraseToAddress p2a = PhraseToAddress.Create(coin, null, null);
+            PhraseToAddress p2a = PhraseToAddress.Create(coin, null);
             p2a.ValidateAddress(address);
         }
 
@@ -489,7 +488,6 @@ namespace FixMyCrypto {
         public abstract CoinType GetCoinType();
         public void Finish() {
             phraseQueue.CompleteAdding();
-            addressQueue.CompleteAdding();
             batchQueue.CompleteAdding();
             lock (mutex) {
                 if (count > 0) Log.Info("P2A done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, keys/s: {1000*count/stopWatch.ElapsedMilliseconds}, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
@@ -673,37 +671,17 @@ namespace FixMyCrypto {
         }
 
         public void Produce(List<Address> addresses) {
-            if (Settings.KnownAddresses != null && Settings.KnownAddresses.Length > 0) {
-                //  See if we generated the known address
-                foreach (Address address in addresses) {
-                    foreach (string knownAddress in Settings.KnownAddresses) {
-                        if (address.address.Equals(knownAddress, StringComparison.OrdinalIgnoreCase)) {
-                            //  Found known address
-                            Finish();
+            //  See if we generated the known address
+            foreach (Address address in addresses) {
+                foreach (string knownAddress in Settings.KnownAddresses) {
+                    if (address.address.Equals(knownAddress, StringComparison.OrdinalIgnoreCase)) {
+                        //  Found known address
+                        Finish();
 
-                            FoundResult.DoFoundResult(this.GetCoinType(), address);
-                        }
+                        FoundResult.DoFoundResult(this.GetCoinType(), address);
                     }
                 }
             }
-            else {
-                //  Need to search blockchain for address
-
-                Work w2 = new Work(null, addresses);
-
-                //  Enqueue address
-
-                queueWaitTime.Start();
-                try {
-                    addressQueue.Add(w2);
-                }
-                catch (InvalidOperationException) {
-                    return;
-                }
-                finally {
-                    queueWaitTime.Stop();
-                }
-            }                    
         }
     }
 }

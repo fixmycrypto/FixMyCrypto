@@ -62,23 +62,7 @@ namespace FixMyCrypto {
 
         public static CoinType CoinType { get { return GetCoinType(result.coin.Value); } }
 
-        public static string AdaApi {get { return result.adaApi; } }
-        
-        public static AdaApiType AdaApiType { get { return (AdaApiType)Enum.Parse(typeof(AdaApiType), result.adaApiType.Value, true); } }
-
-        public static string EthApi {get { return result.ethApi; } }
-
-        public static EthApiType EthApiType { get { return (EthApiType)Enum.Parse(typeof(EthApiType), result.ethApiType.Value, true); } }
-
-        public static string BtcApi {get { return result.btcApi; } }
-
-        public static BtcApiType BtcApiType { get { return (BtcApiType)Enum.Parse(typeof(BtcApiType), result.btcApiType.Value, true); } }
-
         public static string[] Paths {get { if (result != null && result.paths == null) return null; return result.paths.ToObject<string[]>(); } }
-
-        public static string AltcoinApi {get { return result.altcoinApi; } }
-
-        public static AltcoinApiType AltcoinApiType { get { return (AltcoinApiType)Enum.Parse(typeof(AltcoinApiType), result.altcoinApiType.Value, true); } }
 
         public static int Threads {get { if (result != null && result.threads != null) return (int)result.threads.Value; else return Environment.ProcessorCount; } }
 
@@ -99,38 +83,6 @@ namespace FixMyCrypto {
 
         private static bool ignoreResults = false;
         public static bool IgnoreResults {get { return ignoreResults; } }
-
-        public static string GetApiPath(CoinType coin) {
-            switch (coin) {
-                case CoinType.ADA:
-                case CoinType.ADALedger:
-                case CoinType.ADATrezor:
-                return Settings.AdaApi;
-
-                case CoinType.BTC:
-                return Settings.BtcApi;
-
-                case CoinType.ETH:
-                return Settings.EthApi;
-
-                case CoinType.DOGE:
-                case CoinType.LTC:
-                case CoinType.BCH:
-                case CoinType.XRP:
-                return Settings.AltcoinApi;
-
-                case CoinType.SOL:
-                case CoinType.ALGO:
-                case CoinType.DOT:
-                case CoinType.DOTLedger:
-                case CoinType.ATOM:
-                case CoinType.CRO:
-                return null;
-
-                default:
-                throw new NotSupportedException();
-            }
-        }
 
         private static dynamic result;
 

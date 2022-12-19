@@ -118,22 +118,11 @@ namespace FixMyCrypto {
             }
 
             BlockingCollection<Work> phraseQueue = new BlockingCollection<Work>(Settings.Threads);
-            BlockingCollection<Work> addressQueue = new BlockingCollection<Work>(Settings.Threads);
 
             int phraseProducerCount = 1,
-                phraseToAddressCount = 1,
-                addressLookupCount = Math.Max(Settings.Threads - 2, 1);
-
-            string api = Settings.GetApiPath(Settings.CoinType);
-            if (!String.IsNullOrEmpty(api)) {
-                Log.All($"API Server: {api}");
-            }
-            else {
                 phraseToAddressCount = 1;
-                addressLookupCount = 0;
-            }
 
-            Log.Info($"thread count {Settings.Threads} PP={phraseProducerCount} P2A={phraseToAddressCount} LA={addressLookupCount}");
+            Log.Info($"thread count {Settings.Threads} PP={phraseProducerCount} P2A={phraseToAddressCount}");
             Log.All($"Coin type: {Settings.CoinType}");
             int maxPhraseLength = 12;
             foreach (string phrase in Settings.Phrases) {
@@ -178,7 +167,7 @@ namespace FixMyCrypto {
             Log.All($"Indices: {Settings.GetRangeString(Settings.Indices)}");
 
             //  Log the path tree
-            PhraseToAddress p2at = PhraseToAddress.Create(Settings.CoinType, null, null);
+            PhraseToAddress p2at = PhraseToAddress.Create(Settings.CoinType, null);
             PathTree tree = p2at.CreateTree(Settings.Paths, Settings.Accounts, Settings.Indices);
             Log.All($"Derivation path tree:\n{tree.ToString()}");
 
@@ -212,21 +201,10 @@ namespace FixMyCrypto {
             // };
             // timer.Start();
 
-            LookupAddress[] la = new LookupAddress[addressLookupCount];
-            List<Thread> laThreads = new List<Thread>();
-            for (int i = 0; i < addressLookupCount; i++) {
-                la[i] = LookupAddress.Create(Settings.CoinType, addressQueue, i, addressLookupCount);
-
-                Thread thread = new Thread (la[i].Consume);
-                thread.Name = "LA" + i;
-                laThreads.Add(thread);
-                thread.Start(); 
-            }
-
             PhraseToAddress[] p2a = new PhraseToAddress[phraseToAddressCount];
             List<Thread> p2aThreads = new List<Thread>();
             for (int i = 0; i < phraseToAddressCount; i++) {
-                p2a[i] = PhraseToAddress.Create(Settings.CoinType, phraseQueue, addressQueue);
+                p2a[i] = PhraseToAddress.Create(Settings.CoinType, phraseQueue);
 
                 if (i == 0) checkpoint.SetPhraseToAddress(p2a[i]);
 
@@ -293,10 +271,6 @@ namespace FixMyCrypto {
                 p2aThreads[i].Join();
             }
  
-            for (int i = 0; i < addressLookupCount; i++) {
-                laThreads[i].Join();
-            }
-
             checkpoint.Stop();
             // timer.Stop();
             stopWatch.Stop();

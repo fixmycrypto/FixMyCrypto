@@ -9,7 +9,7 @@ namespace FixMyCrypto {
     class PhraseToAddressBitAltcoin : PhraseToAddress {
         private Network network;
         private CoinType coinType;
-        public PhraseToAddressBitAltcoin(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses, CoinType coin) : base(phrases, addresses) {
+        public PhraseToAddressBitAltcoin(BlockingCollection<Work> phrases, CoinType coin) : base(phrases) {
             this.coinType = coin;
 
             switch (this.coinType) {

@@ -35,7 +35,6 @@
 * Search a specified range of accounts and indices
 * Highly multi-threaded, efficient key reuse when searching multiple paths/accounts/indices
 * Checkpoints to resume progress if interrupted
-* Blockchain search mode (requires local node & indexer)
 
 # Support
 
@@ -347,9 +346,9 @@ This will match typos of any of those passphrases, e.g.:
 
 ## Known Addresses
 
-### Strongly Recommended
+### Required
 
-Provide 1 or more addresses that you are certain belong to this wallet. Ideally, you should put the first address that was created by the wallet (account 0, index 0). If you aren't sure which address is address 0, provide as many addresses as you can. Adding more addresses here doesn't slow the search down, in fact it is more likely to speed things up. Check your transaction history with exchanges, wallets, e-mail receipts, etc. to find the receive address(es) you used with this wallet. If you don't know ANY of your addresses, please see below for further instructions on using blockchain search mode.
+Provide 1 or more addresses that you are certain belong to this wallet. Ideally, you should put the first address that was created by the wallet (account 0, index 0). If you aren't sure which address is address 0, provide as many addresses as you can. Adding more addresses here doesn't slow the search down, in fact it is more likely to speed things up. Check your transaction history with exchanges, wallets, e-mail receipts, etc. to find the receive address(es) you used with this wallet. 
 
 In the case of Ethereum, only one address (index 0) is typically used because the same address is used for every transaction on the same account.
 
@@ -499,40 +498,9 @@ Other address formats (e.g. secp256k signatures) or custom derivation paths are 
 
 * `noETA` (default = false) When set to true, disables ETA calculation. If you have a very difficult phrase or passphrase to brute force, just calculating the ETA can take a long time. Setting `noETA` to true will skip this step, but you won't see a ETA on the progress meter.
 
-# Blockchain Search Mode
-
-### Advanced users only
-
-Blockchain search mode can be used if you have a partially valid recovery phrase but don't know any of the addresses associated with this phrase. For example, if your computer was lost or stolen and you don't have any transaction logs to refer to.
-
-## Blockchain search requirements
-
-* Locally running up-to-date node with a fully complete initial block download
-    * This allows the search to be performed offline
-    * Ideally you don't want to use an online indexer API since they require internet access and limit or throttle requests unless you pay for API access
-* Supported indexers:
-    * BTC: Mempool + Electrs (in theory bitcore should work, but it's too slow to index BTC)
-    * BCH, DOGE, LTC, other BTC-alts: bitcore
-    * ETH: geth (serves as both the node and indexer)
-    * ADA: cardano-graphql (docker-compose runs both the node and the indexer)
-    * SOL/ALGO/DOT/XRP: (not yet supported)
-* Refer to node/indexer documentation for setting up the node
-* Allow IBD and index to complete, then take system offline before entering recovery phrase & starting the search.
-
-To use blockchain search mode, leave the knownAddresses field blank. You must specify the API path in the settings.json file:
-
-    "adaApi": "http://localhost:3100", "adaApiType": "graphql",
-
-    "btcApi": "http://localhost:8081", "btcApiType": "mempool",
-
-    "ethApi": "http://localhost:8545", "ethApiType": "gethrpc",
-
-    "altcoinApi": "http://localhost:3000", "altcoinApiType": "bitcore",
-
 # Current Limitations
 
 * Only English BIP39 wordlist and QWERTY keyboard layouts are currently implemented
 * BCH only supports legacy (1...) style addresses
 * SOL deprecated derivation path `m/501'/{account}'/0/{index}` not supported
-* SOL/ALGO/DOT/XRP/ATOM/CRO blockchain search not implemented
 

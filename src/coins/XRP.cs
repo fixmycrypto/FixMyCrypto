@@ -11,7 +11,7 @@ namespace FixMyCrypto {
         static string base58orig = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
         static string base58xrp =  "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
-        public PhraseToAddressXrp(BlockingCollection<Work> phrases, BlockingCollection<Work> addresses) : base(phrases, addresses, CoinType.XRP) {
+        public PhraseToAddressXrp(BlockingCollection<Work> phrases) : base(phrases, CoinType.XRP) {
         }
         public override CoinType GetCoinType() { return CoinType.XRP; }
         public override string[] GetDefaultPaths(string[] knownAddresses) {

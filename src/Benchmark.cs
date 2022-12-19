@@ -33,7 +33,7 @@ namespace FixMyCrypto {
             int[] indices = { 0 };
             string[] passphrases = { "" };
             Parallel.For(0, 100, i => {
-                PhraseToAddress p2a = PhraseToAddress.Create(ct, null, null);
+                PhraseToAddress p2a = PhraseToAddress.Create(ct, null);
                 PathTree tree = p2a.CreateTree(paths, accounts, indices);
                 Phrase phrase = new Phrase(12);
                 p2a.GetAddressesBatchPassphrases(phrase, passphrases, tree, null);
