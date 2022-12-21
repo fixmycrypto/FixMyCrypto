@@ -43,7 +43,7 @@ namespace FixMyCrypto {
         public void SetCheckpoint(Checkpoint c) {
             this.checkpoint = c;
         }
-        private static ConcurrentDictionary<Phrase, byte> testedPhrases = new();
+        private static HashSet<Phrase> testedPhrases = new();
 
         private void TestPhrase(short[] phraseArray) {
             if (countOnly) {
@@ -80,17 +80,17 @@ namespace FixMyCrypto {
                 //  don't retest valid phrases
                 Phrase p = new Phrase(phraseArray, hash, phraseTotal);
 
-                if (testedPhrases.ContainsKey(p)) {
+                if (testedPhrases.Contains(p)) {
                     dupes++;
                     return;
                 }
 
                 try {
-                    testedPhrases[p] = 0;
+                    testedPhrases.Add(p);
                 }
                 catch (Exception) {
                     testedPhrases.Clear();
-                    testedPhrases[p] = 0;
+                    testedPhrases.Add(p);
                 }
 
                 valid++;

@@ -122,7 +122,7 @@ namespace FixMyCrypto {
             int phraseProducerCount = 1,
                 phraseToAddressCount = 1;
 
-            Log.Info($"thread count {Settings.Threads} PP={phraseProducerCount} P2A={phraseToAddressCount}");
+            Log.Info($"thread count {Settings.Threads}");
             Log.All($"Coin type: {Settings.CoinType}");
             int maxPhraseLength = 12;
             foreach (string phrase in Settings.Phrases) {
