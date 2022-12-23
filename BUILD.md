@@ -1,6 +1,6 @@
 # Prerequisites
 
-[.NET (dotnet) 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0)
+[.NET (dotnet) 7.0 SDK](https://dotnet.microsoft.com/download/dotnet/7.0)
 
 # Build & Run from command line:
 
@@ -29,5 +29,4 @@ Debug Run configuration in VS Code.
 
 * Unit tests: run Test configuration in VS Code (`FixMyCrypto -t`)
 * Unit tests require phrases and addresses specified in `secrets.json` (see example in /examples)
-    * Blockchain search tests require some coins to be deposited in those addresses
 * Release tests: Run `./tests.sh`
