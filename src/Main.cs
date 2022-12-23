@@ -1,11 +1,9 @@
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 
 
 namespace FixMyCrypto {
@@ -24,6 +22,7 @@ namespace FixMyCrypto {
             Environment.Exit(code);
         }
         static void Main(string[] args) {
+            Global.sw.Start();
             Log.All(Settings.GetVersion());
 
             bool test = args.Length > 0 && args[0] == "-t";

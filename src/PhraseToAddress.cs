@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace FixMyCrypto {
     abstract class PhraseToAddress {
@@ -141,7 +142,8 @@ namespace FixMyCrypto {
             }
 
         }
-        private BlockingCollection<Batch> batchQueue = new BlockingCollection<Batch>(Settings.Threads);
+        private BlockingCollection<Batch> batchKeysQueue = new BlockingCollection<Batch>(Settings.Threads);
+        private BlockingCollection<Batch> batchAddressesQueue = new BlockingCollection<Batch>(Settings.Threads);
 
         private ConcurrentDictionary<long, Batch> batchFinished = new();
         private long nextBatchId = 0;
@@ -171,33 +173,39 @@ namespace FixMyCrypto {
         public virtual Cryptography.Key[] DeriveRootKey_BatchPhrases(Phrase[] phrases, string passphrase)
         {
             Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
-            // Parallel.For(0, phrases.Length, i => {
-            for (int i = 0; i < phrases.Length; i++) {
-                if (Global.Done) break;
+            Parallel.For(0, phrases.Length, GetParallelOptions(), i => {
+            // for (int i = 0; i < phrases.Length; i++) {
+                // if (Global.Done) break;
+                if (Global.Done) return;
                 keys[i] = DeriveRootKey(phrases[i], passphrase);
-            }
+            // }
+            });
             return keys;
         }
 
         public virtual Cryptography.Key[] DeriveRootKey_BatchPassphrases(Phrase phrase, string[] passphrases)
         {
             Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
-            // Parallel.For(0, passphrases.Length, i => {
-            for (int i = 0; i < passphrases.Length; i++) {
-                if (Global.Done) break;
+            Parallel.For(0, passphrases.Length, GetParallelOptions(), i => {
+            // for (int i = 0; i < passphrases.Length; i++) {
+                // if (Global.Done) break;
+                if (Global.Done) return;
                 keys[i] = DeriveRootKey(phrase, passphrases[i]);
-            }
+            // }
+            });
             return keys;
         }
         protected abstract Cryptography.Key DeriveChildKey(Cryptography.Key parentKey, uint index);
 
         protected virtual Cryptography.Key[] DeriveChildKey_Batch(Cryptography.Key[] parents, uint index) {
             Cryptography.Key[] keys = new Cryptography.Key[parents.Length];
-            // Parallel.For(0, parents.Length, i => {
-            for (int i = 0; i < parents.Length; i++) {
-                if (Global.Done) break;
+            Parallel.For(0, parents.Length, GetParallelOptions(), i => {
+            // for (int i = 0; i < parents.Length; i++) {
+                // if (Global.Done) break;
+                if (Global.Done) return;
                 keys[i] = DeriveChildKey(parents[i], index);
-            }
+            // }
+            });
             return keys;
         }
         private Cryptography.Key[] DerivePath_Batch(Cryptography.Key[] parents, uint[] path) {
@@ -351,12 +359,13 @@ namespace FixMyCrypto {
 
         public delegate void ProduceAddress(List<Address> addresses);
 
-        public void ProcessBatch() {
-            while (!Global.Done && !batchQueue.IsCompleted) {
+        public void ProcessBatchKeys(object thread) {
+            int threadNum = (int)thread;
+            while (!Global.Done && !batchKeysQueue.IsCompleted) {
                 Batch batch = null;
 
                 try {
-                    batch = batchQueue.Take();
+                    batch = batchKeysQueue.Take();
                 }
                 catch (InvalidOperationException) {
                     break;
@@ -364,9 +373,12 @@ namespace FixMyCrypto {
 
                 if (batch == null) continue;
 
-                PathTree t = new PathTree(batch.tree);
+                long batchStart = Global.sw.ElapsedMilliseconds;
+
+                //  make a deep copy of the original tree
+                batch.tree = new PathTree(batch.tree);
                 //  Derive the longest straight branch from root in one go
-                PathNode path = t.GetLongestPathFromRoot();
+                PathNode path = batch.tree.GetLongestPathFromRoot();
                 DeriveRootLongestPath(batch.GetPhrases(), batch.GetPassphrases(), path);
 
                 //  Derive all sub-paths from there
@@ -374,42 +386,78 @@ namespace FixMyCrypto {
                     DeriveChildKeys_Batch(child);
                 }
 
+                try {
+                    batchAddressesQueue.Add(batch);
+                }
+                catch (InvalidOperationException) {
+                    break;
+                }
+
+                // Log.Debug($"{Thread.CurrentThread.Name}, ProcessBatchKeys, {batchStart}, {Global.sw.ElapsedMilliseconds}");
+            }
+
+            batchAddressesQueue.CompleteAdding();
+            if (Global.Done && IsUsingOpenCL()) ocl.Stop();
+        }
+
+        public void ProcessBatchAddresses(object thread)
+        {
+            int threadNum = (int)thread;
+
+            while (!Global.Done && !batchAddressesQueue.IsCompleted) {
+                Batch batch = null;
+
+                try {
+                    batch = batchAddressesQueue.Take();
+                }
+                catch (InvalidOperationException) {
+                    break;
+                }
+
+                if (batch == null) continue;
+
+                long batchStart = Global.sw.ElapsedMilliseconds;
                 if (batch is PhraseBatch) {
                     PhraseBatch pb = batch as PhraseBatch;
                     // Log.Debug($"PhraseBatch {pb.phrases.Length}");
 
-                    // Parallel.For(0, pb.phrases.Length, i => {
-                    for (int i = 0; i < pb.phrases.Length; i++) {
-                        if (Global.Done) break;
+                    Parallel.For(0, pb.phrases.Length, GetParallelOptions(), i => {
+                    // for (int i = 0; i < pb.phrases.Length; i++) {
+                        // if (Global.Done) break;
+                        if (Global.Done) return;
 
                         List<Address> addrs = new();
 
-                        DeriveAddressesBatch(t.Root, i, pb.phrases[i], pb.passphrase, addrs);
+                        DeriveAddressesBatch(batch.tree.Root, i, pb.phrases[i], pb.passphrase, addrs);
 
                         if (pb.produceAddress != null) pb.produceAddress(addrs);
 
                         pb.count += addrs.Count;
-                    }
+                    // }
+                    });
                 }
                 else if (batch is PassphraseBatch) {
                     PassphraseBatch pb = batch as PassphraseBatch;
                     // Log.Debug($"PassphraseBatch {pb.passphrases.Length}");
 
-                    // Parallel.For(0, pb.passphrases.Length, i => {
-                    for (int i = 0; i < pb.passphrases.Length; i++) {
-                        if (Global.Done) break;
+                    Parallel.For(0, pb.passphrases.Length, GetParallelOptions(), i => {
+                    // for (int i = 0; i < pb.passphrases.Length; i++) {
+                        // if (Global.Done) break;
+                        if (Global.Done) return;
 
                         List<Address> addrs = new();
 
-                        DeriveAddressesBatch(t.Root, i, pb.phrase, pb.passphrases[i], addrs);
+                        DeriveAddressesBatch(batch.tree.Root, i, pb.phrase, pb.passphrases[i], addrs);
 
                         if (pb.produceAddress != null) pb.produceAddress(addrs);
 
                         pb.count += addrs.Count;
-                    }
+                    // }
+                    });
                 }
+                // Log.Debug($"{Thread.CurrentThread.Name}, ProcessBatchAddresses, {batchStart}, {Global.sw.ElapsedMilliseconds}");
 
-                // if (!Global.Done) Log.Debug($"{Thread.CurrentThread.Name} finished batch {batch.id} with count={batch.count}");
+                // Log.Debug($"{Thread.CurrentThread.Name}, batch {batch.id}, {batchStart}, {Global.sw.ElapsedMilliseconds}");
                 
                 batchFinished.TryAdd(batch.id, batch);
 
@@ -443,11 +491,31 @@ namespace FixMyCrypto {
                     }
                 }
             }
-
-            if (Global.Done && IsUsingOpenCL()) ocl.Stop();
         }
 
-        protected virtual int GetTaskCount() { return Settings.Threads; } // IsUsingOpenCL() ? Settings.Threads / 2 : 1; }
+        //  Phase 1 threads (derive path keys), Phase 2 threads (produce addresses)
+        //  Hand tuned values
+        protected virtual (int, int) GetTaskCount() { 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                return (Settings.Threads, Settings.Threads);
+            }
+            else {
+                return (
+                    Math.Min(IsUsingOpenCL() ? 1 + 2 * ocl.GetDevicesInUse() : 3, Settings.Threads), 
+                    Math.Min(2, Settings.Threads)
+                ); 
+            }
+        }
+
+        protected virtual ParallelOptions GetParallelOptions() {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                //  For some reason, Parallel.For performs poorly on Mac
+                return new ParallelOptions { MaxDegreeOfParallelism = 1 };
+            }
+            else {
+                return new ParallelOptions();
+            }
+        }
 
         public void GetAddressesBatchPassphrases(Phrase phrase, string[] passphrases, PathTree tree, ProduceAddress Produce) {
 
@@ -458,7 +526,7 @@ namespace FixMyCrypto {
             PassphraseBatch pb = new PassphraseBatch(nextBatchId++, phrase, passphrases, tree, Produce);
             
             try {
-                batchQueue.Add(pb);
+                batchKeysQueue.Add(pb);
             }
             catch (InvalidOperationException) {
                 return;
@@ -472,7 +540,7 @@ namespace FixMyCrypto {
             PhraseBatch pb = new PhraseBatch(nextBatchId++, phrases, passphrase, tree, Produce);
             
             try {
-                batchQueue.Add(pb);
+                batchKeysQueue.Add(pb);
             }
             catch (InvalidOperationException) {
                 return;
@@ -488,7 +556,8 @@ namespace FixMyCrypto {
         public abstract CoinType GetCoinType();
         public void Finish() {
             phraseQueue.CompleteAdding();
-            batchQueue.CompleteAdding();
+            batchKeysQueue.CompleteAdding();
+            batchAddressesQueue.CompleteAdding();
             lock (mutex) {
                 if (count > 0) Log.Info("P2A done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, keys/s: {1000*count/stopWatch.ElapsedMilliseconds}, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
                 count = Int32.MinValue;
@@ -505,6 +574,7 @@ namespace FixMyCrypto {
             if (phraseTested > ppLogTotal) {
                 long done = phraseTested*GetPhraseMultiplier()+phraseStart;
                 long pps = 1000*phraseTested*GetPhraseMultiplier()/stopWatch.ElapsedMilliseconds;
+                if (pps == 0) return;
                 if (checkpoint.GetPhraseTotal() > 0) {
                     TimeSpan eta = TimeSpan.FromSeconds((checkpoint.GetPhraseTotal() - done) / pps);
                     Log.Info($"Phrases Tested total: {done:n0} / {checkpoint.GetPhraseTotal():n0} ({100.0*done/checkpoint.GetPhraseTotal():F2}%), phrases/s: {pps:n0}, ETA: {eta}");
@@ -516,6 +586,7 @@ namespace FixMyCrypto {
             }
             if (passphraseTested > p2aLogTotal) {
                 long ppps = 1000*(passphraseTested - passphraseStart)/stopWatch.ElapsedMilliseconds;
+                if (ppps == 0) return;
                 TimeSpan eta = TimeSpan.FromSeconds((passphraseTotal-passphraseTested)/ppps);
                 Log.Info($"Passphrases tested {passphraseTested:n0} / {passphraseTotal:n0} ({100.0*passphraseTested/passphraseTotal:F2}%), passphrases/s: {ppps:n0}, ETA: {eta}");
                 p2aLogTotal = passphraseTested;
@@ -555,11 +626,17 @@ namespace FixMyCrypto {
             Queue<string> passphraseBatch = new(batchSize);
 
             //  Start batch threads
-            Thread[] t = new Thread[GetTaskCount()];
+            Thread[] t = new Thread[GetTaskCount().Item1];
             for (int i = 0; i < t.Length; i++) {
-                t[i] = new Thread(ProcessBatch);
-                t[i].Name = $"ProcessBatch{i}";
-                t[i].Start();
+                t[i] = new Thread(new ParameterizedThreadStart(ProcessBatchKeys));
+                t[i].Name = $"ProcessBatchKeys_{i}";
+                t[i].Start(i);
+            }
+            Thread[] t2 = new Thread[GetTaskCount().Item2];
+            for (int i = 0; i < t2.Length; i++) {
+                t2[i] = new Thread(new ParameterizedThreadStart(ProcessBatchAddresses));
+                t2[i].Name = $"ProcessBatchAddresses_{i}";
+                t2[i].Start(i);
             }
 
             System.Timers.Timer passphraseLogger = new System.Timers.Timer(15 * 1000);
@@ -664,9 +741,10 @@ namespace FixMyCrypto {
                 GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
             }
 
+            foreach (Thread th in t) th.Join();
+            foreach (Thread th in t2) th.Join();
             passphraseLogger.Stop();
             Finish();
-            foreach (Thread th in t) th.Join();
             stopWatch.Stop();
         }
 

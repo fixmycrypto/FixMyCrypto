@@ -80,11 +80,25 @@ namespace FixMyCrypto {
         }
 
         public static int GetPlatformCount() {
-            return Platform.GetPlatforms().Count();
+            try {
+                return Platform.GetPlatforms().Count();
+            }
+            catch (Exception) {
+                return 0;
+            }
+        }
+
+        public int GetDevicesInUse() {
+            return chosenDevices?.Length ?? 0;
         }
 
         public static int GetDeviceCount(int platform) {
-            return Platform.GetPlatforms().ToList()[platform].GetDevices(DeviceType.All).ToList().Count;
+            try {
+                return Platform.GetPlatforms().ToList()[platform].GetDevices(DeviceType.All).ToList().Count;
+            }
+            catch (Exception) {
+                return 0;
+            }
         }
 
         [System.Runtime.Versioning.SupportedOSPlatformGuard("windows")]
@@ -383,6 +397,8 @@ namespace FixMyCrypto {
         }
 
         public Cryptography.Key[] Bip32DeriveFromRoot(byte[][] passwords, byte[][] salts, uint[] paths, int iters = 2048, int dklen = 64, int phraseLen = 24) {
+            long fStart = Global.sw.ElapsedMilliseconds;
+            
             Init(dklen, phraseLen);
             // Log.Debug($"salt batch size={salts.Length}");
 
@@ -446,6 +462,8 @@ namespace FixMyCrypto {
 
                 logger.Start();
 
+                long kStart = Global.sw.ElapsedMilliseconds;
+
                 using Kernel kernel = program_pbkdf2.CreateKernel(kernelName);
                 
                 int outSize = dklen * count;
@@ -470,11 +488,15 @@ namespace FixMyCrypto {
 
                 if (Global.Done) return null;
 
+                // Log.Debug($"{Thread.CurrentThread.Name}, {kernelName}, {kStart}, {Global.sw.ElapsedMilliseconds}");
+
+
                 Cryptography.Key[] ret = new Cryptography.Key[count];
                 using BinaryReader r = new BinaryReader(new MemoryStream(result));
                 for (int i = 0; i < count; i++) {
                     ret[i] = new Cryptography.Key(r.ReadBytes(32), r.ReadBytes(32));
                 }
+                // Log.Debug($"{Thread.CurrentThread.Name}, Bit32DeriveFromRoot, {fStart}, {Global.sw.ElapsedMilliseconds}");
                 return ret;
             }
             catch (Exception e) {

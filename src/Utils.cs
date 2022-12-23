@@ -11,6 +11,8 @@ namespace FixMyCrypto
         public static bool Done = false;
 
         public static bool Found = false;
+
+        public static System.Diagnostics.Stopwatch sw = new();
     }
     public enum CoinType {
         BTC,
