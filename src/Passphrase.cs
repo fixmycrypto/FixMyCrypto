@@ -606,14 +606,11 @@ namespace FixMyCrypto {
             return count;
         }   
 
-        public (long, int) GetCountAndMaxLength() {
-            long count = 0;
-            int maxLength = 0;
+        public void GetCountAndMaxLength(ref long count, ref int maxLength) {
             foreach (string r in this) {
                 count++;
                 maxLength = Math.Max(r.Length, maxLength);
             }
-            return (count, maxLength);
         }
 
         public void WriteTopologyFile(string path) {
@@ -652,11 +649,15 @@ namespace FixMyCrypto {
         public (long, int) GetCountAndMaxLength() {
             long count = 0;
             int maxLength = 0;
+            System.Timers.Timer t = new(10 * 1000);
+            t.Elapsed += (StringReader, args) => {
+                Log.Info($"Enumerating passphrases: {count:n0} and counting...");
+            };
+            t.Start();
             foreach (Passphrase p in passphrases) {
-                (long c, int m) = p.GetCountAndMaxLength();
-                count += c;
-                maxLength = Math.Max(m, maxLength);
+                p.GetCountAndMaxLength(ref count, ref maxLength);
             }
+            t.Stop();
             return (count, maxLength);
         }
 
