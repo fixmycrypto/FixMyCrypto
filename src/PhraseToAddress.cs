@@ -396,7 +396,7 @@ namespace FixMyCrypto {
                 // Log.Debug($"{Thread.CurrentThread.Name}, ProcessBatchKeys, {batchStart}, {Global.sw.ElapsedMilliseconds}");
             }
 
-            batchAddressesQueue.CompleteAdding();
+            if (batchKeysQueue.IsAddingCompleted) batchAddressesQueue.CompleteAdding();
             if (Global.Done && IsUsingOpenCL()) ocl.Stop();
         }
 
@@ -557,7 +557,6 @@ namespace FixMyCrypto {
         public void Finish() {
             phraseQueue.CompleteAdding();
             batchKeysQueue.CompleteAdding();
-            batchAddressesQueue.CompleteAdding();
             lock (mutex) {
                 if (count > 0) Log.Info("P2A done, count: " + count + " total time: " + stopWatch.ElapsedMilliseconds/1000 + $"s, keys/s: {1000*count/stopWatch.ElapsedMilliseconds}, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
                 count = Int32.MinValue;
@@ -741,10 +740,10 @@ namespace FixMyCrypto {
                 GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
             }
 
+            Finish();
             foreach (Thread th in t) th.Join();
             foreach (Thread th in t2) th.Join();
             passphraseLogger.Stop();
-            Finish();
             stopWatch.Stop();
         }
 
