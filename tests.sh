@@ -17,7 +17,7 @@ for d in */ ; do
 
     rm -f results.json checkpoint.json log.txt graph.dot
 
-    if ! time -p ../../bin/Release/net6.0/FixMyCrypto -ni "$@" >> log.txt; then
+    if ! time -p ../../bin/Release/net7.0/FixMyCrypto -ni "$@" >> log.txt; then
         echo Test $d failed FixMyCrypto with $?
         exit $?
     fi

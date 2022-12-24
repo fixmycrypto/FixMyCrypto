@@ -19,7 +19,7 @@ for /D %%i in (*) do (
     del /q results.json checkpoint.json log.txt graph.dot
 
     Rem run program
-    ..\..\bin\Release\net6.0\FixMyCrypto -ni %* >> log.txt
+    ..\..\bin\Release\net7.0\FixMyCrypto -ni %* >> log.txt
     if !ERRORLEVEL! NEQ 0 (
         echo Test %%i failed FixMyCrypto with !ERRORLEVEL!
         exit /b !ERRORLEVEL!
