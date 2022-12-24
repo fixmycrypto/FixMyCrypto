@@ -149,6 +149,7 @@ namespace FixMyCrypto {
                     (passphraseCount, maxPassphraseLength) = p.GetCountAndMaxLength();
 
                     if (!String.IsNullOrEmpty(Settings.TopologyFile)) {
+                        Log.All($"Write topology file...");
                         p.WriteTopologyFile(Settings.TopologyFile);
                         Log.All($"Passphrase topology written to: {Settings.TopologyFile}");
                     }

@@ -275,14 +275,15 @@ If you have a good idea of the components that make up the passphrase, but not t
     * `[!@#$%^&*()]` will match one of the listed special symbols
     * `[\\c]` will match any printable ASCII character (hex 0x20 - 0x7e)
     * `[\\d]` will match any digit (same as `[0-9]`)
+    * `[\\u]` will match any Unicode character (including other alphabets, emoji, etc.) Note this is around 1 million characters, so use this sparingly!
     * `[\\\\]` to escape a slash `\` within square brackets
     * `([)`, `(])` use parenthesis to escape a square bracket in the passphrase
     * `[(]`, `[)]` use square brackets to escape a parenthesis in the passphrase
     * `[{]`, `[}]` use square brackets around a curly brace to escape them
     * `[?]`, `[<]` will escape a question mark or left angle bracket (only needed if it comes immediately after a right square bracket, right parenthesis, or right curly brace)
     * `^` at the start of a square bracket expression means to exclude all the listed items, i.e. match any ASCII printable character except for those that are listed.
-        * `[^a-zA-Z]` will match any non-letter character (matches one digit or symbol)
-        * `[^a-zA-Z0-9]` will match any non-alphanumeric character
+        * `[^a-zA-Z]` will match any non-letter ASCII character (matches one digit or symbol)
+        * `[^a-zA-Z0-9]` will match any non-alphanumeric ASCII character
         * `[^^]` Two carets will escape a caret (matches "^"); `[^^$]` will match "^" or "$"
     * Nested square bracket expressions are not allowed
 * `<n>` or `<n-m>` after an enclosed expression will repeat the previous group at least N times, and at most M times

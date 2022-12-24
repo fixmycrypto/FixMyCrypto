@@ -119,6 +119,17 @@ namespace FixMyCrypto {
             return parts;
         }
 
+        private bool IsPrintableCharacter(char c) {
+            switch (Char.GetUnicodeCategory(c)) {
+                case System.Globalization.UnicodeCategory.Control:
+                case System.Globalization.UnicodeCategory.OtherNotAssigned:
+                return false;
+
+                default:
+                return true;
+            }
+        }
+
         private List<Part> CreateOptionSet(string set) {
             bool exclude = false;
             this.opType = OpType.Or;
@@ -165,6 +176,23 @@ namespace FixMyCrypto {
                     }
                     else if (set[i] == 'd') {
                         for (char c = '0'; c <= '9'; c++) { items.Add($"{c}"); }
+                    }
+                    else if (set[i] == 'u') {
+                        items.EnsureCapacity(1200000);
+                        //  U+0001 - U+D7FF
+                        for (int c = 0x20; c < 0xd800; c++) { 
+                            if (IsPrintableCharacter((char)c)) items.Add($"{(char)c}"); 
+                        }
+                        //  U+E000 - U+FFFF
+                        for (int c = 0xe000; c <= 0xffff; c++) { 
+                            if (IsPrintableCharacter((char)c)) items.Add($"{(char)c}"); 
+                        }
+                        // Surrogate pairs U+D800-U+DBFF + U+DC00-U+DFFF
+                        for (int c = 0xd800; c <= 0xdbff; c++) { 
+                            for (int d = 0xdc00; d <= 0xdfff; d++) {
+                                items.Add($"{(char)c}{(char)d}");
+                            }
+                        }
                     }
                     else if (set[i] == '\\') {
                         items.Add($"{set[i]}");
