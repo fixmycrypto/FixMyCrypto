@@ -127,47 +127,44 @@ namespace FixMyCrypto {
 
                 switch (c) {
                     case '(':
-                    case ')':
                     case '{':
-                    case '}':
-
                     pattern += $"[{c}]";
-
                     break;
 
                     case '[':
-                    case ']':
-
                     pattern += $"({c})";
+                    break;
 
+                    case ')':
+                    case '}':
+                    pattern += $"[{c}]";
+                    break;
+
+                    case ']':
+                    pattern += $"({c})";
                     break;
 
                     case '?':
-
-                    if (pattern.Length > 0 && (pattern[pattern.Length - 1] == ')' || pattern[pattern.Length - 1] == ']')) {
-                        pattern += "[?]";
+                    case '<':
+                    if (pattern.Length > 0 && (pattern[pattern.Length - 1] == ')' || pattern[pattern.Length - 1] == ']' || pattern[pattern.Length - 1] == '}')) {
+                        pattern += $"[{c}]";
                     }
                     else {
-                        pattern += "?";
+                        pattern += c;
                     }
-
                     break;
 
                     case '^':
-
                     if (pattern.Length > 0 && pattern[pattern.Length - 1] == '[') {
                         pattern += "^^";
                     }
                     else {
                         pattern += "^";
                     }
-
                     break;
 
                     default:
-
                     pattern += c;
-
                     break;
                 }
             }
@@ -303,6 +300,8 @@ namespace FixMyCrypto {
             TestPassphrase("(The||the)(P||p)assphrase[0-9]?[!@#$%^&*()]?", "ThePassphrase!", 484);
             TestPassphrase("((C||c)orrect&&(H||h)orse&&(B||b)attery&&(S||s)taple)[1-9]?[0-9][^a-zA-Z0-9]", new string[] { "CorrectHorseBatteryStaple1!", "horseStaplebatteryCorrect42?", "batterystaplecorrectHorse99@" }, 16 * Utils.Factorial(4) * 10 * 10 * 33);
             TestPassphrase("(a&&b)?c", new string[] { "abc", "bac", "c" }, 3);
+            TestPassphrase("[\\c]", new string[] { "a", "Z", "5" }, 95);
+            TestPassphrase("[\\d]", new string[] { "0", "5", "9" }, 10);
             //  fuzzing
             TestPassphrase("{Foo92!}", new string[] { "Foo93!", "Foo92", "Foo9!", "Food92!", "Foo92!a", "FOO92!" }, 1252);
             TestPassphrase("{Food92?}", new string[] { "Foo92?", "food92?" }, 1448);
@@ -316,9 +315,18 @@ namespace FixMyCrypto {
             //  multi
             TestPassphrase(new string[] { "{MyUsualPassward}", "{MyOtterPassword}", "{4231}" }, new string[] { "MyUsualPassword", "MyOtherPassword", "4321", "myusualpassward", "MYOTTERPASSWORD" }, 6965);
             TestPassphrase(new string[] { "{FirstPossibility}", "{SecondPossibility}" }, new string[] { "SecondPossability" }, 6720);
+            //  repeat
+            TestPassphrase("[0-9]<2>", new string[] { "00", "69", "75" }, 100);
+            TestPassphrase("[0-9]<1-2>", new string[] { "0", "69" }, 110);
+            TestPassphrase("[\\c]<1-2>", new string[] { "a", "Zz" }, 9120);
+            TestPassphrase("[\\d]<3-4>", new string[] { "000", "5555" }, 11000);
+            TestPassphrase("a[\\d]<0-1>", new string[] { "a", "a1" }, 11);
+            TestPassphrase("[0-9][<]2>", "3<2>", 10);
+            TestPassphrase("[\\d]<4-7>", new string[] { "1234", "9876543" }, 13310000);
+            TestPassphrase("[\\c]<1-3>", new string[] { "!", "@#", "$%^", "abc", "123" }, 875520);
 
             //  random passphrase testing
-            Parallel.For(0, 1000000, i => TestRandomPassphrase());
+            Parallel.For(0, 10000000, i => TestRandomPassphrase());
 
             //  should fail
             FailPassphrase("(stuff", "stuff");
@@ -330,6 +338,9 @@ namespace FixMyCrypto {
             FailPassphrase("((a&&b)||c)", "ac");
             FailPassphrase("((a&&b)||c)", "bc");
             FailPassphrase("((a||b)&&c)", "ab");
+            FailPassphrase("[\\q]", "q");
+            FailPassphrase("[0-9]<2>", "0");
+            FailPassphrase("[\\d][<4-8>", "1234");
 
             //  test phrase checksums
             TestPhraseChecksum("fantasy curious recycle slot tilt forward call jar fashion concert around symbol");

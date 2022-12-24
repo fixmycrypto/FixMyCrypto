@@ -273,16 +273,22 @@ If you have a good idea of the components that make up the passphrase, but not t
     * `[aeiou]` will match one lower case vowel letter
     * `[0-9]` will match one digit
     * `[!@#$%^&*()]` will match one of the listed special symbols
+    * `[\\c]` will match any printable ASCII character (hex 0x20 - 0x7e)
+    * `[\\d]` will match any digit (same as `[0-9]`)
+    * `[\\\\]` to escape a slash `\` within square brackets
     * `([)`, `(])` use parenthesis to escape a square bracket in the passphrase
     * `[(]`, `[)]` use square brackets to escape a parenthesis in the passphrase
-    * `[{]`, `[}]` use square brackets around a curly brace to escape it
-    * `[?]` will escape a question mark (only needed if it comes immediately after a right square bracket, right parenthesis, or right curly brace)
+    * `[{]`, `[}]` use square brackets around a curly brace to escape them
+    * `[?]`, `[<]` will escape a question mark or left angle bracket (only needed if it comes immediately after a right square bracket, right parenthesis, or right curly brace)
     * `^` at the start of a square bracket expression means to exclude all the listed items, i.e. match any ASCII printable character except for those that are listed.
         * `[^a-zA-Z]` will match any non-letter character (matches one digit or symbol)
         * `[^a-zA-Z0-9]` will match any non-alphanumeric character
         * `[^^]` Two carets will escape a caret (matches "^"); `[^^$]` will match "^" or "$"
     * Nested square bracket expressions are not allowed
-* `{ }` curly brace expressions will fuzz the contents by testing all possible single tyops (insertions, deletions, substitutions, and transpositions)
+* `<n>` or `<n-m>` after an enclosed expression will repeat the previous group at least N times, and at most M times
+    * `[0-9]<2>` will match two digits 00 - 99
+    * `[0-9]<2-3>` will match two or three digits (00 - 99 and 000 - 999)
+* `{ }` curly brace expressions will fuzz the contents by testing all possible single typos (insertions, deletions, substitutions, and transpositions)
     * `{{ }}` double curly braces will test all possible double typos
 * `?` after an enclosed expression indicates that the enclosed item is optional (i.e. it occurs zero or one times)
     * `(T|t)?he` will match "The", "the", or "he"

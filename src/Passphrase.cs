@@ -157,7 +157,26 @@ namespace FixMyCrypto {
                 start = dash + 2;
             }
 
-            for (int i = start; i < set.Length; i++) items.Add($"{set[i]}");
+            for (int i = start; i < set.Length; i++) {
+                if (set[i] == '\\' && i + 1 < set.Length) {
+                    i++;
+                    if (set[i] == 'c') {
+                        for (char c = (char)0x20; c < 0x7f; c++) { items.Add($"{c}"); }
+                    }
+                    else if (set[i] == 'd') {
+                        for (char c = '0'; c <= '9'; c++) { items.Add($"{c}"); }
+                    }
+                    else if (set[i] == '\\') {
+                        items.Add($"{set[i]}");
+                    }
+                    else {
+                        throw new Exception($"Unsupported character class \\{set[i]}");
+                    }
+                }
+                else {
+                    items.Add($"{set[i]}");
+                }
+            }
 
             if (exclude) {
                 List<string> rValues = new List<string>();
@@ -250,6 +269,8 @@ namespace FixMyCrypto {
                     }
                     else if (depth == 1 && set[i] == GetEndDelimiter(blockType)) {
                         current += set[i];
+                        string repeat = "";
+                        int minRep = 1, maxRep = 1;
 
                         if (i + 1 < set.Length) {
                             switch (set[i+1]) {
@@ -258,11 +279,35 @@ namespace FixMyCrypto {
                                 current += set[i+1];
                                 i += 1;
                                 break;
+
+                                case '<':
+                                i += 2;
+                                while (i < set.Length && set[i] != '>') {
+                                    repeat += set[i];
+                                    i += 1;
+                                }
+                                if (i >= set.Length || set[i] != '>') throw new Exception($"invalid repetition after expression {set}");
+                                if (repeat.Contains("-")) {
+                                    string[] parts = repeat.Split("-");
+                                    if (!int.TryParse(parts[0], out minRep)) minRep = 1;
+                                    if (!int.TryParse(parts[1], out maxRep)) maxRep = 1;
+                                }
+                                else {
+                                    if (!int.TryParse(repeat, out minRep)) minRep = 1;
+                                }
+                                repeat = "";
+                                break;
                             }
                         }
 
-                        Part p = new Part(current);
-                        values.Add(p);
+                        for (int j = 0; j < minRep; j++) {
+                            Part p = new Part(current);
+                            values.Add(p);
+                        }
+                        for (int j = minRep; j < maxRep; j++) {
+                            Part p = new Part(current + "?");
+                            values.Add(p);                            
+                        }
                         current = "";
 
                         depth--;
