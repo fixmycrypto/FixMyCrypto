@@ -396,7 +396,6 @@ namespace FixMyCrypto {
                 // Log.Debug($"{Thread.CurrentThread.Name}, ProcessBatchKeys, {batchStart}, {Global.sw.ElapsedMilliseconds}");
             }
 
-            if (batchKeysQueue.IsAddingCompleted) batchAddressesQueue.CompleteAdding();
             if (Global.Done && IsUsingOpenCL()) ocl.Stop();
         }
 
@@ -742,6 +741,7 @@ namespace FixMyCrypto {
 
             Finish();
             foreach (Thread th in t) th.Join();
+            batchAddressesQueue.CompleteAdding();
             foreach (Thread th in t2) th.Join();
             passphraseLogger.Stop();
             stopWatch.Stop();
