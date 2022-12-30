@@ -145,7 +145,7 @@ namespace FixMyCrypto {
                     maxPassphraseLength = checkpoint.GetPassphraseMaxLength();
                 }
                 else {
-                    Log.All("Enumerating passphrase...");
+                    Log.All("Enumerating passphrases...");
                     (passphraseCount, maxPassphraseLength) = p.GetCountAndMaxLength();
 
                     if (!String.IsNullOrEmpty(Settings.TopologyFile)) {
