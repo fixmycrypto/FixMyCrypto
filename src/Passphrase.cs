@@ -14,7 +14,7 @@ namespace FixMyCrypto {
         OpType opType;
         Part[] parts;
         string stringValue;
-        bool optional;
+        int minCount, maxCount;
         bool fuzz;
 
         //  for graphviz only
@@ -249,16 +249,13 @@ namespace FixMyCrypto {
             return IsSet(set, '{', '}');
         }
 
-        public Part(string set) {
+        public Part(string set, int minCount = 1, int maxCount = 1) {
             // Log.Debug($"Part: {set}");
+            this.minCount = minCount;
+            this.maxCount = maxCount;
 
             List<Part> values = new List<Part>();
             stringValue = null;
-
-            if ((set.StartsWith("(") && set.EndsWith(")?")) || (set.StartsWith("[") && set.EndsWith("]?")) || (set.StartsWith('{') && set.EndsWith("}?"))) {
-                optional = true;
-                set = set.Substring(0, set.Length - 1);
-            }
 
             if (IsBooleanSet(set)) {
                 set = set.Substring(1, set.Length - 2);
@@ -304,7 +301,7 @@ namespace FixMyCrypto {
                             switch (set[i+1]) {
                                 case '?':
 
-                                current += set[i+1];
+                                minRep = 0;
                                 i += 1;
                                 break;
 
@@ -322,20 +319,15 @@ namespace FixMyCrypto {
                                 }
                                 else {
                                     if (!int.TryParse(repeat, out minRep)) minRep = 1;
+                                    maxRep = minRep;
                                 }
                                 repeat = "";
                                 break;
                             }
                         }
 
-                        for (int j = 0; j < minRep; j++) {
-                            Part p = new Part(current);
-                            values.Add(p);
-                        }
-                        for (int j = minRep; j < maxRep; j++) {
-                            Part p = new Part(current + "?");
-                            values.Add(p);                            
-                        }
+                        Part p = new Part(current, minRep, maxRep);
+                        values.Add(p);
                         current = "";
 
                         depth--;
@@ -395,11 +387,28 @@ namespace FixMyCrypto {
             }
         }
 
-        public IEnumerator<string> GetEnumerator() {
-            if (this.optional) {
+        private IEnumerator<string> EnumerateWithCount(int count) {
+            if (count == 0) {
                 yield return "";
             }
-            
+            else if (count == 1) {
+                var r = EnumerateOnce();
+                while (r.MoveNext()) {
+                    yield return r.Current;
+                }
+            }
+            else {
+                var s = EnumerateOnce();
+                while (s.MoveNext()) {
+                    var r = EnumerateWithCount(count - 1);
+                    while (r.MoveNext()) {
+                        yield return s.Current + r.Current;
+                    }
+                }
+            }
+        }
+
+        private IEnumerator<string> EnumerateOnce() {
             if (this.fuzz) {
                 foreach (string r in parts[0]) {
 
@@ -470,38 +479,17 @@ namespace FixMyCrypto {
             }
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-            return GetEnumerator();
+        public IEnumerator<string> GetEnumerator() {
+            for (int i = minCount; i <= maxCount; i++) {
+                var r = EnumerateWithCount(i);
+                while (r.MoveNext()) {
+                    yield return r.Current;
+                }
+            }
         }
 
-        public long GetCount() {
-            if (this.stringValue != null) return 1;
-
-            long count;
-
-            if (this.opType == OpType.Or) {
-                count = 0;
-                foreach (Part p in this.parts) {
-                    count += p.GetCount();
-                }
-            }
-            else if (this.opType == OpType.And) {
-                count = Utils.Factorial(this.parts.Length);
-                foreach (Part p in this.parts) {
-                    count *= p.GetCount();
-                }
-            }
-            else {
-                count = 1;
-                foreach (Part p in this.parts) {
-                    count *= p.GetCount();
-                }
-            }
-
-
-            if (this.optional) count += 1;
-
-            return count;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+            return GetEnumerator();
         }
 
         public override string ToString() {
@@ -516,18 +504,24 @@ namespace FixMyCrypto {
                 }
                 else if (this.range != null) {
                     label = $"[{this.range}]";
-                    if (optional) label += "?";
                 }
                 else if (this.opType == OpType.Or) {
                     label = "(" + String.Join("||", (object[])this.parts) + ")";
-                    if (optional) label += "?";
                 }
                 else if (this.opType == OpType.And) {
                     label = "(" + String.Join("&&", (object[])this.parts) + ")";
-                    if (optional) label += "?";
                 }
 
                 if (fuzz) label = "{" + label + "}";
+
+                if (minCount != 1 || maxCount != 1) {
+                    if (minCount == maxCount) {
+                        label += $"<{minCount}>";
+                    }
+                    else {
+                        label += $"<{minCount}-{maxCount}>";
+                    }
+                }
             }
 
             return label;
@@ -589,7 +583,7 @@ namespace FixMyCrypto {
                     nodes += $"\t\"{id:X8}\"\t->\t\"{childId:X8}\"{target}:n\n";
                 }
 
-                if (this.optional) {
+                if (this.minCount == 0) {
                     Part p = new Part("");
                     string child = p.ToString();
                     int childId =  (label + child).GetHashCode();

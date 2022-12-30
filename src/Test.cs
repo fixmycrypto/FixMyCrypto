@@ -86,8 +86,6 @@ namespace FixMyCrypto {
         public static void TestPassphrase(string[] patterns, string[] expect, long expectCount = -1) {
             MultiPassphrase ph = new MultiPassphrase(patterns);
             string pattern = String.Join(" , ", patterns);
-            long measuredCount = ph.GetCount();
-            if (expectCount > -1 && measuredCount != expectCount) throw new Exception($"Passphrase pattern: \"{pattern}\" GetCount() returned {measuredCount} permutations; expected {expectCount}");
             bool[] found = new bool[expect.Length];
             int count = 0;
             foreach (string pass in ph) {
@@ -96,14 +94,16 @@ namespace FixMyCrypto {
                 if (i > -1) found[i] = true;
                 count++;
             }
+            long measuredCount = ph.GetCount();
+            if (expectCount > -1 && measuredCount != expectCount) throw new Exception($"Passphrase pattern: \"{pattern}\" GetCount() returned {measuredCount:n0} permutations; expected {expectCount:n0}");
 
-            if (count != measuredCount) throw new Exception($"Passphrase pattern: \"{pattern}\" GetCount() returned {measuredCount} permutations; counted {count}");
+            if (count != measuredCount) throw new Exception($"Passphrase pattern: \"{pattern}\" GetCount() returned {measuredCount:n0} permutations; counted {count:n0}");
 
-            if (expectCount > -1 && count != expectCount) throw new Exception($"Passphrase pattern: \"{pattern}\" generated {count} permutations; expected {expectCount}");
+            if (expectCount > -1 && count != expectCount) throw new Exception($"Passphrase pattern: \"{pattern}\" generated {count:n0} permutations; expected {expectCount:n0}");
 
             for (int i = 0; i < found.Length; i++) if (!found[i]) throw new Exception($"Passphrase pattern: \"{pattern}\" failed to generate: \"{expect[i]}\"");
 
-            if (expectCount == -1) Log.Debug($"Passphrase pattern: \"{pattern}\" generated {count} permutations");
+            if (expectCount == -1) Log.Debug($"Passphrase pattern: \"{pattern}\" generated {count:n0} permutations");
         }
 
         public static void FailPassphrase(string pattern, string expect) {
@@ -323,8 +323,8 @@ namespace FixMyCrypto {
             TestPassphrase("[\\d]<3-4>", new string[] { "000", "5555" }, 11000);
             TestPassphrase("a[\\d]<0-1>", new string[] { "a", "a1" }, 11);
             TestPassphrase("[0-9][<]2>", "3<2>", 10);
-            TestPassphrase("[\\d]<4-7>", new string[] { "1234", "9876543" }, 13310000);
-            TestPassphrase("[\\c]<1-3>", new string[] { "!", "@#", "$%^", "abc", "123" }, 875520);
+            TestPassphrase("[\\d]<4-7>", new string[] { "1234", "9876543" }, 10000 + 100000 + 1000000 + 10000000);
+            TestPassphrase("[\\c]<1-3>", new string[] { "!", "@#", "$%^", "abc", "123" }, 95 + (95*95) + (95*95*95));
 
             //  random passphrase testing
             Parallel.For(0, 10000000, i => TestRandomPassphrase());
