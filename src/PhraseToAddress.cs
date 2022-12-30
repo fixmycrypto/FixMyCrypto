@@ -164,7 +164,11 @@ namespace FixMyCrypto {
         }
         public (Phrase, string, long, long, int) GetLastTested() {
             lock(mutex) {
-                return (this.lastPhrase, this.lastPassphrase, this.passphraseTested, this.passphraseTotal, this.maxPassphraseLength);
+                return (this.lastPhrase, 
+                        this.lastPassphrase, 
+                        this.passphraseTested, 
+                        this.passphraseTotal, 
+                        this.maxPassphraseLength);
             }
         }
 
@@ -431,7 +435,9 @@ namespace FixMyCrypto {
 
                         if (pb.produceAddress != null) pb.produceAddress(addrs);
 
-                        pb.count += addrs.Count;
+                        lock (pb) {
+                            pb.count += addrs.Count;
+                        }
                     // }
                     });
                 }
@@ -450,7 +456,9 @@ namespace FixMyCrypto {
 
                         if (pb.produceAddress != null) pb.produceAddress(addrs);
 
-                        pb.count += addrs.Count;
+                        lock (pb) {
+                            pb.count += addrs.Count;
+                        }
                     // }
                     });
                 }
@@ -561,7 +569,7 @@ namespace FixMyCrypto {
                 count = Int32.MinValue;
             }
         }
-        private long ppLogTotal = 0, p2aLogTotal = 0;
+        private long phraseLogTotal = 0, passphraseLogTotal = 0;
 
         private int GetPhraseMultiplier() {
             return 1 << (Settings.Phrases[0].Split(' ').Length / 3);
@@ -569,25 +577,27 @@ namespace FixMyCrypto {
         public void PassphraseLog() {
             if (stopWatch.ElapsedMilliseconds == 0) return;
 
-            if (phraseTested > ppLogTotal) {
+            if (phraseTested > phraseLogTotal) {
                 long done = phraseTested*GetPhraseMultiplier()+phraseStart;
                 long pps = 1000*phraseTested*GetPhraseMultiplier()/stopWatch.ElapsedMilliseconds;
-                if (pps == 0) return;
-                if (checkpoint.GetPhraseTotal() > 0) {
-                    TimeSpan eta = TimeSpan.FromSeconds((checkpoint.GetPhraseTotal() - done) / pps);
-                    Log.Info($"Phrases Tested total: {done:n0} / {checkpoint.GetPhraseTotal():n0} ({100.0*done/checkpoint.GetPhraseTotal():F2}%), phrases/s: {pps:n0}, ETA: {eta}");
+                if (pps != 0) {
+                    if (checkpoint.GetPhraseTotal() > 0) {
+                        TimeSpan eta = TimeSpan.FromSeconds((checkpoint.GetPhraseTotal() - done) / pps);
+                        Log.Info($"Phrases Tested total: {done:n0} / {checkpoint.GetPhraseTotal():n0} ({100.0*done/checkpoint.GetPhraseTotal():F2}%), phrases/s: {pps:n0}, ETA: {eta}");
+                    }
+                    else {
+                        Log.Info($"Phrases Tested total: {done:n0} / ???, phrases/s: {pps:n0}");
+                    }
                 }
-                else {
-                    Log.Info($"Phrases Tested total: {done:n0} / ???, phrases/s: {pps:n0}");
-                }
-                ppLogTotal = phraseTested;
+                phraseLogTotal = phraseTested;
             }
-            if (passphraseTested > p2aLogTotal) {
+            if (passphraseTested > passphraseLogTotal) {
                 long ppps = 1000*(passphraseTested - passphraseStart)/stopWatch.ElapsedMilliseconds;
-                if (ppps == 0) return;
-                TimeSpan eta = TimeSpan.FromSeconds((passphraseTotal-passphraseTested)/ppps);
-                Log.Info($"Passphrases tested {passphraseTested:n0} / {passphraseTotal:n0} ({100.0*passphraseTested/passphraseTotal:F2}%), passphrases/s: {ppps:n0}, ETA: {eta}");
-                p2aLogTotal = passphraseTested;
+                if (ppps != 0) {
+                    TimeSpan eta = TimeSpan.FromSeconds((passphraseTotal-passphraseTested)/ppps);
+                    Log.Info($"Passphrases tested {passphraseTested:n0} / {passphraseTotal:n0} ({100.0*passphraseTested/passphraseTotal:F2}%), passphrases/s: {ppps:n0}, ETA: {eta}");
+                }
+                passphraseLogTotal = passphraseTested;
             }
         }
         public void Consume() {
@@ -670,6 +680,7 @@ namespace FixMyCrypto {
                 try {
                     if (passphraseCount > 1) {
                         passphraseTested = 0;
+                        passphraseLogTotal = 0;
                         passphraseTotal = passphraseCount;
                         IEnumerator<string> e = p.GetEnumerator();
                         while (e.MoveNext() && !Global.Done) {
@@ -714,7 +725,6 @@ namespace FixMyCrypto {
                         }
 
                         phraseTested++;
-                        passphraseLogger.Stop();
                     }
                     else {
                         phraseBatch.Enqueue(w.phrase);
