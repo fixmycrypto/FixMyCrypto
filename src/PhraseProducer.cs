@@ -17,6 +17,8 @@ namespace FixMyCrypto {
 
         bool countOnly = false;
 
+        bool checkDupes = false;
+
         enum SwapMode {
             SameLetter,
             Similar,
@@ -36,8 +38,8 @@ namespace FixMyCrypto {
         
         public void Finish() {
             queue.CompleteAdding();
-            Log.Info("PP done, valid: " + valid + " invalid: " + invalid + $", dupes: {dupes}, total time: {sw1.ElapsedMilliseconds/1000.0:F2}s");
-            if (sw1.ElapsedMilliseconds != 0) Log.Info($"PP Total phrases/s: {1000*(valid+invalid)/sw1.ElapsedMilliseconds}, Valid phrases/s: {1000*valid/sw1.ElapsedMilliseconds}, queue wait: " + queueWaitTime.ElapsedMilliseconds/1000 + "s");
+            Log.Info($"PP done, valid: {valid:n0} invalid: {invalid:n0}, dupes: {dupes:n0}, total time: {sw1.ElapsedMilliseconds/1000.0:F2}s");
+            if (sw1.ElapsedMilliseconds != 0) Log.Info($"PP Total phrases/s: {1000*(valid+invalid)/sw1.ElapsedMilliseconds:n0}, Valid phrases/s: {1000*valid/sw1.ElapsedMilliseconds:n0}, queue wait: {queueWaitTime.ElapsedMilliseconds/1000}s");
         }
 
         public void SetCheckpoint(Checkpoint c) {
@@ -77,20 +79,21 @@ namespace FixMyCrypto {
             (bool isValid, int hash) = Phrase.VerifyChecksum(phraseArray);
             
             if (isValid) {
-                //  don't retest valid phrases
                 Phrase p = new Phrase(phraseArray, hash, phraseTotal);
 
-                if (testedPhrases.Contains(p)) {
-                    dupes++;
-                    return;
-                }
-
-                try {
-                    testedPhrases.Add(p);
-                }
-                catch (Exception) {
-                    testedPhrases.Clear();
-                    testedPhrases.Add(p);
+                if (checkDupes) {
+                    //  don't retest valid phrases
+                    try {
+                        bool added = testedPhrases.Add(p);
+                        if (!added) {
+                            dupes++;
+                            return;
+                        }
+                    }
+                    catch (Exception) {
+                        testedPhrases.Clear();
+                        testedPhrases.Add(p);
+                    }
                 }
 
                 valid++;
@@ -787,6 +790,20 @@ namespace FixMyCrypto {
         public void ProduceWork() {
 
             Log.Debug("PP start");
+
+            if (!countOnly) {
+                long total = checkpoint.GetPhraseTotal();
+                if (total <= 0 || total > 100_000_000) {
+                    //  disable dupe checking
+                    checkDupes = false;
+                    Log.Debug("dupe checking disabled");
+                }
+                else {
+                    checkDupes = true;
+                    testedPhrases.EnsureCapacity((int)checkpoint.GetPhraseTotal());
+                    Log.Debug("dupe checking enabled");
+                }
+            }
 
             //  must be deterministic order and not thread safe
             foreach (string[] p in this.phrases) {
