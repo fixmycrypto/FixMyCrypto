@@ -87,7 +87,9 @@ namespace FixMyCrypto {
                 lock(mutex) {
                     (Phrase phrase, string passphrase, long passphraseNum, long passphraseTotal, int maxLength) = p2a.GetLastTested();
 
-                    if (phrase == null || passphrase == null || passphraseNum < 0) return;
+                    if (phrase == null) {
+                        return;
+                    }
 
                     //  Write to checkpoint file
 
