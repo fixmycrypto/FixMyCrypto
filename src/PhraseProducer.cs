@@ -60,7 +60,7 @@ namespace FixMyCrypto {
             if (checkpointPhrase != null) {
                 if (checkpointPhrase.SequenceNum == phraseTotal) {
                     if (checkpointPhrase.IndicesEquals(phraseArray)) {
-                        Log.Info($"Resuming from last checkpoint phrase: {checkpointPhrase.ToPhrase()}");
+                        Log.Info($"Resuming from last checkpoint phrase: {checkpointPhrase.ToPhrase()} ({phraseTotal})");
                         checkpoint.ClearPhrase();
                         if (String.IsNullOrEmpty(checkpoint.GetCheckpointPassphrase().Item1)) checkpoint.Start();
                     }
@@ -793,8 +793,10 @@ namespace FixMyCrypto {
 
             if (!countOnly) {
                 long total = checkpoint.GetPhraseTotal();
-                if (total <= 0 || total > 100_000_000) {
-                    //  disable dupe checking
+                if (checkpoint.GetPassphraseTotal() <= 1 && (total <= 0 || total > 100_000_000)) {
+                    //  disable dupe checking when:
+                    //  not testing multiple passphrases, and
+                    //  phrase count unknown or over 100M
                     checkDupes = false;
                     Log.Debug("dupe checking disabled");
                 }

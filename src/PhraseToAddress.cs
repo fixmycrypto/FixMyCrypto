@@ -74,7 +74,8 @@ namespace FixMyCrypto {
         string lastPassphrase = null;
         Phrase lastPhrase = null;
         Checkpoint checkpoint = null;
-        long passphraseTested = 0, passphraseTotal = 0, passphraseStart = 0, phraseTested = 0, phraseStart = 0;
+        long lastPassphraseNum = 0, passphraseCount = 0, passphraseStart = 0, lastPhraseNum = 0, phraseStart = 0;
+        long totalPhrasesTested = 0, totalPassphrasesTested = 0;
         object mutex = new();
         protected OpenCL ocl = null;
         protected MultiPassphrase mp = null;
@@ -129,9 +130,11 @@ namespace FixMyCrypto {
         private class PassphraseBatch : Batch {
             public Phrase phrase;
             public string[] passphrases;
-            public PassphraseBatch(long id, Phrase phrase, string[] passphrases,PathTree tree, ProduceAddress produceAddress) : base(id, tree, produceAddress) {
+            public long passphraseSequenceNum;
+            public PassphraseBatch(long id, Phrase phrase, string[] passphrases, long passphraseSequenceNum, PathTree tree, ProduceAddress produceAddress) : base(id, tree, produceAddress) {
                 this.phrase = phrase;
                 this.passphrases = passphrases;
+                this.passphraseSequenceNum = passphraseSequenceNum;
             }
             public override Phrase[] GetPhrases() {
                 return new Phrase[] { phrase };
@@ -146,6 +149,7 @@ namespace FixMyCrypto {
         private BlockingCollection<Batch> batchAddressesQueue = new BlockingCollection<Batch>(Settings.Threads);
 
         private ConcurrentDictionary<long, Batch> batchFinished = new();
+        private bool allBatchesFinished = false;
         private long nextBatchId = 0;
         private long lastBatchFinished = 0;
         protected PhraseToAddress(BlockingCollection<Work> phrases) {
@@ -166,8 +170,8 @@ namespace FixMyCrypto {
             lock(mutex) {
                 return (this.lastPhrase, 
                         this.lastPassphrase, 
-                        this.passphraseTested, 
-                        this.passphraseTotal, 
+                        this.lastPassphraseNum, 
+                        this.passphraseCount, 
                         this.maxPassphraseLength);
             }
         }
@@ -377,8 +381,6 @@ namespace FixMyCrypto {
 
                 if (batch == null) continue;
 
-                long batchStart = Global.sw.ElapsedMilliseconds;
-
                 //  make a deep copy of the original tree
                 batch.tree = new PathTree(batch.tree);
                 //  Derive the longest straight branch from root in one go
@@ -467,35 +469,53 @@ namespace FixMyCrypto {
                 // Log.Debug($"{Thread.CurrentThread.Name}, batch {batch.id}, {batchStart}, {Global.sw.ElapsedMilliseconds}");
                 
                 batchFinished.TryAdd(batch.id, batch);
+            }
+        }
 
-                //  Update finished results, keeping the sequence
+        public void RetireBatch() {
+            //  Update finished results for checkpoint, ensuring batches are retired in sequence
 
-                while (batchFinished.Count > 0 && !Global.Done) {
-                   
-                    batchFinished.TryRemove(lastBatchFinished, out Batch b);
+            while (!Global.Done && !allBatchesFinished) {
+                
+                batchFinished.TryRemove(lastBatchFinished, out Batch b);
 
-                    if (b == null) break;
+                if (b == null) {
+                    Thread.Sleep(100);
+                    continue;
+                }
 
-                    // Log.Debug($"Retire batch {b.id} with count={b.count}");
+                lock (mutex) {
+                    count += b.count;
 
-                    lock (mutex) {
-                        count += b.count;
+                    if (b is PhraseBatch) {
+                        PhraseBatch pb = (PhraseBatch)b;
+                        lastPhrase = pb.phrases[pb.phrases.Length - 1];
+                        lastPhraseNum = lastPhrase.SequenceNum;
+                        lastPassphrase = pb.passphrase;
 
-                        if (b is PhraseBatch) {
-                            PhraseBatch pb = (PhraseBatch)b;
-                            lastPhrase = pb.phrases[pb.phrases.Length - 1];
-                            lastPassphrase = pb.passphrase;
-                            phraseTested += pb.phrases.Length;
-                        }
-                        else {
-                            PassphraseBatch pb = (PassphraseBatch)b;
-                            lastPhrase = pb.phrase;
-                            lastPassphrase = pb.passphrases[pb.passphrases.Length - 1];
-                            passphraseTested += pb.passphrases.Length;
-                        }
-
-                        lastBatchFinished++;
+                        //  for progress log
+                        totalPhrasesTested += pb.phrases.Length;
                     }
+                    else {
+                        PassphraseBatch pb = (PassphraseBatch)b;
+
+                        if (pb.passphraseSequenceNum == 0) {
+                            passphraseLogTotal = 0;
+                            if (lastPhrase != null) totalPhrasesTested += 1;
+                        }
+
+                        lastPhrase = pb.phrase;
+                        lastPhraseNum = lastPhrase.SequenceNum;
+                        lastPassphrase = pb.passphrases[pb.passphrases.Length - 1];
+                        lastPassphraseNum = pb.passphraseSequenceNum + pb.passphrases.Length;
+
+                        //  for progress log
+                        totalPassphrasesTested += pb.passphrases.Length;
+
+                        // Log.Debug($"Retire batch {b.id} with lassPassphrase=\"{lastPassphrase}\" lastPassphraseNum={lastPassphraseNum}");
+                    }
+
+                    lastBatchFinished++;
                 }
             }
         }
@@ -524,13 +544,13 @@ namespace FixMyCrypto {
             }
         }
 
-        public void GetAddressesBatchPassphrases(Phrase phrase, string[] passphrases, PathTree tree, ProduceAddress Produce) {
+        public void GetAddressesBatchPassphrases(Phrase phrase, string[] passphrases, long passphraseSequenceNum, PathTree tree, ProduceAddress Produce) {
 
             if (Global.Done) return;
 
             //  Enqueue batch
 
-            PassphraseBatch pb = new PassphraseBatch(nextBatchId++, phrase, passphrases, tree, Produce);
+            PassphraseBatch pb = new PassphraseBatch(nextBatchId++, phrase, passphrases, passphraseSequenceNum, tree, Produce);
             
             try {
                 batchKeysQueue.Add(pb);
@@ -574,30 +594,42 @@ namespace FixMyCrypto {
         private int GetPhraseMultiplier() {
             return 1 << (Settings.Phrases[0].Split(' ').Length / 3);
         }
-        public void PassphraseLog() {
+        public void ProgressLog() {
             if (stopWatch.ElapsedMilliseconds == 0) return;
+            long done = totalPhrasesTested*GetPhraseMultiplier();
+            long phrasesToGo = checkpoint.GetPhraseTotal() - done - phraseStart;
+            long currentPhraseNum = lastPhrase != null ? lastPhrase.SequenceNum : 0;
 
-            if (phraseTested > phraseLogTotal) {
-                long done = phraseTested*GetPhraseMultiplier()+phraseStart;
-                long pps = 1000*phraseTested*GetPhraseMultiplier()/stopWatch.ElapsedMilliseconds;
-                if (pps != 0) {
-                    if (checkpoint.GetPhraseTotal() > 0) {
-                        TimeSpan eta = TimeSpan.FromSeconds((checkpoint.GetPhraseTotal() - done) / pps);
-                        Log.Info($"Phrases Tested total: {done:n0} / {checkpoint.GetPhraseTotal():n0} ({100.0*done/checkpoint.GetPhraseTotal():F2}%), phrases/s: {pps:n0}, ETA: {eta}");
+            if (passphraseCount > 1) {
+                if (totalPassphrasesTested > passphraseLogTotal) {
+                    long ppps = 1000*totalPassphrasesTested/stopWatch.ElapsedMilliseconds;
+                    if (ppps != 0) {
+                        if (phrasesToGo > 1) {
+                            TimeSpan eta = TimeSpan.FromSeconds(((phrasesToGo * passphraseCount) - totalPassphrasesTested) / ppps);
+                            Log.Info($"Phrase {currentPhraseNum:n0} / {checkpoint.GetPhraseTotal():n0} ({100.0*currentPhraseNum/checkpoint.GetPhraseTotal():F2}%), Passphrases tested {lastPassphraseNum:n0} / {passphraseCount:n0} ({100.0*lastPassphraseNum/passphraseCount:F2}%), passphrases/s: {ppps:n0}, ETA: {eta}");
+                        }
+                        else {
+                            TimeSpan eta = TimeSpan.FromSeconds((passphraseCount - lastPassphraseNum) / ppps);
+                            Log.Info($"Passphrases tested {lastPassphraseNum:n0} / {passphraseCount:n0} ({100.0*lastPassphraseNum/passphraseCount:F2}%), passphrases/s: {ppps:n0}, ETA: {eta}");
+                        }
                     }
-                    else {
-                        Log.Info($"Phrases Tested total: {done:n0} / ???, phrases/s: {pps:n0}");
-                    }
+                    passphraseLogTotal = totalPassphrasesTested;
                 }
-                phraseLogTotal = phraseTested;
             }
-            if (passphraseTested > passphraseLogTotal) {
-                long ppps = 1000*(passphraseTested - passphraseStart)/stopWatch.ElapsedMilliseconds;
-                if (ppps != 0) {
-                    TimeSpan eta = TimeSpan.FromSeconds((passphraseTotal-passphraseTested)/ppps);
-                    Log.Info($"Passphrases tested {passphraseTested:n0} / {passphraseTotal:n0} ({100.0*passphraseTested/passphraseTotal:F2}%), passphrases/s: {ppps:n0}, ETA: {eta}");
+            else {
+                if (totalPhrasesTested > phraseLogTotal) {
+                    long pps = 1000*done/stopWatch.ElapsedMilliseconds;
+                    if (pps != 0) {
+                        if (checkpoint.GetPhraseTotal() > 0) {
+                            TimeSpan eta = TimeSpan.FromSeconds(phrasesToGo / pps);
+                            Log.Info($"Phrases Tested total: {currentPhraseNum:n0} / {checkpoint.GetPhraseTotal():n0} ({100.0*(done+phraseStart)/checkpoint.GetPhraseTotal():F2}%), phrases/s: {pps:n0}, ETA: {eta}");
+                        }
+                        else {
+                            Log.Info($"Phrases Tested total: {currentPhraseNum:n0} / ???, phrases/s: {pps:n0}");
+                        }
+                    }
+                    phraseLogTotal = totalPhrasesTested;
                 }
-                passphraseLogTotal = passphraseTested;
             }
         }
         public void Consume() {
@@ -608,7 +640,6 @@ namespace FixMyCrypto {
             Log.Debug($"Longest root path: {end.GetPath()}");
 
             MultiPassphrase p;
-            long passphraseCount;
             string passphrase = null;
             phraseStart = checkpoint.GetCheckpointPhrase()?.SequenceNum ?? 0;
 
@@ -646,12 +677,15 @@ namespace FixMyCrypto {
                 t2[i].Name = $"ProcessBatchAddresses_{i}";
                 t2[i].Start(i);
             }
+            Thread retire = new Thread(RetireBatch);
+            retire.Name = "RetireBatch";
+            retire.Start();
 
-            System.Timers.Timer passphraseLogger = new System.Timers.Timer(15 * 1000);
-            passphraseLogger.Elapsed += (StringReader, args) => {
-                PassphraseLog();
+            System.Timers.Timer progressLogger = new System.Timers.Timer(15 * 1000);
+            progressLogger.Elapsed += (StringReader, args) => {
+                ProgressLog();
             };
-            passphraseLogger.Start();
+            progressLogger.Start();
 
             while (!Global.Done && !phraseQueue.IsCompleted) {
 
@@ -673,15 +707,14 @@ namespace FixMyCrypto {
  
                 if (Global.Done) break;
 
-                if (!stopWatch.IsRunning) stopWatch.Start();
-
                 //  Convert phrase to address
 
                 try {
+                    if (!stopWatch.IsRunning) stopWatch.Start();
+
                     if (passphraseCount > 1) {
-                        passphraseTested = 0;
-                        passphraseLogTotal = 0;
-                        passphraseTotal = passphraseCount;
+                        long passphraseNum = 0;
+                        passphraseStart = 0;
                         IEnumerator<string> e = p.GetEnumerator();
                         while (e.MoveNext() && !Global.Done) {
                             string current = e.Current;
@@ -689,18 +722,18 @@ namespace FixMyCrypto {
                             //  If checkpoint is set, skip passphrases until we reach the checkpoint
                             (string checkpointPassphrase, long num) = checkpoint.GetCheckpointPassphrase();
                             if (checkpointPassphrase != null) {
-                                passphraseTested++;
-                                if (num == passphraseTested) {
+                                passphraseNum++;
+                                if (num == passphraseNum) {
                                     if (checkpointPassphrase == current) {
-                                        Log.Info($"Resuming from last checkpoint passphrase: {current}");
-                                        passphraseStart = passphraseTested;
+                                        Log.Info($"Resuming from last checkpoint passphrase: \"{current}\" ({passphraseNum})");
+                                        passphraseStart = passphraseNum;
                                         checkpoint.ClearPassphrase();
                                         checkpoint.Start();
                                         stopWatch.Restart();
                                         continue;
                                     }
                                     else {
-                                        Log.Error($"Passphrase restore error\nexpect:  {checkpointPassphrase}\ncurrent: {current}");
+                                        Log.Error($"Passphrase restore error\nexpect: \"{checkpointPassphrase}\"\ncurrent: \"{current}\"");
                                         FixMyCrypto.PauseAndExit(1);
                                     }
                                 }
@@ -713,7 +746,8 @@ namespace FixMyCrypto {
                             if (passphraseBatch.Count >= batchSize) {
                                 string[] passphrases = passphraseBatch.ToArray();
                                 passphraseBatch.Clear();
-                                GetAddressesBatchPassphrases(w.phrase, passphrases, tree, Produce);
+                                GetAddressesBatchPassphrases(w.phrase, passphrases, passphraseNum, tree, Produce);
+                                passphraseNum += passphrases.Length;
                             }
                         }
 
@@ -721,10 +755,9 @@ namespace FixMyCrypto {
                         if (passphraseBatch.Count > 0 && !Global.Done) {
                             string[] passphrases = passphraseBatch.ToArray();
                             passphraseBatch.Clear();
-                            GetAddressesBatchPassphrases(w.phrase, passphrases, tree, Produce);
+                            GetAddressesBatchPassphrases(w.phrase, passphrases, passphraseNum, tree, Produce);
+                            passphraseNum += passphrases.Length;
                         }
-
-                        phraseTested++;
                     }
                     else {
                         phraseBatch.Enqueue(w.phrase);
@@ -749,11 +782,20 @@ namespace FixMyCrypto {
                 GetAddressesBatchPhrases(phrases, passphrase, tree, Produce);
             }
 
+            //  finish key generation
             Finish();
             foreach (Thread th in t) th.Join();
             batchAddressesQueue.CompleteAdding();
             foreach (Thread th in t2) th.Join();
-            passphraseLogger.Stop();
+
+            //  finish retiring batches
+            while (!Global.Done && batchFinished.Count > 0) {
+                Thread.Sleep(100);
+            }
+            allBatchesFinished = true;
+            retire.Join();
+
+            progressLogger.Stop();
             stopWatch.Stop();
         }
 
