@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
-
+using System.IO;
+using System.IO.Compression;
+using System.Text;
 namespace FixMyCrypto {
 
     class Part : IEnumerable<string> {
@@ -666,6 +668,64 @@ namespace FixMyCrypto {
                 count += p.GetCount();
             }
             return count;
+        }
+
+        public void LoadFromFile(string file) {
+            if (file == null) return;
+            
+            if (file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) {
+                using var zip = ZipFile.OpenRead(file);
+                Log.Info($"Extracting passphrases from {file}");
+                foreach (var entry in zip.Entries) {
+                    if (entry.FullName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)) {
+                        using var stream = entry.Open();
+                        using var reader = new StreamReader(stream);
+                        List<string> lines = new();
+                        while (!reader.EndOfStream) {
+                            lines.Add(reader.ReadLine());
+                        }
+                        LoadStrings(lines, entry.FullName);
+                    }
+                }
+            }
+            else {
+                LoadStrings(File.ReadAllLines(file), file);
+            }
+        }
+
+        private void LoadStrings(IEnumerable<string> lines, string file) {
+            long count = 0;
+            foreach (var line in lines) {
+                var p = EscapeString(line);
+                if (String.IsNullOrEmpty(p)) continue;
+                passphrases.Add(new Passphrase(p));
+                count++;
+            }
+            Log.Info($"Read {count:n0} passphrases from {file}");
+        }
+
+        private string EscapeString(string s) {
+            StringBuilder sb = new();
+            for (int i = 0; i < s.Length; i++) {
+                switch (s[i]) {
+                    case '(':
+                    case '{':
+                    case '<':
+                    case '?':
+                    sb.AppendFormat("[{0}]", s[i]);
+                    break;
+
+                    case '[':
+                    sb.AppendFormat("({0})", s[i]);
+                    break;
+
+                    default:
+                    sb.Append(s[i]);
+                    break;
+                }
+            }
+
+            return sb.ToString();
         }
 
         public (long, int) GetCountAndMaxLength() {

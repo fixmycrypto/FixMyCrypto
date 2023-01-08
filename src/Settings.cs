@@ -62,7 +62,7 @@ namespace FixMyCrypto {
 
         public static CoinType CoinType { get { return GetCoinType(result.coin.Value); } }
 
-        public static string[] Paths {get { if (result != null && result.paths == null) return null; return result.paths.ToObject<string[]>(); } }
+        public static string[] Paths {get { if (result == null || result.paths == null) return null; return result.paths.ToObject<string[]>(); } }
 
         public static int Threads {get { if (result != null && result.threads != null) return (int)result.threads.Value; else return Environment.ProcessorCount; } }
 
@@ -76,6 +76,7 @@ namespace FixMyCrypto {
 
         public static bool NoETA { get { if (result?.noETA != null) return result.noETA; return false; }}
 
+        public static string[] PassphraseFiles {get { if (result == null || result.passphraseFiles == null) return null; return result.passphraseFiles.ToObject<string[]>(); } }
         private static int platform = -1;
         public static int OpenCLPlatform {get { return platform; } }
         private static int[] devices = null;

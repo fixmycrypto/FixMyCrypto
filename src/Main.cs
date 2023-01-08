@@ -133,12 +133,19 @@ namespace FixMyCrypto {
             long passphraseCount = 0;
             MultiPassphrase p = null;
 
-            if (Settings.Passphrases != null) {
-                foreach (string passphrase in Settings.Passphrases) {
-                    Log.All($"passphrase: \"{passphrase}\"");
+            if (Settings.Passphrases != null || Settings.PassphraseFiles != null) {
+                if (Settings.Passphrases != null) {
+                    foreach (string passphrase in Settings.Passphrases) {
+                        Log.All($"passphrase: \"{passphrase}\"");
+                    }
                 }
 
                 p = new MultiPassphrase(Settings.Passphrases);
+                if (Settings.PassphraseFiles != null) {
+                    foreach (string passphraseFile in Settings.PassphraseFiles) {
+                        p.LoadFromFile(passphraseFile);
+                    }
+                }
 
                 if (resumeFromCheckpoint) {
                     passphraseCount = checkpoint.GetPassphraseTotal();
