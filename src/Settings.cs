@@ -8,57 +8,68 @@ namespace FixMyCrypto {
     class Settings {
 
         public static int[] Indices = { 0 }, Accounts = { 0 };
+
+        private static string[] _phrases;
         public static string[] Phrases { 
 
             get {
+                if (_phrases != null) return _phrases;
+
                 if (result == null) {
                     return null;
                 }
                 else if (result.phrase != null) 
                 {
-                    string[] phrases = null;
-
                     try {
-                        phrases = result.phrase.ToObject<string[]>(); 
+                        _phrases = result.phrase.ToObject<string[]>(); 
                     }
                     catch (Exception) { }
 
-                    if (phrases == null) 
-                        phrases = new string[] { result.phrase.Value };
+                    if (_phrases == null) 
+                        _phrases = new string[] { result.phrase.Value };
 
-                    return phrases;
+                    return _phrases;
                 }
                 else 
                     return null; 
             } 
         }
 
+        private static string[] _passphrases;
+
         public static string[] Passphrases { 
             
             get {
+                if (_passphrases != null) return _passphrases;
+
                 if (result == null) {
                     return null;
                 }
                 else if (result.passphrase != null) 
                 {
-                    string[] passphrases = null;
-
                     try {
-                        passphrases = result.passphrase.ToObject<string[]>(); 
+                        _passphrases = result.passphrase.ToObject<string[]>(); 
                     }
                     catch (Exception) { }
 
-                    if (passphrases == null) 
-                        passphrases = new string[] { result.passphrase.Value };
+                    if (_passphrases == null) 
+                        _passphrases = new string[] { result.passphrase.Value };
 
-                    return passphrases;
+                    return _passphrases;
                 }
                 else 
                     return null; 
             } 
         }
 
-        public static string[] KnownAddresses { get { return result?.knownAddresses?.ToObject<string[]>(); } }
+        private static string[] _knownAddresses;
+        public static string[] KnownAddresses { 
+            get { 
+                if (_knownAddresses == null)
+                    _knownAddresses = result?.knownAddresses?.ToObject<string[]>();
+                return _knownAddresses;
+            } 
+        }
 
         public static CoinType CoinType { get { return GetCoinType(result.coin.Value); } }
 
