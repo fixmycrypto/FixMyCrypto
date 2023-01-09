@@ -657,6 +657,7 @@ namespace FixMyCrypto {
 
         public MultiPassphrase(string[] src) {
             passphrases = new();
+            if (src == null) return;
             foreach (string p in src) {
                 passphrases.Add(new Passphrase(p));
             }
