@@ -696,8 +696,8 @@ namespace FixMyCrypto {
         private void LoadStrings(IEnumerable<string> lines, string file) {
             long count = 0;
             foreach (var line in lines) {
+                if (line.Length <= 0 || line.Length > 255) continue;
                 var p = EscapeString(line);
-                if (String.IsNullOrEmpty(p)) continue;
                 passphrases.Add(new Passphrase(p));
                 count++;
             }
