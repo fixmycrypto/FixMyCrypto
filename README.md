@@ -349,6 +349,37 @@ This will match typos of any of those passphrases, e.g.:
 * "MyOt**t**erPassword"
 * "4**23**1", etc. (6965 permutations)
 
+### Example 5
+
+Your passphrase is a 4-8 digit number similar to a PIN.
+
+    "passphrase": [
+        "[0-9]<4-8>"
+    ]
+
+This will match all 4-8 digit numbers (111,110,000 permutations)
+
+---
+
+## Passphrase Files
+
+You can use .txt files (or zipped collections of .txt files) that contain lists of passwords, such as commonly used passwords or passwords collected from various data breaches or leaks.
+
+    "passphraseFiles": [
+        "passwords.txt",
+        "passwords.zip"
+    ]
+
+A passphrase file should be UTF-8 formatted plain text with one password per line, or a .zip archive containing one or more such .txt files.
+
+The provided file passwords/passwords.zip contains a list of 19 million commonly used passwords from these sources:
+* "rockyou" data breach
+* "xato net" data breach
+* Top 1 million web passwords
+* English 467k word dictionary
+* BIP-39 English word set
+* All dates from 1900-2023 in common formats (YYYYMMDD, MMDDYYYY, DDMMYYYY, YYMMDD, MMDDYY, DDMMYY)
+
 ---
 
 ## Known Addresses
