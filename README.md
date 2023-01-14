@@ -291,7 +291,7 @@ If you have a good idea of the components that make up the passphrase, but not t
     * `[0-9]<2-3>` will match two or three digits (00 - 99 and 000 - 999)
 * `{ }` curly brace expressions will fuzz the contents by testing all possible single typos (insertions, deletions, substitutions, and transpositions)
     * `{{ }}` double curly braces will test all possible double typos
-* `?` after an enclosed expression indicates that the enclosed item is optional (i.e. it occurs zero or one times)
+* `?` after an enclosed expression indicates that the enclosed item is optional (i.e. it occurs zero or one times, same as `<0-1>`)
     * `(T|t)?he` will match "The", "the", or "he"
     * `Hello Dolly[!$]?` will match "Hello Dolly", "Hello Dolly!", or "Hello Dolly$"
     * `[0-9][0-9]?` will match any one or two digits 0 - 9 and 00 - 99 (including 00, 01, etc.)
