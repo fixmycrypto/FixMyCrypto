@@ -18,6 +18,9 @@ for /D %%i in (*) do (
     Rem delete old test results
     del /q results.json checkpoint.json log.txt graph.dot
 
+    Rem wait for disk sync
+    timeout 2 > NUL
+
     Rem run program
     ..\..\bin\Release\net7.0\FixMyCrypto -ni %* >> log.txt
     if !ERRORLEVEL! NEQ 0 (
