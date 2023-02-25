@@ -308,7 +308,7 @@ namespace FixMyCrypto {
 
                         //  Derive stake key
                         string stakePath = GetStakePath().Replace("{account}", $"{account}");
-                        tree.AddPath(stakePath, false);
+                        tree.AddPath(stakePath, path.EndsWith("/2/0"));
                         break;
                     }
                 }

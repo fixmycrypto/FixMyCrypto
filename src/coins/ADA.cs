@@ -92,19 +92,36 @@ namespace FixMyCrypto {
         protected override Address DeriveAddress(PathNode node, int index) {
             var pub = GetPublicKey(node.Keys[index]);
 
-            //  Stake key is path with last 2 sections replaced by /2/0
+            if (node.Parent.Value == 0) {
+                //  Stake key is path with last 2 sections replaced by /2/0
 
-            PathNode stakeNode = node.Parent.Parent.GetChild(2U).GetChild(0U);
+                PathNode stakeNode = node.Parent.Parent.GetChild(2U).GetChild(0U);
 
-            var stakePub = GetPublicKey(stakeNode.Keys[index]);
+                var stakePub = GetPublicKey(stakeNode.Keys[index]);
 
-            var baseAddr = this.addressService.GetAddress(
-                pub, 
-                stakePub, 
-                CardanoSharp.Wallet.Enums.NetworkType.Mainnet, 
-                AddressType.Base);
+                var baseAddr = this.addressService.GetAddress(
+                    pub, 
+                    stakePub, 
+                    CardanoSharp.Wallet.Enums.NetworkType.Mainnet, 
+                    AddressType.Base);
 
-            return new Address(baseAddr.ToString(), node.GetPath());
+                return new Address(baseAddr.ToString(), node.GetPath());
+            }
+            else if (node.Parent.Value == 2) {
+                //  Stake address
+
+                var stakeAddr = this.addressService.GetAddress(
+                    pub,
+                    pub,
+                    CardanoSharp.Wallet.Enums.NetworkType.Mainnet, 
+                    AddressType.Reward);
+                
+                return new Address(stakeAddr.ToString(), node.GetPath());
+            }
+            else {
+                //  Shouldn't be here
+                return null;
+            }
         }
         public CardanoSharp.Wallet.Models.Keys.Mnemonic Restore(Phrase phrase, bool includeChecksum = false) {
             byte[] entropy = phrase.Indices.ElevenToEight(includeChecksum);
@@ -126,9 +143,15 @@ namespace FixMyCrypto {
         }
 
         public override void ValidateAddress(string address) {
-            if (!address.StartsWith("addr1q")) throw new Exception("ADA address must start with addr1q");
-
-            if (address.Length != 103) throw new Exception("ADA address incorrect length");
+            if (address.StartsWith("addr1")) {
+                if (address.Length != 103) throw new Exception("ADA address incorrect length");
+            }
+            else if (address.StartsWith("stake1")) {
+                if (address.Length != 59) throw new Exception("ADA address incorrect length");
+            }
+            else {
+                 throw new Exception("ADA address must start with addr1 or stake1");
+            }
 
             //  TODO: validate characters
         }
