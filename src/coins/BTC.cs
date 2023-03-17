@@ -216,33 +216,33 @@ namespace FixMyCrypto {
         }
 
         protected override void DeriveRootLongestPath(Phrase[] phrases, string[] passphrases, PathNode node) {
-            if (!IsUsingOpenCL()) {
+            // if (!IsUsingOpenCL()) {
                 base.DeriveRootLongestPath(phrases, passphrases, node);
-                return;
-            }
+            //     return;
+            // }
 
-            byte[][] passwords = new byte[phrases.Length][];
-            for (int i = 0; i < phrases.Length; i++) passwords[i] = phrases[i].ToPhrase().ToUTF8Bytes();
-            byte[][] salts = new byte[passphrases.Length][];
-            for (int i = 0; i < passphrases.Length; i++) salts[i] = Cryptography.PassphraseToSalt(passphrases[i]);
+            // byte[][] passwords = new byte[phrases.Length][];
+            // for (int i = 0; i < phrases.Length; i++) passwords[i] = phrases[i].ToPhrase().ToUTF8Bytes();
+            // byte[][] salts = new byte[passphrases.Length][];
+            // for (int i = 0; i < passphrases.Length; i++) salts[i] = Cryptography.PassphraseToSalt(passphrases[i]);
 
-            uint[] paths = node.GetPathValues();
-            node.Keys = ocl.Bip32DeriveFromRoot(passwords, salts, paths.Slice(1), 2048, 64, phrases[0].Length);
+            // uint[] paths = node.GetPathValues();
+            // node.Keys = ocl.Bip32DeriveFromRoot(passwords, salts, paths.Slice(1), 2048, 64, phrases[0].Length);
         }
 
         protected override Cryptography.Key DeriveChildKey(Cryptography.Key parentKey, uint index) {
-            if (!IsUsingOpenCL()) {
+            // if (!IsUsingOpenCL()) {
                 return parentKey.Derive_Bip32(index);
-            }
+            // }
 
-            return DeriveChildKey_Batch(new Cryptography.Key[] { parentKey }, index)[0];
+            // return DeriveChildKey_Batch(new Cryptography.Key[] { parentKey }, index)[0];
         }
         protected override Cryptography.Key[] DeriveChildKey_Batch(Cryptography.Key[] parents, uint index) {
-            if (!IsUsingOpenCL()) {
+            // if (!IsUsingOpenCL()) {
                 return base.DeriveChildKey_Batch(parents, index);
-            }
+            // }
 
-            return ocl.Bip32_Derive(parents, index);
+            // return ocl.Bip32_Derive(parents, index);
         }
 
         protected override Address DeriveAddress(PathNode node, int index) {

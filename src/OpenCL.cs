@@ -133,8 +133,8 @@ namespace FixMyCrypto {
                     Log.Info(ocl.GetDeviceInfo());
                     Dictionary<string, int> results = new();
                     ocl.Benchmark_Pbkdf2(count, results);
-                    ocl.Benchmark_Bip32Derive(0, count, results);
-                    ocl.Benchmark_Bip32DerivePath(null, count, results);
+                    // ocl.Benchmark_Bip32Derive(0, count, results);
+                    // ocl.Benchmark_Bip32DerivePath(null, count, results);
 
                     if (first) {
                         table.AddRow(GetCpuName(), $"{results["cpuPhrases"]/1000.0:F1}", $"{results["cpuPassphrases"]/1000.0:F1}", $"{results["cpuSecDerives"]/1000.0:F1}", $"{results["cpuSecPaths"]/1000.0:F1}");
@@ -193,7 +193,8 @@ namespace FixMyCrypto {
             saltBufferSize = maxPassphraseLength + 8;   //  +8 for "mnemonic"
             if (saltBufferSize % wordSize != 0) saltBufferSize += wordSize - (saltBufferSize % wordSize);
 
-            string code = Bip39_Solver.common_cl + Bip39_Solver_Secp256k1.secp256k1_common_cl + Bip39_Solver_Secp256k1.secp256k1_scalar_cl + Bip39_Solver_Secp256k1.secp256k1_field_cl + Bip39_Solver_Secp256k1.secp256k1_group_cl + Bip39_Solver_Secp256k1.secp256k1_preq_cl + Bip39_Solver_Secp256k1.secp256k1_cl + Bip39_Solver_Sha.sha2_cl + Bip39_Solver.pbkdf2_cl + Bip39_Solver.derive_cl;
+            // string code = Bip39_Solver.common_cl + Bip39_Solver_Secp256k1.secp256k1_common_cl + Bip39_Solver_Secp256k1.secp256k1_scalar_cl + Bip39_Solver_Secp256k1.secp256k1_field_cl + Bip39_Solver_Secp256k1.secp256k1_group_cl + Bip39_Solver_Secp256k1.secp256k1_preq_cl + Bip39_Solver_Secp256k1.secp256k1_cl + Bip39_Solver_Sha.sha2_cl + Bip39_Solver.pbkdf2_cl + Bip39_Solver.derive_cl;
+            string code = Bip39_Solver.common_cl + Bip39_Solver_Sha.sha2_cl + Bip39_Solver.pbkdf2_cl;
           
             code = code.Replace("<hashBlockSize_bits>", "1024");
             code = code.Replace("<hashDigestSize_bits>", "512");
