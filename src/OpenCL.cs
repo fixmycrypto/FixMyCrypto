@@ -243,7 +243,7 @@ namespace FixMyCrypto {
             return best;
         }
 
-        public Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, bool final_hmac = true, int iters = 2048, int dklen = 64) {
+        public unsafe Seed[] Pbkdf2_Sha512_MultiPassword(Phrase[] phrases, string[] passphrases, byte[][] passwords, byte[] salt, bool final_hmac = true, int iters = 2048, int dklen = 64) {
             Init(dklen, phrases[0].Length);
 
             // Log.Debug($"password batch size={passwords.Length}");
@@ -283,14 +283,14 @@ namespace FixMyCrypto {
             // Log.Debug($"data: {data.ToHexString()}");
             // Log.Debug($"saltData: {saltData.ToHexString()}");
 
-            byte[] result = RunKernel($"pbkdf2_{iters}_{dklen}{(final_hmac ? "_final_hmac" : "")}", data, saltData, passwords.Length);
+            (IntPtr result, int outSize) = RunKernel($"pbkdf2_{iters}_{dklen}{(final_hmac ? "_final_hmac" : "")}", data, saltData, passwords.Length);
 
             if (Global.Done) return null;
 
             // Console.WriteLine($"ocl: {result.ToHexString()}");
 
             Seed[] retval = new Seed[passwords.Length];
-            using BinaryReader r = new BinaryReader(new MemoryStream(result));
+            using BinaryReader r = new BinaryReader(new UnmanagedMemoryStream((byte*)result.ToPointer(), outSize));
             for (int i = 0; i < passwords.Length; i++) {
                 byte[] seed = r.ReadBytes(dklen);
                 if (outBufferSize > dklen) r.BaseStream.Position += (outBufferSize - dklen);
@@ -305,9 +305,9 @@ namespace FixMyCrypto {
             return retval;
         }
 
-        private byte[] RunKernel(string kernelName, byte[] data, byte[] saltData, int count) {
+        private unsafe (IntPtr, int) RunKernel(string kernelName, byte[] data, byte[] saltData, int count) {
             
-            if (Global.Done) return null;
+            if (Global.Done) return (IntPtr.Zero, 0);
 
             logger.Start();
 
@@ -325,20 +325,18 @@ namespace FixMyCrypto {
                 using CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevices[device]);
                 Interlocked.Increment(ref kernelsRunning[device]);
                 commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
-                byte[] r = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                IntPtr r = commandQueue.EnqueueReadPointer(outBuffer, outSize);
                 Interlocked.Decrement(ref kernelsRunning[device]);
 
-                return r;
+                return (r, outSize);
             }
             catch (Exception e) {
-                if (Global.Done) return null;
-
                 Log.Error(e.ToString() + $"\nkernel name: {kernelName}");
                 throw;
             }
         }
 
-        public Seed[] Pbkdf2_Sha512_MultiSalt(Phrase[] phrases, string[] passphrases, byte[] password, byte[][] salts, bool final_hmac = true, int iters = 2048, int dklen = 64) {
+        public unsafe Seed[] Pbkdf2_Sha512_MultiSalt(Phrase[] phrases, string[] passphrases, byte[] password, byte[][] salts, bool final_hmac = true, int iters = 2048, int dklen = 64) {
             Init(dklen, phrases[0].Length);
             // Log.Debug($"salt batch size={salts.Length}");
 
@@ -376,13 +374,13 @@ namespace FixMyCrypto {
             // Log.Debug($"data: {data.ToHexString()}");
             // Log.Debug($"saltData: {saltData.ToHexString()}");
 
-            byte[] result = RunKernel($"pbkdf2_saltlist_{iters}_{dklen}{(final_hmac ? "_final_hmac" : "")}", data, saltData, salts.Length);
+            (IntPtr result, int outSize) = RunKernel($"pbkdf2_saltlist_{iters}_{dklen}{(final_hmac ? "_final_hmac" : "")}", data, saltData, salts.Length);
 
             if (Global.Done) return null;
             // Console.WriteLine($"ocl: {result.ToHexString()}");
 
             Seed[] retval = new Seed[salts.Length];
-            using BinaryReader r = new BinaryReader(new MemoryStream(result));
+            using BinaryReader r = new BinaryReader(new UnmanagedMemoryStream((byte*)result.ToPointer(), outSize));
             for (int i = 0; i < salts.Length; i++) {
                 byte[] seed = r.ReadBytes(dklen);
                 if (outBufferSize > dklen) r.BaseStream.Position += (outBufferSize - dklen);
