@@ -671,7 +671,7 @@ namespace FixMyCrypto {
             return count;
         }
 
-        public void LoadFromFile(string file) {
+        public void LoadFromFile(string file, int depth) {
             if (file == null) return;
             
             if (file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) {
@@ -685,28 +685,29 @@ namespace FixMyCrypto {
                         while (!reader.EndOfStream) {
                             lines.Add(reader.ReadLine());
                         }
-                        LoadStrings(lines, entry.FullName);
+                        LoadStrings(lines, entry.FullName, depth);
                     }
                 }
             }
             else {
-                LoadStrings(File.ReadAllLines(file), file);
+                LoadStrings(File.ReadAllLines(file), file, depth);
             }
         }
 
-        private void LoadStrings(IEnumerable<string> lines, string file) {
+        private void LoadStrings(IEnumerable<string> lines, string file, int depth) {
             long count = 0;
             foreach (var line in lines) {
                 if (line.Length <= 0 || line.Length > 255) continue;
-                var p = EscapeString(line);
+                var p = EscapeString(line, depth);
                 passphrases.Add(new Passphrase(p));
                 count++;
             }
             Log.Info($"Read {count:n0} passphrases from {file}");
         }
 
-        private string EscapeString(string s) {
+        private string EscapeString(string s, int depth) {
             StringBuilder sb = new();
+            for (int i = 0; i < depth; i++) sb.Append("{");
             for (int i = 0; i < s.Length; i++) {
                 switch (s[i]) {
                     case '(':
@@ -725,6 +726,7 @@ namespace FixMyCrypto {
                     break;
                 }
             }
+            for (int i = 0; i < depth; i++) sb.Append("}");
 
             return sb.ToString();
         }
