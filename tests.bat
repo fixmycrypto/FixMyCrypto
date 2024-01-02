@@ -19,7 +19,7 @@ for /D %%i in (*) do (
     del /q results.json checkpoint.json log.txt graph.dot
 
     Rem wait for disk sync
-    timeout 2 > NUL
+    timeout 5 > NUL
 
     Rem run program
     ..\..\bin\Release\net7.0\FixMyCrypto -ni %* >> log.txt

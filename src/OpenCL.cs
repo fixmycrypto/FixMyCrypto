@@ -122,7 +122,7 @@ namespace FixMyCrypto {
         public static void BenchmarkDevices(int count = 4096) {
             Log.Info("Benchmarking devices...");
 
-            ConsoleTable table = new ConsoleTable("Device", "phrases/ms", "passphrases/ms", "Secp256k1 keys/ms", "BIP32 paths/ms");
+            ConsoleTable table = new ConsoleTable("Device", "phrases/ms", "passphrases/ms"); //, "Secp256k1 keys/ms", "BIP32 paths/ms");
             bool first = true;
             for (int p = 0; p < GetPlatformCount(); p++) {
                 Platform platform = Platform.GetPlatforms().ToList()[p];
@@ -137,13 +137,13 @@ namespace FixMyCrypto {
                     // ocl.Benchmark_Bip32DerivePath(null, count, results);
 
                     if (first) {
-                        table.AddRow(GetCpuName(), $"{results["cpuPhrases"]/1000.0:F1}", $"{results["cpuPassphrases"]/1000.0:F1}", $"{results["cpuSecDerives"]/1000.0:F1}", $"{results["cpuSecPaths"]/1000.0:F1}");
+                        table.AddRow(GetCpuName(), $"{results["cpuPhrases"]/1000.0:F1}", $"{results["cpuPassphrases"]/1000.0:F1}"); //, $"{results["cpuSecDerives"]/1000.0:F1}", $"{results["cpuSecPaths"]/1000.0:F1}");
                         first = false;
                     }
 
                     Device dev = platform.GetDevices(DeviceType.All).ToList()[d];
 
-                    table.AddRow($"{dev.Name} ({p}:{d})", $"{results["oclPhrases"]/1000.0:F1}", $"{results["oclPassphrases"]/1000.0:F1}", $"{results["oclSecDerives"]/1000.0:F1}", $"{results["oclSecPaths"]/1000.0:F1}");
+                    table.AddRow($"{dev.Name} ({p}:{d})", $"{results["oclPhrases"]/1000.0:F1}", $"{results["oclPassphrases"]/1000.0:F1}"); //, $"{results["oclSecDerives"]/1000.0:F1}", $"{results["oclSecPaths"]/1000.0:F1}");
                 }
             }
             Log.Info("Benchmark Results:");
