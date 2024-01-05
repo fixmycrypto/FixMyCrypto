@@ -143,7 +143,7 @@ namespace FixMyCrypto {
                 p = new MultiPassphrase(Settings.Passphrases);
                 if (Settings.PassphraseFiles != null) {
                     foreach (string passphraseFile in Settings.PassphraseFiles) {
-                        p.LoadFromFile(passphraseFile);
+                        p.LoadFromFile(passphraseFile, Settings.PassphraseFilesFuzzDepth);
                     }
                 }
 

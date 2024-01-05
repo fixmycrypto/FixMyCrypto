@@ -88,6 +88,7 @@ namespace FixMyCrypto {
         public static bool NoETA { get { if (result?.noETA != null) return result.noETA; return false; }}
 
         public static string[] PassphraseFiles {get { if (result == null || result.passphraseFiles == null) return null; return result.passphraseFiles.ToObject<string[]>(); } }
+        public static int PassphraseFilesFuzzDepth {get { if (result != null && result.passphraseFilesFuzzDepth != null) return (int)result.passphraseFilesFuzzDepth.Value; else return 0; } }
         private static int platform = -1;
         public static int OpenCLPlatform {get { return platform; } }
         private static int[] devices = null;
