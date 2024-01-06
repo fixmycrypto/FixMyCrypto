@@ -231,8 +231,28 @@ namespace FixMyCrypto {
 
             int depth = 0;
             for (int i = 1; i < set.Length - 1; i++) {
-                if (set[i] == start) depth++;
-                if (set[i] == end) depth--;
+                if (set[i] == start) {
+                    //  ignore escaped chars
+                    if (i > 0 && i < set.Length - 1
+                        && set[i-1] != set[i]
+                        && IsStartDelimiter(set[i-1]) && set[i+1] == GetEndDelimiter(set[i-1])) {
+                            //  this is an escaped char, don't increase depth
+                        }
+                    else {
+                        depth++;
+                    }
+                }
+                else if (set[i] == end) {
+                    //  ignore escaped chars
+                    if (i > 0 && i < set.Length - 1
+                        && set[i+1] != set[i]
+                        && IsStartDelimiter(set[i-1]) && set[i+1] == GetEndDelimiter(set[i-1])) {
+                            //  this is an escaped char, don't decrease depth
+                        }
+                    else {
+                        depth--;
+                    }
+                }
 
                 if (depth < 0) return false;
             }
@@ -530,7 +550,31 @@ namespace FixMyCrypto {
         }
 
         private string EscapeString(string s) {
-            return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("<", "&lt;").Replace("|", "\\|");
+            StringBuilder sb = new();
+            for (int i = 0; i < s.Length; i++) {
+                if ((s[i] >= 'A' && s[i] <= 'Z') || (s[i] >= 'a' && s[i] <= 'z') || (s[i] >= '0' && s[i] <= '9')) {
+                    sb.Append(s[i]);
+                }
+                else if (s[i] == '<') {
+                    sb.Append("&lt;");
+                }
+                else if (s[i] == '>') {
+                    sb.Append("&gt;");
+                }
+                else if (s[i] == '&') {
+                    sb.Append("&amp;");
+                }
+                else if (s[i] == '"') {
+                    sb.Append("&quot;");
+                }
+                else if (s[i] == '\\') {
+                    sb.Append("\\\\");
+                }
+                else {
+                    sb.Append($"&#x{(int)s[i]:X};");
+                }
+            }
+            return sb.ToString();
         }
 
         public string GetTopology(bool root = false, string parentLabel = "") {
