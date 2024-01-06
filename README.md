@@ -380,6 +380,12 @@ The provided file passwords/passwords.zip contains a list of 19 million commonly
 * BIP-39 English word set
 * All dates from 1900-2023 in common formats (YYYYMMDD, MMDDYYYY, DDMMYYYY, YYMMDD, MMDDYY, DDMMYY)
 
+### Fuzzing
+
+If you want to fuzz all the passphrases from the provided passphrase file(s), you can set the passphrase depth setting. A setting of 1 is equivalent to adding { } around every passphrase in the file, 2 would be {{ }}, etc.
+
+    "passphraseFilesFuzzDepth": 1
+
 ---
 
 ## Known Addresses
