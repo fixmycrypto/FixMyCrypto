@@ -302,7 +302,7 @@ namespace FixMyCrypto {
             TestPassphrase("(a&&b)?c", new string[] { "abc", "bac", "c" }, 3);
             TestPassphrase("[\\c]", new string[] { "a", "Z", "5" }, 95);
             TestPassphrase("[\\d]", new string[] { "0", "5", "9" }, 10);
-            TestPassphrase("[\\u]", new string[] { "🙂", "𤭢", "き", "Ы", "ز" }, 1110543);
+            TestPassphrase("[\\u]", new string[] { "🙂", "𤭢", "き", "Ы", "ز" }, 1110545);
             //  fuzzing
             TestPassphrase("{Foo92!}", new string[] { "Foo93!", "Foo92", "Foo9!", "Food92!", "Foo92!a", "FOO92!" }, 1252);
             TestPassphrase("{Food92?}", new string[] { "Foo92?", "food92?" }, 1448);

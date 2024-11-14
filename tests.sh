@@ -19,7 +19,7 @@ for d in */ ; do
 
     sleep 2 > /dev/null
 
-    if ! time -p ../../bin/Release/net7.0/FixMyCrypto -ni "$@" >> log.txt; then
+    if ! time -p ../../bin/Release/net8.0/FixMyCrypto -ni "$@" >> log.txt; then
         echo Test $d failed FixMyCrypto with $?
         exit $?
     fi

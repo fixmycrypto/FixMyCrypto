@@ -1,1 +1,3 @@
-*.sh -crlf
+* text=auto eol=crlf
+*.sh text=auto eol=lf
+*.zip -text

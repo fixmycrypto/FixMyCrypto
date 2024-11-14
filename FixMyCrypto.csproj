@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>FixMyCrypto</RootNamespace>
     <TargetName>FixMyCrypto</TargetName>
     <AssemblyName>FixMyCrypto</AssemblyName>
@@ -40,7 +40,7 @@
   
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.13.1" />
-    <PackageReference Include="BouncyCastle" Version="1.8.9" />
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.3.1" />
     <PackageReference Include="CardanoSharp.Wallet" Version="1.0.0" />
     <PackageReference Include="ConsoleTables" Version="2.4.2" />
     <PackageReference Include="Cryptography.ECDSA.Secp256k1" Version="1.1.3" />

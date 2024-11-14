@@ -22,7 +22,7 @@ for /D %%i in (*) do (
     timeout 5 > NUL
 
     Rem run program
-    ..\..\bin\Release\net7.0\FixMyCrypto -ni %* >> log.txt
+    ..\..\bin\Release\net8.0\FixMyCrypto -ni %* >> log.txt
     if !ERRORLEVEL! NEQ 0 (
         echo Test %%i failed FixMyCrypto with !ERRORLEVEL!
         exit /b !ERRORLEVEL!
