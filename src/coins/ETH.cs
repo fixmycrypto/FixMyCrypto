@@ -42,7 +42,8 @@ namespace FixMyCrypto {
         private string SkToAddress(Cryptography.Key sk) {
             byte[] pk = Cryptography.Secp256K_GetPublicKey(sk.data, false);
 
-            byte[] hash = Cryptography.KeccakDigest(pk.Slice(1, 64));
+            // byte[] hash = Cryptography.KeccakDigest(pk.Slice(1, 64));
+            byte[] hash = Cryptography.KeccakDigest(new ReadOnlySpan<byte>(pk, 1, 64));
 
             string l = hash.ToHexString(12, 20);
 

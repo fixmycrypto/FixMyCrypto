@@ -1,3 +1,5 @@
+using System;
+
 namespace FixMyCrypto {
     public class Seed {
         public byte[] seed { get; }
@@ -6,8 +8,8 @@ namespace FixMyCrypto {
 
         public string passphrase { get; }
 
-        public Seed(byte[] key, Phrase phrase, string passphrase) {
-            this.seed = key;
+        public Seed(ReadOnlySpan<byte> key, Phrase phrase, string passphrase) {
+            this.seed = key.ToArray();
             this.phrase = phrase;
             this.passphrase = passphrase;
         }

@@ -404,7 +404,7 @@ namespace FixMyCrypto {
                 int colCount = phrase.Length / rowCount;
                 if (rowCount * colCount == phrase.Length) {
                     //  Transpose
-                    // Log.Debug($"transpose {rowCount}x{colCount}");
+                    Log.Debug($"transpose {rowCount}x{colCount}");
                     short[] t = new short[phrase.Length];
 
                     for (int row = 0; row < rowCount; row++) {
@@ -423,6 +423,7 @@ namespace FixMyCrypto {
             short[] p = new short[phrase.Length];
 
             //  Swap two columns i.e. 6 7 8 9 10 11 0 1 2 3 4 5
+            Log.Debug("swap columns");
 
             for (int i = 0; i < phrase.Length / 2; i++) {
                 p[i] = phrase[i + phrase.Length / 2];
@@ -436,6 +437,7 @@ namespace FixMyCrypto {
             if (Global.Done) return;
 
             // Swap 2 col x N/2 rows, i.e. 0 6 1 7 2 8 3 9 4 10 5 11
+            Log.Debug("swap half columns");
 
             p = new short[phrase.Length];
 
@@ -555,57 +557,56 @@ namespace FixMyCrypto {
             // parallelOptions.MaxDegreeOfParallelism = threads;
 
             Stopwatch sw2 = new Stopwatch();
-
-            // Log.Debug($"PP: Swap columns");
+            Log.Debug($"PP: Swap columns");
             sw2.Start();
             SwapColumns(phrase);
             sw2.Stop();
             // Log.Debug($"PP: Swap columns finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
-            // Log.Debug($"PP: Swap any 2");
+            Log.Debug($"PP: Swap any 2");
             sw2.Start();
             SwapTwo(phrase);
             sw2.Stop();
             // Log.Debug($"PP: Swap any 2 finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
-            // Log.Debug($"PP: Change 1 word (same letter)");
+            Log.Debug($"PP: Change 1 word (same letter)");
             sw2.Restart();
             ChangeWords(phrase, 1, SwapMode.SameLetter);
             sw2.Stop();
             // Log.Debug($"PP: Change 1 word (same letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
-            // Log.Debug($"PP: Swap any 3");
+            Log.Debug($"PP: Swap any 3");
             sw2.Start();
             SwapThree(phrase);
             sw2.Stop();
             // Log.Debug($"PP: Swap any 3 finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
-            // Log.Debug($"PP: Swap any 4");
+            Log.Debug($"PP: Swap any 4");
             sw2.Start();
             SwapFour(phrase);
             sw2.Stop();
             // Log.Debug($"PP: Swap any 4 finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
-            // Log.Debug($"PP: Change 1 word (any letter)");
+            Log.Debug($"PP: Change 1 word (any letter)");
             sw2.Restart();
             ChangeWords(phrase, 1, SwapMode.AnyLetter);
             sw2.Stop();
             // Log.Debug($"PP: Change 1 word (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
-            // Log.Debug($"PP: Swap 2, Change 1 (distance = {Settings.WordDistance})");
+            Log.Debug($"PP: Swap 2, Change 1 (distance = {Settings.WordDistance})");
             sw2.Restart();
             SwapTwoCOW(phrase, SwapMode.Similar);
             sw2.Stop();
             // Log.Debug($"PP: Swap 2, Change 1 (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
-            // Log.Debug($"PP: Change 2 words (distance = {Settings.WordDistance})");
+            Log.Debug($"PP: Change 2 words (distance = {Settings.WordDistance})");
             sw2.Restart();
             ChangeWords(phrase, 2, SwapMode.Similar);
             sw2.Stop();
@@ -616,35 +617,35 @@ namespace FixMyCrypto {
 
             //  Advanced modes
 
-            // Log.Debug($"PP: Swap 2, Change 2 (distance = {Settings.WordDistance})");
+            Log.Debug($"PP: Swap 2, Change 2 (distance = {Settings.WordDistance})");
             sw2.Restart();
             ChangeWordsSwap(phrase, 2, SwapMode.Similar);
             sw2.Stop();
             // Log.Debug($"PP: Swap 2, Change 2 (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
-            // Log.Debug($"PP: Swap 2, Change 1 (same letter)");
+            Log.Debug($"PP: Swap 2, Change 1 (same letter)");
             sw2.Restart();
             SwapTwoCOW(phrase, SwapMode.SameLetter);
             sw2.Stop();
             // Log.Debug($"PP: Swap 2, Change 1 (same letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
-            // Log.Debug($"PP: Change 2 words (same letter)");
+            Log.Debug($"PP: Change 2 words (same letter)");
             sw2.Restart();
             ChangeWords(phrase, 2, SwapMode.SameLetter);
             sw2.Stop();
             // Log.Debug($"PP: Change 2 words (same letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
-            // Log.Debug($"PP: Swap 2, Change 1 (any letter)");
+            Log.Debug($"PP: Swap 2, Change 1 (any letter)");
             sw2.Restart();
             SwapTwoCOW(phrase, SwapMode.AnyLetter);
             sw2.Stop();
             // Log.Debug($"PP: Swap 2, Change 1 (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
-            // Log.Debug($"PP: Change 3 words (distance = {Settings.WordDistance})");
+            Log.Debug($"PP: Change 3 words (distance = {Settings.WordDistance})");
             sw2.Restart();
             ChangeWords(phrase, 3, SwapMode.Similar);
             sw2.Stop();
@@ -653,6 +654,7 @@ namespace FixMyCrypto {
 
             //  All permutations
             if (phrase.Length == 12) {
+                Log.Debug("PP: Try all word orders");
                 sw2.Restart();
                 Scramble(phrase, 0);
                 sw2.Stop();
@@ -661,31 +663,40 @@ namespace FixMyCrypto {
             
             if (difficulty < 2) return;
 
+            Log.Debug($"PP: Change 2 words (any)");
+            sw2.Restart();
+            ChangeWords(phrase, 2, SwapMode.AnyLetter);
+            sw2.Stop();
+            // Log.Debug($"PP: Change 2 words (any) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            if (Global.Done) return;
+
+            if (difficulty < 3) return;
+
             //  SUPER ADVANCED MODE
 
-            // Log.Debug($"PP: Change 4 words (distance = {Settings.WordDistance})");
+            Log.Debug($"PP: Change 4 words (distance = {Settings.WordDistance})");
             sw2.Restart();
             ChangeWords(phrase, 4, SwapMode.Similar);
             sw2.Stop();
             // Log.Debug($"PP: Change 4 words (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
 
-            if (difficulty < 3) return;
-
-            // Log.Debug($"PP: Change 2 words (any letter)");
-            sw2.Restart();
-            ChangeWords(phrase, 2, SwapMode.AnyLetter);
-            sw2.Stop();
-            // Log.Debug($"PP: Change 2 words (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) return;
-
             if (difficulty < 4) return;
 
-            // Log.Debug($"PP: Change 3 words (any letter)");
+            Log.Debug($"PP: Change 3 words (any)");
             sw2.Restart();
             ChangeWords(phrase, 3, SwapMode.AnyLetter);
             sw2.Stop();
-            // Log.Debug($"PP: Change 3 words (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            // Log.Debug($"PP: Change 3 words (any) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
+            if (Global.Done) return;
+
+            if (difficulty < 5) return;
+
+            Log.Debug($"PP: Change 4 words (any letter)");
+            sw2.Restart();
+            ChangeWords(phrase, 4, SwapMode.AnyLetter);
+            sw2.Stop();
+            // Log.Debug($"PP: Change 4 words (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
             if (Global.Done) return;
         }
 

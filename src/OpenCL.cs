@@ -221,7 +221,7 @@ namespace FixMyCrypto {
             int cus = 0;
             foreach (Device d in chosenDevices) cus = Math.Max(cus, d.MaximumComputeUnits);
 
-            int batchSize = 128 * cus;
+            int batchSize = 256 * cus;
             Log.Debug($"batchSize={batchSize}, CUs={cus} inBuffer={batchSize*inBufferSize}, outBuffer={batchSize*outBufferSize}");
             return batchSize;
         }
@@ -290,10 +290,12 @@ namespace FixMyCrypto {
             // Console.WriteLine($"ocl: {result.ToHexString()}");
 
             Seed[] retval = new Seed[passwords.Length];
-            using BinaryReader r = new BinaryReader(new UnmanagedMemoryStream((byte*)result.ToPointer(), outSize));
+            // using BinaryReader r = new BinaryReader(new UnmanagedMemoryStream((byte*)result.ToPointer(), outSize));
+            var memory = new ReadOnlySpan<byte>((byte*)result.ToPointer(), outSize);
             for (int i = 0; i < passwords.Length; i++) {
-                byte[] seed = r.ReadBytes(dklen);
-                if (outBufferSize > dklen) r.BaseStream.Position += (outBufferSize - dklen);
+                // byte[] seed = r.ReadBytes(dklen);
+                var seed = memory.Slice(i * outBufferSize, dklen);
+                // if (outBufferSize > dklen) r.BaseStream.Position += (outBufferSize - dklen);
 
                 if (phrases.Length == passwords.Length) {
                     retval[i] = new Seed(seed, phrases[i], passphrases[0]);
@@ -380,10 +382,12 @@ namespace FixMyCrypto {
             // Console.WriteLine($"ocl: {result.ToHexString()}");
 
             Seed[] retval = new Seed[salts.Length];
-            using BinaryReader r = new BinaryReader(new UnmanagedMemoryStream((byte*)result.ToPointer(), outSize));
+            // using BinaryReader r = new BinaryReader(new UnmanagedMemoryStream((byte*)result.ToPointer(), outSize));
+            var memory = new ReadOnlySpan<byte>((byte*)result.ToPointer(), outSize);
             for (int i = 0; i < salts.Length; i++) {
-                byte[] seed = r.ReadBytes(dklen);
-                if (outBufferSize > dklen) r.BaseStream.Position += (outBufferSize - dklen);
+                // byte[] seed = r.ReadBytes(dklen);
+                // if (outBufferSize > dklen) r.BaseStream.Position += (outBufferSize - dklen);
+                var seed = memory.Slice(i * outBufferSize, dklen);
 
                 if (phrases.Length == salts.Length) {
                     retval[i] = new Seed(seed, phrases[i], passphrases[0]);
@@ -395,7 +399,7 @@ namespace FixMyCrypto {
             return retval;
         }
 
-        public Cryptography.Key[] Bip32DeriveFromRoot(byte[][] passwords, byte[][] salts, uint[] paths, int iters = 2048, int dklen = 64, int phraseLen = 24) {
+        public unsafe Cryptography.Key[] Bip32DeriveFromRoot(byte[][] passwords, byte[][] salts, uint[] paths, int iters = 2048, int dklen = 64, int phraseLen = 24) {
             long fStart = Global.sw.ElapsedMilliseconds;
             
             Init(dklen, phraseLen);
@@ -482,7 +486,8 @@ namespace FixMyCrypto {
                 using CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevices[device]);
                 Interlocked.Increment(ref kernelsRunning[device]);
                 commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
-                byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                // byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                IntPtr r = commandQueue.EnqueueReadPointer(outBuffer, outSize);
                 Interlocked.Decrement(ref kernelsRunning[device]);
 
                 if (Global.Done) return null;
@@ -491,9 +496,11 @@ namespace FixMyCrypto {
 
 
                 Cryptography.Key[] ret = new Cryptography.Key[count];
-                using BinaryReader r = new BinaryReader(new MemoryStream(result));
+                // using BinaryReader r = new BinaryReader(new MemoryStream(result));
+                var memory = new ReadOnlySpan<byte>((byte*)r.ToPointer(), outSize);
                 for (int i = 0; i < count; i++) {
-                    ret[i] = new Cryptography.Key(r.ReadBytes(32), r.ReadBytes(32));
+                    // ret[i] = new Cryptography.Key(r.ReadBytes(32), r.ReadBytes(32));
+                    ret[i] = new Cryptography.Key(memory.Slice(i * 64, 32), memory.Slice(i * 64 + 32, 32));
                 }
                 // Log.Debug($"{Thread.CurrentThread.Name}, Bit32DeriveFromRoot, {fStart}, {Global.sw.ElapsedMilliseconds}");
                 return ret;
@@ -506,7 +513,7 @@ namespace FixMyCrypto {
             }
         }
 
-        public Cryptography.Key[] Bip32_Derive(Cryptography.Key[] keys, uint path, int keyLen = 32, int ccLen = 32) {
+        public unsafe Cryptography.Key[] Bip32_Derive(Cryptography.Key[] keys, uint path, int keyLen = 32, int ccLen = 32) {
             Init(keyLen + ccLen, usingPhraseLen);
 
             int length = keyLen + ccLen;
@@ -549,15 +556,19 @@ namespace FixMyCrypto {
                 using CommandQueue commandQueue = CommandQueue.CreateCommandQueue(context, chosenDevices[device]);
                 Interlocked.Increment(ref kernelsRunning[device]);
                 commandQueue.EnqueueNDRangeKernel(kernel, 1, count);
-                byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                // byte[] result = commandQueue.EnqueueReadBuffer<byte>(outBuffer, outSize);
+                IntPtr r = commandQueue.EnqueueReadPointer(outBuffer, outSize);
                 Interlocked.Decrement(ref kernelsRunning[device]);
 
                 if (Global.Done) return null;
 
                 Cryptography.Key[] ret = new Cryptography.Key[count];
-                using BinaryReader r = new BinaryReader(new MemoryStream(result));
+                // using BinaryReader r = new BinaryReader(new MemoryStream(result));
+                var memory = new ReadOnlySpan<byte>((byte*)r.ToPointer(), outSize);
+                int len = keyLen + ccLen;
                 for (int i = 0; i < count; i++) {
-                    ret[i] = new Cryptography.Key(r.ReadBytes(keyLen), r.ReadBytes(ccLen));
+                    // ret[i] = new Cryptography.Key(r.ReadBytes(keyLen), r.ReadBytes(ccLen));
+                    ret[i] = new Cryptography.Key(memory.Slice(i * len, keyLen), memory.Slice(i * len + keyLen, ccLen));
                 }
                 return ret;
             }

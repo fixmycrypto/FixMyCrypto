@@ -177,7 +177,8 @@ namespace FixMyCrypto {
             byte[] salt = Cryptography.PassphraseToSalt(passphrase);
             byte[] seed = Cryptography.Pbkdf2_HMAC512(p, salt, 2048, 64);
             byte[] key = Cryptography.HMAC512_Bitcoin(seed);
-            return new Cryptography.Key(key.Slice(0, 32), key.Slice(32));
+            // return new Cryptography.Key(key.Slice(0, 32), key.Slice(32));
+            return new Cryptography.Key(new ReadOnlySpan<byte>(key, 0, 32), new ReadOnlySpan<byte>(key, 32, 32));
         }
         public override bool IsUsingOpenCL() {
             return (ocl != null);
@@ -194,7 +195,8 @@ namespace FixMyCrypto {
             Cryptography.Key[] keys = new Cryptography.Key[phrases.Length];
             for (int i = 0; i < phrases.Length; i++) {
                 if (Global.Done) break;
-                keys[i] = new Cryptography.Key(seeds[i].seed.Slice(0, 32), seeds[i].seed.Slice(32));
+                // keys[i] = new Cryptography.Key(seeds[i].seed.Slice(0, 32), seeds[i].seed.Slice(32));
+                keys[i] = new Cryptography.Key(new ReadOnlySpan<byte>(seeds[i].seed, 0, 32), new ReadOnlySpan<byte>(seeds[i].seed, 32, 32));
             }
             return keys;
         }
@@ -210,7 +212,8 @@ namespace FixMyCrypto {
             Cryptography.Key[] keys = new Cryptography.Key[passphrases.Length];
             for (int i = 0; i < passphrases.Length; i++) {
                 if (Global.Done) break;
-                keys[i] = new Cryptography.Key(seeds[i].seed.Slice(0, 32), seeds[i].seed.Slice(32));
+                // keys[i] = new Cryptography.Key(seeds[i].seed.Slice(0, 32), seeds[i].seed.Slice(32));
+                keys[i] = new Cryptography.Key(new ReadOnlySpan<byte>(seeds[i].seed, 0, 32), new ReadOnlySpan<byte>(seeds[i].seed, 32, 32));
             }
             return keys;
         }

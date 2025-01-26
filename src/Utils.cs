@@ -86,6 +86,12 @@ namespace FixMyCrypto
         public static string ToHexString(this byte[] b) {
             return b.ToHexString(0, b.Length);
         }
+        public static string ToHexString(this ReadOnlyMemory<byte> b) {
+            return Convert.ToHexString(b.Span);
+        }
+        public static string ToHexString(this ReadOnlySpan<byte> b) {
+            return Convert.ToHexString(b);
+        }
         public static string ToHexString(this byte[] b, int start, int len) {
             char[] c = new char[len * 2];
             int p = 0;

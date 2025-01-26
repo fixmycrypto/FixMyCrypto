@@ -595,17 +595,30 @@ namespace FixMyCrypto {
             long done = totalPhrasesTested*GetPhraseMultiplier();
             long phrasesToGo = checkpoint.GetPhraseTotal() - done - phraseStart;
             long currentPhraseNum = lastPhrase != null ? lastPhrase.SequenceNum : 0;
+            TimeSpan eta = TimeSpan.MaxValue;
 
             if (passphraseCount > 1) {
                 if (totalPassphrasesTested > passphraseLogTotal) {
                     long ppps = 1000*totalPassphrasesTested/stopWatch.ElapsedMilliseconds;
                     if (ppps != 0) {
                         if (phrasesToGo > 1) {
-                            TimeSpan eta = TimeSpan.FromSeconds(((phrasesToGo * passphraseCount) - totalPassphrasesTested) / ppps);
+                            try
+                            {
+                                eta = TimeSpan.FromSeconds(((phrasesToGo * passphraseCount) - totalPassphrasesTested) / ppps);
+                            }
+                            catch (Exception)
+                            {
+                            }
                             Log.Info($"Phrase {currentPhraseNum:n0} / {checkpoint.GetPhraseTotal():n0} ({100.0*currentPhraseNum/checkpoint.GetPhraseTotal():F2}%), Passphrases tested {lastPassphraseNum:n0} / {passphraseCount:n0} ({100.0*lastPassphraseNum/passphraseCount:F2}%), passphrases/s: {ppps:n0}, ETA: {eta}");
                         }
                         else {
-                            TimeSpan eta = TimeSpan.FromSeconds((passphraseCount - lastPassphraseNum) / ppps);
+                            try
+                            {
+                                eta = TimeSpan.FromSeconds((passphraseCount - lastPassphraseNum) / ppps);
+                            }
+                            catch (Exception)
+                            {
+                            }
                             Log.Info($"Passphrases tested {lastPassphraseNum:n0} / {passphraseCount:n0} ({100.0*lastPassphraseNum/passphraseCount:F2}%), passphrases/s: {ppps:n0}, ETA: {eta}");
                         }
                     }
@@ -617,7 +630,13 @@ namespace FixMyCrypto {
                     long pps = 1000*done/stopWatch.ElapsedMilliseconds;
                     if (pps != 0) {
                         if (checkpoint.GetPhraseTotal() > 0) {
-                            TimeSpan eta = TimeSpan.FromSeconds(phrasesToGo / pps);
+                            try
+                            {
+                                eta = TimeSpan.FromSeconds(phrasesToGo / pps);
+                            }
+                            catch (Exception)
+                            {
+                            }
                             Log.Info($"Phrases Tested total: {currentPhraseNum:n0} / {checkpoint.GetPhraseTotal():n0} ({100.0*(done+phraseStart)/checkpoint.GetPhraseTotal():F2}%), phrases/s: {pps:n0}, ETA: {eta}");
                         }
                         else {

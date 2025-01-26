@@ -41,6 +41,14 @@ namespace FixMyCrypto {
             return h;
         }
 
+        public static byte[] KeccakDigest(ReadOnlySpan<byte> data) {
+            var digest = new Org.BouncyCastle.Crypto.Digests.KeccakDigest(256);
+            digest.BlockUpdate(data);
+            byte[] h = new byte[digest.GetByteLength()];
+            digest.DoFinal(h, 0);
+            return h;
+        }
+
         public static byte[] PassphraseToSalt(string passphrase) {
             return Encoding.UTF8.GetBytes("mnemonic" + passphrase);
         }
@@ -57,9 +65,9 @@ namespace FixMyCrypto {
         public class Key {
             public byte[] data { get; }
             public byte[] cc { get; }
-            public Key(byte[] data, byte[] cc) {
-                this.data = data;
-                this.cc = cc;
+            public Key(ReadOnlySpan<byte> data, ReadOnlySpan<byte> cc) {
+                this.data = data.ToArray();
+                this.cc = cc.ToArray();
             }
 
             public Key Derive_Bip32(uint index) {
@@ -82,10 +90,12 @@ namespace FixMyCrypto {
                 using HMACSHA512 HMAC512 = new HMACSHA512(this.cc);
                 byte[] result = HMAC512.ComputeHash(hmac_input);
 
-                Scalar sk = new Scalar(result.Slice(0, 32));
+                // Scalar sk = new Scalar(result.Slice(0, 32));
+                Scalar sk = new Scalar(result.AsSpan<byte>(0, 32));
                 Scalar parent = new Scalar(this.data);
                 Scalar child = sk.Add(parent);
-                Key r = new Key(child.ToBytes(), result.Slice(32));
+                // Key r = new Key(child.ToBytes(), result.Slice(32));
+                Key r = new Key(child.ToBytes(), result.AsSpan<byte>(32));
 
                 return r;
             }
@@ -102,10 +112,12 @@ namespace FixMyCrypto {
                 using HMACSHA512 HMAC512 = new HMACSHA512(this.cc);
                 byte[] result = HMAC512.ComputeHash(hmac_input);
 
-                Scalar sk = new Scalar(result.Slice(0, 32));
+                // Scalar sk = new Scalar(result.Slice(0, 32));
+                Scalar sk = new Scalar(result.AsSpan<byte>(0, 32));
                 Scalar parent = new Scalar(this.data);
                 Scalar child = sk.Add(parent);
-                Key r = new Key(child.ToBytes(), result.Slice(32));
+                // Key r = new Key(child.ToBytes(), result.Slice(32));
+                Key r = new Key(child.ToBytes(), result.AsSpan<byte>(32));
 
                 return r;
             }
