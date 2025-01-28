@@ -8,12 +8,13 @@
     <AssemblyName>FixMyCrypto</AssemblyName>
     <NoWarn>NU1701</NoWarn>
     <!--<Nullable>enable</Nullable>-->
-    <AssemblyVersion>3.0.3.0</AssemblyVersion>
+    <AssemblyVersion>3.1.0.0</AssemblyVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);lib\**</DefaultItemExcludes>
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace FixMyCrypto {
     class PhraseToAddressEth : PhraseToAddressBitAltcoin {
-        public PhraseToAddressEth(BlockingCollection<Work> phrases) : base(phrases, CoinType.ETH) {
+        public PhraseToAddressEth(PhraseProducer phrases) : base(phrases, CoinType.ETH) {
         }
         public override CoinType GetCoinType() { return CoinType.ETH; }
         private char GetChecksumDigit(byte h, char c) {

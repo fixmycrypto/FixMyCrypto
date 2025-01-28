@@ -116,8 +116,6 @@ namespace FixMyCrypto {
                 PauseAndExit(1);
             }
 
-            BlockingCollection<Work> phraseQueue = new BlockingCollection<Work>(Settings.Threads);
-
             int phraseProducerCount = 1,
                 phraseToAddressCount = 1;
 
@@ -202,16 +200,27 @@ namespace FixMyCrypto {
                 }
             }
 
-            // System.Timers.Timer timer = new System.Timers.Timer(30 * 1000);
-            // timer.Elapsed += (StringReader, args) => { 
-            //     if (phraseQueue.Count > 0 || addressQueue.Count > 0) Log.Debug($"Queue status: phrases {phraseQueue.Count} addresses {addressQueue.Count}");
-            // };
-            // timer.Start();
+            PhraseProducer phraseProducer = new PhraseProducer(Settings.Phrases);
+            checkpoint.SetPhraseProducer(phraseProducer);
+            long totalPhrases;
+            if (resumeFromCheckpoint) {
+                totalPhrases = checkpoint.GetPhraseTotal();
+            }
+            else if (!Settings.NoETA) {
+                Log.All("Enumerating phrases...");
+                totalPhrases = phraseProducer.GetTotalCount();
+                Log.All($"Phrase count: {totalPhrases:n0}");
+                checkpoint.SetPhraseTotal(totalPhrases);
+            }
+            else {
+                totalPhrases = 0;
+                checkpoint.SetPhraseTotal(totalPhrases);
+            }
 
             PhraseToAddress[] p2a = new PhraseToAddress[phraseToAddressCount];
             List<Thread> p2aThreads = new List<Thread>();
             for (int i = 0; i < phraseToAddressCount; i++) {
-                p2a[i] = PhraseToAddress.Create(Settings.CoinType, phraseQueue);
+                p2a[i] = PhraseToAddress.Create(Settings.CoinType, phraseProducer);
 
                 if (i == 0) checkpoint.SetPhraseToAddress(p2a[i]);
 
@@ -238,41 +247,7 @@ namespace FixMyCrypto {
                 thread.Start(); 
              }
 
-            PhraseProducer[] phrasers = new PhraseProducer[phraseProducerCount];
-            List<Thread> phraseThreads = new List<Thread>();
-            for (int i = 0; i < phraseProducerCount; i++) {
-                phrasers[i] = new PhraseProducer(phraseQueue, Settings.Phrases);
-
-                if (i == 0) {
-                    checkpoint.SetPhraseProducer(phrasers[i]);
-                    
-                    long totalPhrases;
-                    if (resumeFromCheckpoint) {
-                        totalPhrases = checkpoint.GetPhraseTotal();
-                    }
-                    else if (!Settings.NoETA) {
-                        Log.All("Enumerating phrases...");
-                        totalPhrases = phrasers[i].GetTotalCount();
-                        Log.All($"Phrase count: {totalPhrases:n0}");
-                        checkpoint.SetPhraseTotal(totalPhrases);
-                    }
-                    else {
-                        totalPhrases = 0;
-                        checkpoint.SetPhraseTotal(totalPhrases);
-                    }
-                }
-
-                Thread thread = new Thread (phrasers[i].ProduceWork);
-                thread.Name = "PP" + i;
-                phraseThreads.Add(thread);
-                thread.Start(); 
-            }
-
             if (!resumeFromCheckpoint) checkpoint.Start();
-
-            for (int i = 0; i < phraseProducerCount; i++) {
-                phraseThreads[i].Join();
-            }
 
             for (int i = 0; i < phraseToAddressCount; i++) {
                 p2aThreads[i].Join();

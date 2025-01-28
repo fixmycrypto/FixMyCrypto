@@ -8,7 +8,7 @@ using Cryptography.ECDSA;
 namespace FixMyCrypto {
 
     class PhraseToAddressPolkadot : PhraseToAddress {
-        public PhraseToAddressPolkadot(BlockingCollection<Work> phrases) : base(phrases) { 
+        public PhraseToAddressPolkadot(PhraseProducer phrases) : base(phrases) { 
         }
 
         public override CoinType GetCoinType() { return CoinType.DOT; }
@@ -92,7 +92,7 @@ namespace FixMyCrypto {
         }
     }
     class PhraseToAddressPolkadotLedger : PhraseToAddressPolkadot {
-        public PhraseToAddressPolkadotLedger(BlockingCollection<Work> phrases) : base(phrases) {
+        public PhraseToAddressPolkadotLedger(PhraseProducer phrases) : base(phrases) {
         }
 
         public override string[] GetDefaultPaths(string[] knownAddresses) {

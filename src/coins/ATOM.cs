@@ -4,7 +4,7 @@ using Bech32;
 
 namespace FixMyCrypto {
     class PhraseToAddressAtom : PhraseToAddressBitAltcoin {
-        public PhraseToAddressAtom(BlockingCollection<Work> phrases) : base(phrases, CoinType.ATOM) {
+        public PhraseToAddressAtom(PhraseProducer phrases) : base(phrases, CoinType.ATOM) {
         }
         public override CoinType GetCoinType() { return CoinType.ATOM; }
         public override string[] GetDefaultPaths(string[] knownAddresses) {

@@ -8,9 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace FixMyCrypto {
     abstract class PhraseToAddress {
-        protected BlockingCollection<Work> phraseQueue;
 
-        public static PhraseToAddress Create(CoinType coin, BlockingCollection<Work> phrases) {
+        PhraseProducer phraseProducer;
+
+        public static PhraseToAddress Create(CoinType coin, PhraseProducer phrases) {
             switch (coin) {
                 case CoinType.ADA:
 
@@ -152,8 +153,8 @@ namespace FixMyCrypto {
         private bool allBatchesFinished = false;
         private long nextBatchId = 0;
         private long lastBatchFinished = 0;
-        protected PhraseToAddress(BlockingCollection<Work> phrases) {
-            this.phraseQueue = phrases;
+        protected PhraseToAddress(PhraseProducer phraseProducer) {
+            this.phraseProducer = phraseProducer;
         }
         public void SetOpenCL(OpenCL ocl) {
             this.ocl = ocl;
@@ -582,7 +583,6 @@ namespace FixMyCrypto {
         }
         public abstract CoinType GetCoinType();
         public void Finish() {
-            phraseQueue.CompleteAdding();
             batchKeysQueue.CompleteAdding();
         }
         private long phraseLogTotal = 0, passphraseLogTotal = 0;
@@ -702,26 +702,14 @@ namespace FixMyCrypto {
             };
             progressLogger.Start();
 
-            while (!Global.Done && !phraseQueue.IsCompleted) {
+            var phraseEnumerator = phraseProducer.ProduceWork();
 
-                //  Dequeue phrase
-                Work w = null;
+            foreach (var workItem in phraseEnumerator) {
 
-                queueWaitTime.Start();
-                try {
-                    w = phraseQueue.Take();
-                }
-                catch (InvalidOperationException) {
-                    break;
-                }
-                finally {
-                    queueWaitTime.Stop();
-                }
-
-                if (w == null) continue;
- 
                 if (Global.Done) break;
 
+                if (workItem == null) continue;
+ 
                 //  Convert phrase to address
 
                 try {
@@ -761,7 +749,7 @@ namespace FixMyCrypto {
                             if (passphraseBatch.Count >= batchSize) {
                                 string[] passphrases = passphraseBatch.ToArray();
                                 passphraseBatch.Clear();
-                                GetAddressesBatchPassphrases(w.phrase, passphrases, passphraseNum, tree, Produce);
+                                GetAddressesBatchPassphrases(workItem, passphrases, passphraseNum, tree, Produce);
                                 passphraseNum += passphrases.Length;
                             }
                         }
@@ -770,12 +758,12 @@ namespace FixMyCrypto {
                         if (passphraseBatch.Count > 0 && !Global.Done) {
                             string[] passphrases = passphraseBatch.ToArray();
                             passphraseBatch.Clear();
-                            GetAddressesBatchPassphrases(w.phrase, passphrases, passphraseNum, tree, Produce);
+                            GetAddressesBatchPassphrases(workItem, passphrases, passphraseNum, tree, Produce);
                             passphraseNum += passphrases.Length;
                         }
                     }
                     else {
-                        phraseBatch.Enqueue(w.phrase);
+                        phraseBatch.Enqueue(workItem);
                         if (phraseBatch.Count >= batchSize) {
                             Phrase[] phrases = phraseBatch.ToArray();
                             phraseBatch.Clear();
