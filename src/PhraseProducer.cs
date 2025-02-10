@@ -124,7 +124,6 @@ namespace FixMyCrypto {
                     p[j] = temp;
 
                     yield return TestPhrase(p);
-                    if (Global.Done) yield break;
                 }
             };
         }
@@ -149,7 +148,6 @@ namespace FixMyCrypto {
                         p[k] = temp;
 
                         yield return TestPhrase(p);
-                        if (Global.Done) yield break;
 
                         //  Swap ijk - kij
                         p = phrase.Copy();
@@ -160,7 +158,6 @@ namespace FixMyCrypto {
                         p[j] = temp;
 
                         yield return TestPhrase(p);
-                        if (Global.Done) yield break;
                     }
                 }
             };
@@ -192,7 +189,6 @@ namespace FixMyCrypto {
                             p[l] = temp;
 
                             yield return TestPhrase(p);
-                            if (Global.Done) yield break;
 
                             //  Swap ijkl - klij
                             p = phrase.Copy();
@@ -203,7 +199,6 @@ namespace FixMyCrypto {
                             p[k] = temp;
 
                             yield return TestPhrase(p);
-                            if (Global.Done) yield break;
 
                             //  Swap ijkl - lijk
                             p = phrase.Copy();
@@ -214,7 +209,6 @@ namespace FixMyCrypto {
                             p[j] = temp;
 
                             yield return TestPhrase(p);
-                            if (Global.Done) yield break;
                         }             
                     }
                 }
@@ -249,7 +243,6 @@ namespace FixMyCrypto {
         private IEnumerable<Phrase?> SwapTwoCOW(short[] phrase, SwapMode swapMode) {
              for (int i = 0; i < phrase.Length - 1; i++) {
             // Parallel.For(0, phrase.Length - 1, this.parallelOptions, i => {
-                if (Global.Done) yield break;
                 if (locked[i]) continue;
 
                 // if (i > 0) Log.Debug($"PP S2C1W ({swapMode}) progress: {(100*i/phrase.Length)}%");
@@ -268,7 +261,6 @@ namespace FixMyCrypto {
                     /*  already tested by SwapTwo
                     //  Test swapped only
                     TestPhrase(swapped);
-                    if (Global.Done) yield break;
                     */
 
                     for (int k = 0; k < phrase.Length; k++) {
@@ -282,7 +274,6 @@ namespace FixMyCrypto {
                                 cow_swapped[k] = word;
 
                                 yield return TestPhrase(cow_swapped);
-                                if (Global.Done) yield break;
                             }
                         } 
                     }
@@ -298,7 +289,6 @@ namespace FixMyCrypto {
 
             for (int i = start; i < end; i++) {
             // Parallel.For(start, end, this.parallelOptions, i => {
-                if (Global.Done) yield break;
                 if (skip != null && skip.Contains(i)) continue;
                 if (locked[i]) continue;
 
@@ -326,7 +316,6 @@ namespace FixMyCrypto {
                     else {
                         //  test after current swap
                         yield return TestPhrase(cow);
-                        if (Global.Done) yield break;
                     }
                 }
             };
@@ -340,7 +329,6 @@ namespace FixMyCrypto {
 
             for (int i = start; i < end; i++) {
             // Parallel.For(start, end, this.parallelOptions, i => {
-                if (Global.Done) yield break;
                 if (skip != null && skip.Contains(i)) continue;
                 if (locked[i]) continue;
 
@@ -368,7 +356,6 @@ namespace FixMyCrypto {
                     else {
                         //  test after current swap
                         yield return TestPhrase(cow);
-                        if (Global.Done) yield break;
 
                         //  plus 1 swap
 
@@ -383,7 +370,6 @@ namespace FixMyCrypto {
                                 cowswap[k] = temp;
 
                                 yield return TestPhrase(cowswap);
-                                if (Global.Done) yield break;
                             }
                         }
                     }
@@ -407,7 +393,6 @@ namespace FixMyCrypto {
                     }
 
                     yield return TestPhrase(t);
-                    if (Global.Done) yield break;
                 }
             }
 
@@ -427,7 +412,6 @@ namespace FixMyCrypto {
             }
 
             yield return TestPhrase(p);
-            if (Global.Done) yield break;
 
             // Swap 2 col x N/2 rows, i.e. 0 6 1 7 2 8 3 9 4 10 5 11
             Log.Debug("swap half columns");
@@ -441,11 +425,9 @@ namespace FixMyCrypto {
             }
 
             yield return TestPhrase(p);
-            if (Global.Done) yield break;
         }
 
         private IEnumerable<Phrase?> FixMissing(short[] phrase, int missing, int totalMissing, int wrong, bool runAlgorithms, int difficulty) {
-            if (Global.Done) yield break;
 
             if (missing == 0) {
                 foreach (var result in FixInvalid(phrase, wrong, wrong, runAlgorithms, SwapMode.Similar, difficulty))
@@ -463,10 +445,8 @@ namespace FixMyCrypto {
 
             // Parallel.For(0, phrase.Length + 1, po, i => {
             for (int i = 0; i <= phrase.Length; i++) {
-                if (Global.Done) yield break;
                 // if (missing == totalMissing) Log.Debug($"Insert missing word into {i}");
                 for (int word = 0; word < Wordlists.OriginalWordlist.Count; word++) {
-                    if (Global.Done) yield break;
 
                     short[] copy = new short[phrase.Length + 1];
 
@@ -486,11 +466,9 @@ namespace FixMyCrypto {
         }
 
         private IEnumerable<Phrase?> FixInvalid(short[] phrase, int depth, int maxDepth, bool runAlgorithms, SwapMode mode, int difficulty) {
-            if (Global.Done) yield break;
 
             if (depth == 0) {
                 yield return TestPhrase(phrase);
-                if (Global.Done) yield break;
 
                 if (runAlgorithms) 
                 {
@@ -506,7 +484,6 @@ namespace FixMyCrypto {
             int indexToReplace = -1;
 
             for (int i = 0; i < phrase.Length; i++) {
-                if (Global.Done) yield break;
 
                 if (phrase[i] >= Wordlists.OriginalWordlist.Count) {
                     indexToReplace = i;
@@ -526,8 +503,6 @@ namespace FixMyCrypto {
             // Parallel.ForEach(words, po, replacement => {
             foreach (short replacement in words) {
                 attempt++;
-
-                if (Global.Done) yield break;
 
                 short[] fix = phrase.Copy();
 
@@ -550,7 +525,6 @@ namespace FixMyCrypto {
             }
 
             for (var i = start; i < phrase.Length; i++) {
-                if (Global.Done) yield break;
                 if (locked[i] || locked[start]) continue;
 
                 short[] swap = phrase.Copy();
@@ -565,8 +539,6 @@ namespace FixMyCrypto {
         private IEnumerable<Phrase?> RunAlgorithms(short[] phrase, int difficulty) {
             // Log.Debug($"RunAlgorithms on phrase: {String.Join(' ', phrase)}");
 
-            if (Global.Done) yield break;
-
             // parallelOptions = new ParallelOptions();
             // parallelOptions.MaxDegreeOfParallelism = threads;
 
@@ -579,7 +551,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Swap columns finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             Log.Debug($"PP: Swap any 2");
             sw2.Start();
@@ -589,7 +560,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Swap any 2 finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             Log.Debug($"PP: Change 1 word (same letter)");
             sw2.Restart();
@@ -599,7 +569,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Change 1 word (same letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             Log.Debug($"PP: Swap any 3");
             sw2.Start();
@@ -609,7 +578,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Swap any 3 finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             Log.Debug($"PP: Swap any 4");
             sw2.Start();
@@ -619,7 +587,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Swap any 4 finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             Log.Debug($"PP: Change 1 word (any letter)");
             sw2.Restart();
@@ -629,7 +596,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Change 1 word (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             Log.Debug($"PP: Swap 2, Change 1 (distance = {Settings.WordDistance})");
             sw2.Restart();
@@ -639,7 +605,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Swap 2, Change 1 (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             Log.Debug($"PP: Change 2 words (distance = {Settings.WordDistance})");
             sw2.Restart();
@@ -649,7 +614,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Change 2 words (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             if (difficulty < 1) yield break;
 
@@ -663,7 +627,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Swap 2, Change 2 (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             Log.Debug($"PP: Swap 2, Change 1 (same letter)");
             sw2.Restart();
@@ -673,7 +636,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Swap 2, Change 1 (same letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             Log.Debug($"PP: Change 2 words (same letter)");
             sw2.Restart();
@@ -683,7 +645,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Change 2 words (same letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             Log.Debug($"PP: Swap 2, Change 1 (any letter)");
             sw2.Restart();
@@ -693,7 +654,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Swap 2, Change 1 (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             Log.Debug($"PP: Change 3 words (distance = {Settings.WordDistance})");
             sw2.Restart();
@@ -703,7 +663,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Change 3 words (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             //  All permutations
             if (phrase.Length == 12) {
@@ -714,7 +673,6 @@ namespace FixMyCrypto {
                     yield return result;
                 }
                 sw2.Stop();
-                if (Global.Done) yield break;
             }
             
             if (difficulty < 2) yield break;
@@ -727,7 +685,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Change 2 words (any) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             if (difficulty < 3) yield break;
 
@@ -741,7 +698,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Change 4 words (distance = {Settings.WordDistance}) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             if (difficulty < 4) yield break;
 
@@ -753,7 +709,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Change 3 words (any) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
 
             if (difficulty < 5) yield break;
 
@@ -765,7 +720,6 @@ namespace FixMyCrypto {
             }
             sw2.Stop();
             // Log.Debug($"PP: Change 4 words (any letter) finished in {sw2.ElapsedMilliseconds/1000}s valid: {valid} invalid: {invalid} dupes: {dupes}");
-            if (Global.Done) yield break;
         }
 
         public long GetTotalCount() {
@@ -833,7 +787,7 @@ namespace FixMyCrypto {
                     yield return result;
                 }
 
-                if (!Global.Done && (Settings.Difficulty > 0)) {
+                if (Settings.Difficulty > 0) {
                     Log.Info($"PP replace {missingWords} missing words (+ swaps/changes)");
                     foreach (var result in FixMissing(phrase.Slice(0, phrase.Length - missingWords), missingWords, missingWords, wrongWords, true, Settings.Difficulty))
                     {
@@ -846,12 +800,9 @@ namespace FixMyCrypto {
 
                 //  Run all algorithms with a bit extra difficulty
 
-                if (!Global.Done) 
+                foreach (var result in RunAlgorithms(phrase, Settings.Difficulty + 1))
                 {
-                    foreach (var result in RunAlgorithms(phrase, Settings.Difficulty + 1))
-                    {
-                        yield return result;
-                    }
+                    yield return result;
                 }
             }
             else {
@@ -863,7 +814,7 @@ namespace FixMyCrypto {
                 }
 
                 //  Try fixing invalid words plus swaps/changes
-                if (!Global.Done && (wrongWords < 2 || Settings.Difficulty > 0)) {
+                if (wrongWords < 2 || Settings.Difficulty > 0) {
                     Log.Info($"PP replace {wrongWords} invalid words with similar words + swaps/changes");
                     foreach (var result in FixInvalid(phrase, wrongWords, wrongWords, true, SwapMode.Similar, Settings.Difficulty))
                     {
@@ -872,7 +823,7 @@ namespace FixMyCrypto {
                 }
 
                 //  Try any substitute for invalid words (no swaps/changes) if practical
-                if (!Global.Done && (wrongWords < 2 || Settings.Difficulty > 1)) {
+                if (wrongWords < 2 || Settings.Difficulty > 1) {
                     Log.Info($"PP replace {wrongWords} invalid words with any words");
                     foreach (var result in FixInvalid(phrase, wrongWords, wrongWords, false, SwapMode.AnyLetter, Settings.Difficulty))
                     {
@@ -881,7 +832,7 @@ namespace FixMyCrypto {
                 }
 
                 //  Last ditch effort
-                if (!Global.Done && (Settings.Difficulty > 1)) {
+                if (Settings.Difficulty > 1) {
                     Log.Info($"PP replace {wrongWords} invalid words with any words + swaps/changes");
                     foreach (var result in FixInvalid(phrase, wrongWords, wrongWords, true, SwapMode.AnyLetter, Settings.Difficulty + 1))
                     {
