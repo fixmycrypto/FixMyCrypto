@@ -38,7 +38,7 @@
 
 # Support
 
-For technical support or help with any crypto recovery needs, please contact us via [e-mail](mailto:help@fixmycrypto.com) or via our website <https://www.fixmycrypto.com>
+For technical support or help with any crypto recovery needs, please contact us via [e-mail](mailto:help@fixmycrypto.com)
 
 # Donations / Tips
 
